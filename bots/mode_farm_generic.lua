@@ -1,3 +1,4 @@
+local Objectives = require(GetScriptDirectory()..'/FunLib/objectives')
 if GetBot():IsInvulnerable() or not GetBot():IsHero() or not string.find(GetBot():GetUnitName(), "hero") or GetBot():IsIllusion() then
 	return;
 end
@@ -60,7 +61,7 @@ function GetDesire()
 	-- if DotaTime() > 30 and cachedVar ~= nil then return cachedVar end
 	local res = GetDesireHelper()
 	-- J.Utils.SetCachedVars(cacheKey, res)
-	return res
+	return Objectives.CapRoutineDesire(bot, res)
 end
 
 function GetDesireHelper()

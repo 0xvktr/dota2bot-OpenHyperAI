@@ -1,3 +1,4 @@
+local Objectives = require(GetScriptDirectory()..'/FunLib/objectives')
 local bot = GetBot()
 local botName = bot:GetUnitName()
 if bot == nil or bot:IsInvulnerable() or not bot:IsHero() or not bot:IsAlive() or not string.find(botName, "hero") or bot:IsIllusion() then return end
@@ -78,7 +79,7 @@ function GetDesire()
     res = CapForLanePush(res)
 
     -- J.Utils.SetCachedVars(cacheKey, res)
-    return res
+    return Objectives.CapRoutineDesire(bot, res)
 end
 function GetDesireHelper()
     if bot:IsInvulnerable() or not bot:IsHero() or not bot:IsAlive() or not string.find(botName, "hero") or bot:IsIllusion() then

@@ -2,6 +2,7 @@ local bot = GetBot()
 if bot == nil or bot:IsInvulnerable() or not bot:IsHero() or not string.find(bot:GetUnitName(), "hero") or bot:IsIllusion() then return end
 
 local J = require( GetScriptDirectory()..'/FunLib/jmz_func' )
+local Objectives = require(GetScriptDirectory()..'/FunLib/objectives')
 
 local PING_RECENCY = 8        -- respond to pings within this many seconds
 local ASSEMBLE_DURATION = 5    -- stay in assemble mode for this long after ping
@@ -33,6 +34,9 @@ function GetDesire()
 	end
 
 	-- Continue moving to assembly point if still active
+	local regroup = Objectives.PlanDesire(bot, 'regroup')
+	if regroup > 0 then return regroup end
+
 	if assembleLoc ~= nil and GameTime() < assembleExpireTime then
 		local dist = GetUnitToLocationDistance(bot, assembleLoc)
 		if dist <= ARRIVE_RADIUS then
@@ -53,6 +57,7 @@ end
 
 function Think()
 	if J.CanNotUseAction(bot) then return end
+	if assembleLoc == nil and Objectives.PlanThink(bot, 'regroup') then return end
 	if assembleLoc == nil then return end
 
 	local dist = GetUnitToLocationDistance(bot, assembleLoc)

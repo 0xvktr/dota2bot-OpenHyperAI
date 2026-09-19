@@ -7,8 +7,9 @@ local tAllyHumanList = {}
 
 local RadiantFountain = Vector( -6619, -6336, 384 )
 local DireFountain = Vector( 6928, 6372, 392 )
-local RadiantTormentorLoc = Vector(7499, -7847, 256)
-local DireTormentorLoc = Vector(-7229, 7933, 256)
+local ObjectiveLocations = require(GetScriptDirectory()..'/FunLib/objective_locations')
+local RadiantTormentorLoc = ObjectiveLocations.tormentor.day
+local DireTormentorLoc = ObjectiveLocations.tormentor.night
 
 local fKeepManaPercent = 0.39
 
@@ -5014,7 +5015,8 @@ function J.HasEnoughDPSForRoshan(heroes)
         DPS = DPS + dps
     end
 
-    DPS =  DPS / #heroes
+    -- Sum the participating team's DPS; averaging penalized larger groups.
+    if #heroes == 0 then return false end
 
     DPSThreshold = roshanHealth / plannedTimeToKill
     return DPS >= DPSThreshold
@@ -5954,7 +5956,7 @@ function J.ModeAnnounce(bot, locKey, cooldown)
 	bot.lastModeChatTime[locKey] = GameTime()
 	local msgs = Localization.Get(locKey)
 	if msgs ~= nil and #msgs > 0 then
-		bot:ActionImmediate_Chat(msgs[RandomInt(1, #msgs)], false)
+		bot:ActionImmediate_Chat(msgs[RandomInt(1, #msgs)], true)
 	end
 end
 
@@ -5990,12 +5992,12 @@ function J.IsHumanInLoc(vLoc, nRadius)
 end
 
 function J.GetCurrentRoshanLocation()
-	-- 7.41: Roshan's pit preference switched (day/night swap)
+	-- 7.41: starts in the top pit, then top by day / bottom by night.
 	if J.CheckTimeOfDay() == 'day'
 	then
-		return J.Utils.DireRoshanLoc
+		return ObjectiveLocations.roshan.day
 	else
-		return J.Utils.RadiantRoshanLoc
+		return ObjectiveLocations.roshan.night
 	end
 end
 
@@ -6013,9 +6015,9 @@ function J.GetTormentorWaitingLocation(team)
 	-- 7.41: Tormentor's spawn preference switched (day/night swap)
 	local timeOfday = J.CheckTimeOfDay()
 	if timeOfday == 'day' then
-		return Vector(6792, -6815, 256)
+		return RadiantTormentorLoc + Vector(-450, 450, 0)
 	else
-		return Vector(-7041, 6796, 256)
+		return DireTormentorLoc + Vector(450, -450, 0)
 	end
 end
 

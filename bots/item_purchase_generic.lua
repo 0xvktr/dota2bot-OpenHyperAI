@@ -1142,18 +1142,6 @@ function ItemPurchaseThink()
 		bot:ActionImmediate_SellItem(bot:GetItemInSlot(bot:FindItemSlot('item_mask_of_madness')))
 	end
 
-	-- Cores drop normal/great lotuses after 30min to free up slots for real items.
-	-- Greater lotus (item_greater_famango) is kept by everyone — too valuable to drop.
-	if currentTime > 30 * 60 and J.IsCore(bot) then
-		local tDropLotus = { 'item_famango', 'item_great_famango' }
-		for _, lotusName in ipairs(tDropLotus) do
-			local slot = bot:FindItemSlot(lotusName)
-			if slot >= 0 then
-				bot:Action_DropItem(bot:GetItemInSlot(slot), bot:GetLocation())
-				print("[Item] Core "..botName.." dropped "..lotusName.." (past 30min)")
-			end
-		end
-	end
 
 	if #bot.purchaseListInReverseOrder == 0 then
 		_resetCurrentTarget()
