@@ -1,3 +1,6 @@
+local SupportLastHits = require(GetScriptDirectory()..'/FunLib/support_last_hits')
+local GateProbe = require(GetScriptDirectory()..'/FunLib/twin_gate_probe')
+local LaneRotation = require(GetScriptDirectory()..'/FunLib/lane_rotation')
 local Objectives = require(GetScriptDirectory()..'/FunLib/objectives')
 local J = require( GetScriptDirectory()..'/FunLib/jmz_func')
 local Customize = require( GetScriptDirectory()..'/Customize/general' )
@@ -50,12 +53,22 @@ local laneAndT1s = {
 }
 
 function GetDesire()
+    local probe = GateProbe.Desire(bot)
+    if probe > 0 then return probe end
+    bot.ohaProtectingLastHit = false
 	-- local cacheKey = 'GetRoamDesire'..tostring(bot:GetPlayerID())
 	-- local cachedVar = J.Utils.GetCachedVars(cacheKey, 0.5 * (1 + Customize.ThinkLess))
 	-- if DotaTime() > 30 and cachedVar ~= nil then return cachedVar end
 	local res = GetDesireHelper()
 	-- J.Utils.SetCachedVars(cacheKey, res)
-	return Objectives.CapRoutineDesire(bot, res)
+	local returnDesire = LaneRotation.ReturnDesire(bot)
+    if res < 0.89 and SupportLastHits.Window(bot) then
+        bot.ohaProtectingLastHit = true
+        return 0.89
+    end
+    bot.ohaReturningLane = returnDesire > res
+    if bot.ohaReturningLane then return returnDesire end
+    return Objectives.CapRoutineDesire(bot, res)
 end
 function GetDesireHelper()
 	botName = bot:GetUnitName()
@@ -140,7 +153,10 @@ function GetDesireHelper()
 end
 
 function Think()
+    if GateProbe.Think(bot) then return end
     if J.CanNotUseAction(bot) then return end
+    if bot.ohaProtectingLastHit and SupportLastHits.Think(bot) then return end
+    if bot.ohaReturningLane and LaneRotation.ThinkReturn(bot) then return end
 	if J.Utils.IsBotThinkingMeaningfulAction(bot, Customize.ThinkLess, "roam") then return end
 
 	nInRangeEnemy = bot:GetNearbyHeroes(1200, true, BOT_MODE_NONE)

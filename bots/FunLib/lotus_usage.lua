@@ -5,28 +5,31 @@ local protected = { item_aegis = true, item_rapier = true, item_armlet = true,
     item_black_king_bar = true, item_bloodstone = true, item_gem = true,
     item_cheese = true, item_refresher_shard = true, item_power_treads = true }
 
+local function resourceRatio(h)
+    local hp = h:GetHealth() / math.max(1, h:GetMaxHealth())
+    local maxMana = h:GetMaxMana()
+    local mp = maxMana > 0 and h:GetMana() / maxMana or 1
+    return math.min(hp, mp)
+end
+
 function L.Target(bot, item)
-    local amount = restore[item:GetName()]
-    if not amount or bot:DistanceFromFountain() < 1200 then return nil end
-    local best, score = nil, 0
+    if not restore[item:GetName()] or bot:DistanceFromFountain() < 1200 then return nil end
+    local best, lowest = nil, 0.5
     local candidates = { bot }
     for _, h in ipairs(J.GetAlliesNearLoc(bot:GetLocation(), item:GetCastRange())) do
         if h ~= bot then table.insert(candidates, h) end
     end
     for _, h in ipairs(candidates) do
-        if J.IsValidHero(h) and h:IsAlive() and not h:IsIllusion() then
-            local hp = h:GetMaxHealth() - h:GetHealth()
-            local mp = h:GetMaxMana() - h:GetMana()
-            local value = math.min(hp, amount) + math.min(mp, amount)
-            -- Instant restoration is useful in combat too. Avoid wasting a large
-            -- lotus on a small deficit, except when health is critically low.
-            if value >= amount * 0.8 or (J.GetHP(h) < 0.35 and hp > 100) then
-                local priority = value / amount + (1 - J.GetHP(h)) * 2
-                if priority > score then best, score = h, priority end
-            end
+        if J.IsValidHero(h) and h:IsAlive() and not h:IsIllusion() and J.IsCore(h) then
+            local ratio = resourceRatio(h)
+            if ratio < lowest then best, lowest = h, ratio end
         end
     end
-    return best
+    -- A depleted core takes priority even over a more depleted support holder.
+    -- All tiers use the same strict threshold; otherwise save the lotus.
+    if best then return best end
+    if resourceRatio(bot) < 0.5 then return bot end
+    return nil
 end
 
 function L.Prepare(bot)

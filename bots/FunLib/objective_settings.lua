@@ -1,4 +1,5 @@
 return {
+    TwinGateProbe = { Enabled = false, Team = TEAM_RADIANT, Method = 'remaining_forms' },
     RoshanMinTime = 30 * 60,
     AllowEarlyRoshan = false,
     EarlyRoshanMinTime = 20 * 60,

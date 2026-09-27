@@ -1,3 +1,5 @@
+local GateProbe = require(GetScriptDirectory()..'/FunLib/twin_gate_probe')
+local LaneRotation = require(GetScriptDirectory()..'/FunLib/lane_rotation')
 local BossCombat = require(GetScriptDirectory()..'/FunLib/boss_combat')
 local LotusUsage = require(GetScriptDirectory()..'/FunLib/lotus_usage')
 local FightResponse = require(GetScriptDirectory()..'/FunLib/fight_response')
@@ -1023,9 +1025,7 @@ local function ItemUsageComplement()
 						J.SetReportMotive( bDebugMode, sItemName..'→'..sMotive )
 					end
 
-					X.SetUseItem( hItem, hItemTarget, sCastType )
-
-					return nSlot + 1
+					if X.SetUseItem( hItem, hItemTarget, sCastType ) ~= false then return nSlot + 1 end
 				end
 			end
 		end
@@ -1036,6 +1036,10 @@ local function ItemUsageComplement()
 end
 
 function X.SetUseItem( hItem, hItemTarget, sCastType )
+    if hItem:GetName() == 'item_tpscroll' and sCastType == 'ground' then
+        if not FightResponse.CanTeleportTo(bot, hItemTarget) then return false end
+        FightResponse.RecordTeleport(bot, hItemTarget)
+    end
 
 	if sCastType == 'none'
 	then
@@ -4978,6 +4982,10 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 	local nNearbyEnemyTowers = bot:GetNearbyTowers( 888, true )
 	if #nNearbyEnemyTowers > 0 then return BOT_ACTION_DESIRE_NONE end
 
+    local returnLoc = LaneRotation.ReturnTP(bot)
+    if returnLoc and FightResponse.CanTeleportTo(bot, returnLoc) then
+        return BOT_ACTION_DESIRE_HIGH, returnLoc, 'ground', 'Return to lane after rescue'
+    end
     local reinforcement = FightResponse.TeleportLocation(bot)
     if reinforcement then
         return BOT_ACTION_DESIRE_HIGH, reinforcement, 'ground', 'Reinforce fight at allied tower'
@@ -8311,6 +8319,8 @@ end
 
 function ItemUsageThink()
 	if RefreshBotHandle() then return end
+    if GateProbe.Active(bot) then return end
+    if FightResponse.CancelUnsafeTeleport(bot) then return end
 	if bot:IsInvulnerable() or not bot:IsHero() or not bot:IsAlive() or not string.find(botName, "hero") or bot:IsIllusion() then return end
 	if bot.lastItemFrameProcessTime == nil then bot.lastItemFrameProcessTime = DotaTime() end
 	if DotaTime() > 30 and (DotaTime() - bot.lastItemFrameProcessTime < (bot.frameProcessTime * (1 + Customize.ThinkLess))) then return end
@@ -8320,6 +8330,7 @@ end
 
 function AbilityUsageThink()
 	if RefreshBotHandle() then return end
+    if GateProbe.Active(bot) then return end
 	if bot:IsInvulnerable() or not bot:IsHero() or not bot:IsAlive() or not string.find(botName, "hero") or bot:IsIllusion() then return end
 	if bot.lastAbilityFrameProcessTime == nil then bot.lastAbilityFrameProcessTime = DotaTime() end
 	if DotaTime() > 30 and (DotaTime() - bot.lastAbilityFrameProcessTime < (bot.frameProcessTime * (1 + Customize.ThinkLess))) and bot.isBear == nil then return end

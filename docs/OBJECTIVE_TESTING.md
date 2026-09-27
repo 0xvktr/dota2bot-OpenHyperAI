@@ -18,7 +18,9 @@ here. Its hero bans and unrelated laning changes are not included.
   useful, a backpack lotus temporarily replaces an eligible inexpensive item
   outside combat. The displaced item returns after consumption or a 20-second
   timeout. The normal backpack activation cooldown still applies. Active
-  lotuses can restore the holder or a nearby ally, including humans, in combat.
+  lotuses prioritize a nearby core (including humans) strictly below 50% HP or
+  mana. If no core needs one, the holder uses it only below 50% HP or mana;
+  otherwise it is saved. This applies to every tier, including during combat.
 - Wisdom: a bot support prepares up to 30 seconds before each seven-minute
   spawn, with actual departure based on estimated travel time. Radiant secures
   the top shrine, Dire the bottom. A nearby bot core is the fallback. A human
@@ -161,6 +163,44 @@ spell/item use, and approach with an enemy to verify cancellation. For TP,
 observe a distant healthy hero during a contested fight at an allied tower.
 Wisdom collection succeeded in the first reported match; its assignment rules
 are unchanged by this follow-up.
+
+## September 19: rescue follow-through and lost defenses
+
+`fight_response.lua` now checks every normal TP-scroll destination at the final
+cast boundary, plus Nature's Prophet's teleport decisions. An outer tower is
+not defended by a lone arrival against superior numbers. Visible and recently
+seen attackers count; healthy defenders already present count, but promised
+arrivals do not turn a losing fight into a safe one. Short incoming reservations
+prevent redundant TPs. Observed defender deaths cause a 35-second backoff until
+enough heroes physically regroup. Tier-one/tier-two defense mode also yields;
+base tower defense retains its existing logic. A tracked TP already channeling
+is canceled if the defense becomes unsafe before arrival. These are conservative
+numbers/health rules, not a complete hero-matchup strength estimate.
+
+`lane_rotation.lua` records rescue teleports during laning. After arrival and
+eight seconds without nearby combat, the arriving bot chooses between returning
+to its assigned lane and a nearby tier-one push. A push needs three healthy
+allies, at least three nearby allied lane creeps, at most one recently seen
+defender, and no endangered core back home. It lasts at most 20 seconds and uses
+the existing tower/creep micro. Return movement yields to fighting, retreating,
+and channels; a safe available TP can shorten a long return. Failed rescue TPs
+expire, arrival home clears the assignment, and the whole lifecycle expires
+after 150 seconds or when laning ends.
+
+Twin Gate activation is **not enabled**. The old gate code is disabled,
+unconnected and does not validate the ability handle. An open August 14, 2026
+report describes the missing ordinary-bot activation path:
+https://github.com/ValveSoftware/Dota2-Gameplay/issues/34354
+This report is evidence of an unresolved limitation, not proof that every
+possible workaround is impossible. Until actual gate traversal is demonstrated
+in a local lobby, proactive gate ganks, gate-return routes and dedicated gate
+vision/dewarding policy remain pending. Returning bots currently walk or TP;
+they are never instructed to wait at an unusable gate.
+
+Focused live checks: repeat a successful lane rescue without nearby enemies;
+check that arriving bots return home or briefly push behind a creep wave. Then
+attack an enemy outer tower with three heroes and kill its defenders; surviving
+bots should not trickle-TP into that tower, including during an existing channel.
 
 Set `O.Debug = true` near the top of `objectives.lua` before starting a fresh
 match to log assignments, plan creation and cancellation reasons as

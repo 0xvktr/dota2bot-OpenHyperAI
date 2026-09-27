@@ -1,3 +1,4 @@
+local SupportLastHits = require(GetScriptDirectory()..'/FunLib/support_last_hits')
 local Objectives = require(GetScriptDirectory()..'/FunLib/objectives')
 local bot = GetBot()
 local botName = bot:GetUnitName()
@@ -350,6 +351,10 @@ end
 -- (guarded by emergency retreat)
 -- ==============================
 function X.SupportFindTarget()
+    if targetUnit and SupportLastHits.ReservedForCore(bot, targetUnit) then
+        targetUnit = nil
+        bot:SetTarget(nil)
+    end
     if X.CanNotUseAttack(bot) or DotaTime() < 0 then return nil, 0 end
 
     local IsModeSuitHit = X.IsModeSuitToHitCreep(bot)

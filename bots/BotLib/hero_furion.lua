@@ -1,3 +1,4 @@
+local FightResponse = require(GetScriptDirectory()..'/FunLib/fight_response')
 local X = {}
 local bot = GetBot()
 
@@ -215,6 +216,11 @@ function X.SkillsComplement()
     and bot.ProphetTPLocation ~= nil
     and J.CanCastAbility(Teleportation)
     then
+        if not FightResponse.CanTeleportTo(bot, bot.ProphetTPLocation) then
+            bot.useProphetTP = false
+            return
+        end
+        FightResponse.RecordTeleport(bot, bot.ProphetTPLocation)
         bot:Action_UseAbilityOnLocation(Teleportation, bot.ProphetTPLocation)
         bot.useProphetTP = false
         return
@@ -231,7 +237,8 @@ function X.SkillsComplement()
     end
 
     local tpDesire, tpLoc = X.ConsiderTeleportation()
-    if tpDesire > 0 then
+    if tpDesire > 0 and FightResponse.CanTeleportTo(bot, tpLoc) then
+        FightResponse.RecordTeleport(bot, tpLoc)
         J.SetQueuePtToINT(bot, false)
         bot:ActionQueue_UseAbilityOnLocation(Teleportation, tpLoc)
         bot.useProphetTP = false

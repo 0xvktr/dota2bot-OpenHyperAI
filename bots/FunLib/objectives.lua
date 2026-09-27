@@ -1,3 +1,4 @@
+local LaneRotation = require(GetScriptDirectory()..'/FunLib/lane_rotation')
 -- Team assignments shared through a real allied hero, like the existing rune state.
 -- No server-side APIs or FretBots dependency. Humans count physically, never as
 -- promised participants merely because they are alive.
@@ -370,6 +371,7 @@ end
 function O.CapRoutineDesire(bot, desire)
     -- Only suppress routine activity, never an emergency/dodge or ongoing fight.
     if desire >= 1 then return desire end
+    desire = LaneRotation.CapRoutineDesire(bot, desire)
     if O.GetPlan(bot) then return math.min(desire, 0.45) end
     return desire
 end

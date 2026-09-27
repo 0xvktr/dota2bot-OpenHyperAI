@@ -11,14 +11,21 @@ local now, allies, threat, tower, fightEnemies, landingDanger
 function GetScriptDirectory()return 'bots'end
 function DotaTime()return now end
 function GetTeam()return 2 end
+function GetTeamPlayers()return {1,2,3,4,5}end
+function GetTeamMember(i)return allies[i]end
+function GetUnitToLocationDistance(h,loc)return math.abs(h.loc.x-loc.x)end
 function GetItemCost(name)return name=='item_branches' and 50 or 2000 end
 function GetTower(_,id)return id==1 and tower or nil end
 function GetAncient()return {GetLocation=function()return Vector(-8000)end}end
 function GetUnitToUnitDistance(a,b)return math.abs(a.loc.x-b.loc.x)end
 local J={}
 function J.GetHP(h)return h.hp/h.maxhp end
+function J.GetDistance(a,b)return math.abs(a.x-b.x)end
+function J.GetLastSeenEnemiesNearLoc(loc,radius)return J.GetEnemiesNearLoc(loc,radius)end
+function J.GetNumOfAliveHeroes()return 5 end
 function J.GetMP(h)return h.mp/1000 end
 function J.IsValidHero(h)return h~=nil end
+function J.IsCore(h)return h.core or false end
 function J.IsValid(h)return h~=nil end
 function J.CanNotUseAction(h)return h.casting end
 function J.GetAlliesNearLoc()return allies end
@@ -72,14 +79,14 @@ test('basic lotus can restore health during combat',function()
     assert(L.Target(h,item('item_famango'))==h)
 end)
 test('lotus prioritizes depleted nearby human over healthy holder',function()
-    local h, human=hero(),hero();human.mp=100;allies={h,human}
+    local h, human=hero(),hero();human.mp=100;human.core=true;allies={h,human}
     assert(L.Target(h,item('item_great_famango'))==human)
 end)
 test('large lotus is not wasted on tiny deficits',function()
     local h=hero();h.hp=950;assert(L.Target(h,item('item_greater_famango'))==nil)
 end)
 test('backpack lotus replaces cheap item and restores it after use',function()
-    local h=hero();h.hp=600
+    local h=hero();h.hp=400
     for i=0,5 do h.items[i]=item('item_expensive')end
     local branch,lotus=item('item_branches'),item('item_famango');h.items[2]=branch;h.items[6]=lotus
     L.Prepare(h);assert(h.items[2]==lotus and h.items[6]==branch)
@@ -148,5 +155,34 @@ test('Drums require a group actually attacking the boss',function()
     assert(B.ItemDesire(h,item('item_ancient_janggo'))==0)
     allies[2].target=h.target;allies[3].target=h.target
     assert(B.ItemDesire(h,item('item_ancient_janggo'))>0)
+end)
+test('every lotus tier holds at full resources and at exactly fifty percent',function()
+    for _,name in ipairs({'item_famango','item_great_famango','item_greater_famango'}) do
+        local h,c=hero(),hero();c.core=true;allies={h,c}
+        assert(L.Target(h,item(name))==nil)
+        h.hp=500;h.mp=500;c.hp=500;c.mp=500
+        assert(L.Target(h,item(name))==nil)
+        h.hp=499;assert(L.Target(h,item(name))==h)
+    end
+end)
+test('depleted core outranks even more depleted support',function()
+    local h,c=hero(),hero();h.hp=100;c.mp=499;c.core=true;allies={h,c}
+    assert(L.Target(h,item('item_famango'))==c)
+    c.mp=1000;c.hp=499
+    assert(L.Target(h,item('item_famango'))==c)
+    c.hp=1000;assert(L.Target(h,item('item_famango'))==h)
+end)
+test('hold lotus when both heroes exceed fifty percent despite large deficits',function()
+    local h,c=hero(),hero();h.hp=600;h.mp=600;c.hp=600;c.mp=600;c.core=true;allies={h,c}
+    h.items[6]=item('item_famango')
+    assert(L.Target(h,h.items[6])==nil);L.Prepare(h);assert(not h.swaps)
+end)
+test('low self mana permits use when nearby core is healthy',function()
+    local h,c=hero(),hero();h.mp=499;c.core=true;allies={h,c}
+    assert(L.Target(h,item('item_famango'))==h)
+end)
+test('zero mana capacity does not count as missing mana',function()
+    local h=hero();h.mp=0;h.GetMaxMana=function()return 0 end
+    assert(L.Target(h,item('item_famango'))==nil)
 end)
 print(passed..' feedback scenarios passed')

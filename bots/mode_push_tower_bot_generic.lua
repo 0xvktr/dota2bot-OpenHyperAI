@@ -1,3 +1,4 @@
+local LaneRotation = require(GetScriptDirectory()..'/FunLib/lane_rotation')
 local Objectives = require(GetScriptDirectory()..'/FunLib/objectives')
 local J = require(GetScriptDirectory()..'/FunLib/jmz_func')
 local Push = require( GetScriptDirectory()..'/FunLib/aba_push')
@@ -7,6 +8,8 @@ if bot == nil or bot:IsInvulnerable() or not bot:IsHero() or not bot:IsAlive() o
 if bot.PushLaneDesire == nil then bot.PushLaneDesire = {0, 0, 0} end
 
 function GetDesire()
+    local rotationDesire = LaneRotation.PushDesire(bot, LANE_BOT)
+    if rotationDesire ~= nil then bot.PushLaneDesire[LANE_BOT] = rotationDesire; return rotationDesire end
     local plan = Objectives.GetPlan(bot)
     if plan then
         bot.PushLaneDesire[LANE_BOT] = Objectives.PlanDesire(bot, 'push', LANE_BOT)

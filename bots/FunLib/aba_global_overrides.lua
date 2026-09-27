@@ -1,3 +1,9 @@
+-- The ordinary bot Lua sandbox may not expose the debug library.
+local function safeTraceback()
+    if debug and type(debug.traceback) == 'function' then return debug.traceback() end
+    return '(stack trace unavailable in bot sandbox)'
+end
+
 
 -- macOS compatibility: Valve's VScript on Mac resolves require() paths differently.
 -- Extend package.path to include the script directory so both path styles work.
@@ -87,13 +93,13 @@ local original_GetUnitToUnitDistance = GetUnitToUnitDistance
 function GetUnitToUnitDistance(unit1, unit2)
 	if not unit1 then
 		print("[Error] GetUnitToUnitDistance called with invalid unit 1")
-		print("Stack Trace:", debug.traceback())
+		print("Stack Trace:", safeTraceback())
 		return 1000
 	end
 	if unit2 == nil or unit2:GetLocation() == nil then
 		if unit1 then
 			print("[Error] GetUnitToUnitDistance called with invalid unit 2, the unit 1 is: " .. unit1:GetUnitName())
-			print("Stack Trace:", debug.traceback())
+			print("Stack Trace:", safeTraceback())
 		end
 		return 1000
 	end
@@ -104,7 +110,7 @@ local originalWasRecentlyDamagedByAnyHero = CDOTA_Bot_Script.WasRecentlyDamagedB
 function CDOTA_Bot_Script:WasRecentlyDamagedByAnyHero(fInterval)
     if not self:IsHero() then
 		-- print("WasRecentlyDamagedByAnyHero has been called on non hero")
-		-- print("Stack Trace:", debug.traceback())
+		-- print("Stack Trace:", safeTraceback())
 		return nil
 	end
     return originalWasRecentlyDamagedByAnyHero(self, fInterval)
@@ -114,7 +120,7 @@ local originalGetNearbyTowers = CDOTA_Bot_Script.GetNearbyTowers
 function CDOTA_Bot_Script:GetNearbyTowers(nRadius, bEnemies)
     if not self:IsHero() then
 		-- print("GetNearbyTowers has been called on non hero")
-		-- print("Stack Trace:", debug.traceback())
+		-- print("Stack Trace:", safeTraceback())
 		return nil
 	end
     return originalGetNearbyTowers(self, math.min(nRadius, 1600), bEnemies)
@@ -124,12 +130,12 @@ local originalIsIllusion = CDOTA_Bot_Script.IsIllusion
 function CDOTA_Bot_Script:IsIllusion()
     if not self:IsHero() then
 		-- print("IsIllusion has been called on non hero")
-		-- print("Stack Trace:", debug.traceback())
+		-- print("Stack Trace:", safeTraceback())
 		return nil
 	end
     if not self:CanBeSeen() then
 		-- print("IsIllusion has been called on non hero")
-		-- print("Stack Trace:", debug.traceback())
+		-- print("Stack Trace:", safeTraceback())
 		return nil
 	end
 
@@ -142,11 +148,11 @@ function CDOTA_Bot_Script:HasModifier(sModifierName)
     if not self:CanBeSeen() then
 		return false
 		-- print("HasModifier has been called on unit can't be seen")
-		-- print("Stack Trace:", debug.traceback())
+		-- print("Stack Trace:", safeTraceback())
 	end
     -- if not self:IsHero() then
 	-- 	print("HasModifier has been called on non hero")
-	-- 	print("Stack Trace:", debug.traceback())
+	-- 	print("Stack Trace:", safeTraceback())
 	-- end
     return originalHasModifier(self, sModifierName)
 end
@@ -156,7 +162,7 @@ function CDOTA_Bot_Script:GetLocation()
     if self == nil or (not self:IsBuilding() and not self:CanBeSeen()) then
 		return nil
 		-- print("GetLocation has been called on unit can't be seen")
-		-- print("Stack Trace:", debug.traceback())
+		-- print("Stack Trace:", safeTraceback())
 	end
     return originalGetLocation(self)
 end
@@ -165,7 +171,7 @@ function CDOTA_Bot_Script:GetMagicResist()
     if self == nil or not self:CanBeSeen() then
 		return 1
 		-- print("GetMagicResist has been called on unit can't be seen")
-		-- print("Stack Trace:", debug.traceback())
+		-- print("Stack Trace:", safeTraceback())
 	end
     return originalGetMagicResist(self)
 end
@@ -174,7 +180,7 @@ local originalIsInvulnerable = CDOTA_Bot_Script.IsInvulnerable
 function CDOTA_Bot_Script:IsInvulnerable()
     if not self:CanBeSeen() then
 		-- print("IsInvulnerable has been called on unit can't be seen")
-		-- print("Stack Trace:", debug.traceback())
+		-- print("Stack Trace:", safeTraceback())
 		return false
 	end
 	if self:HasModifier('modifier_dazzle_nothl_projection_soul_debuff') then
@@ -187,7 +193,7 @@ local originalIsAttackImmune = CDOTA_Bot_Script.IsAttackImmune
 function CDOTA_Bot_Script:IsAttackImmune()
     if not self:CanBeSeen() then
 		-- print("IsAttackImmune has been called on unit can't be seen")
-		-- print("Stack Trace:", debug.traceback())
+		-- print("Stack Trace:", safeTraceback())
 		return false
 	end
     return originalIsAttackImmune(self)
@@ -197,7 +203,7 @@ local originalIsUsingAbility = CDOTA_Bot_Script.IsUsingAbility
 function CDOTA_Bot_Script:IsUsingAbility()
     if not self:CanBeSeen() or not self:IsHero() then
 		-- print("IsUsingAbility has been called on unit can't be seen")
-		-- print("Stack Trace:", debug.traceback())
+		-- print("Stack Trace:", safeTraceback())
 		return false
 	end
     return originalIsUsingAbility(self)
@@ -207,7 +213,7 @@ local originalIsChanneling = CDOTA_Bot_Script.IsChanneling
 function CDOTA_Bot_Script:IsChanneling()
     if not self:CanBeSeen() then
 		-- print("IsChanneling has been called on unit can't be seen")
-		-- print("Stack Trace:", debug.traceback())
+		-- print("Stack Trace:", safeTraceback())
 		return false
 	end
     return originalIsChanneling(self)
@@ -217,7 +223,7 @@ local originalGetAttackTarget = CDOTA_Bot_Script.GetAttackTarget
 function CDOTA_Bot_Script:GetAttackTarget()
     if not self:CanBeSeen() then
 		-- print("GetAttackTarget has been called on unit can't be seen")
-		-- print("Stack Trace:", debug.traceback())
+		-- print("Stack Trace:", safeTraceback())
 		return nil
 	end
     return originalGetAttackTarget(self)
@@ -227,7 +233,7 @@ local originalGetNearbyHeroes = CDOTA_Bot_Script.GetNearbyHeroes
 function CDOTA_Bot_Script:GetNearbyHeroes(nRadius, bEnemies, nMode)
     if not self:CanBeSeen() then
 		-- print("GetNearbyHeroes has been called on unit can't be seen")
-		-- print("Stack Trace:", debug.traceback())
+		-- print("Stack Trace:", safeTraceback())
 		return nil
 	end
     return originalGetNearbyHeroes(self, math.min(nRadius, 1600), bEnemies, nMode)
@@ -277,7 +283,7 @@ local originalGetNearbyLaneCreeps = CDOTA_Bot_Script.GetNearbyLaneCreeps
 function CDOTA_Bot_Script:GetNearbyLaneCreeps( nRadius, bEnemies)
     -- if not self or not self:IsBot() then
 	-- 	print("GetNearbyLaneCreeps has been called on unit is not a bot")
-	-- 	print("Stack Trace:", debug.traceback())
+	-- 	print("Stack Trace:", safeTraceback())
 	-- 	return nil
 	-- end
     return originalGetNearbyLaneCreeps(self, math.min(nRadius, 1600), bEnemies)
@@ -297,11 +303,17 @@ function CDOTA_Bot_Script:GetUnitName()
 	return uName
 end
 
+-- Permit only the explicit diagnostic to test the hidden Twin Gate ability.
+local function probeMayCastHidden(bot, ability)
+    return ability ~= nil and bot.ohaGateProbe ~= nil and not bot.ohaGateProbe.done
+        and ability:GetName() == 'twin_gate_portal_warp'
+end
+
 local originalAction_UseAbility = CDOTA_Bot_Script.Action_UseAbility
 function CDOTA_Bot_Script:Action_UseAbility(hAbility)
-    if hAbility == nil or hAbility:IsHidden() then
+    if hAbility == nil or (hAbility:IsHidden() and not probeMayCastHidden(self, hAbility)) then
 		print("Action_UseAbility has been called on ability that's hidden")
-		print("Stack Trace:", debug.traceback())
+		print("Stack Trace:", safeTraceback())
 		return nil
 	end
     return originalAction_UseAbility(self, hAbility)
@@ -309,9 +321,9 @@ end
 
 local originalActionPush_UseAbility = CDOTA_Bot_Script.ActionPush_UseAbility
 function CDOTA_Bot_Script:ActionPush_UseAbility(hAbility)
-    if hAbility == nil or hAbility:IsHidden() then
+    if hAbility == nil or (hAbility:IsHidden() and not probeMayCastHidden(self, hAbility)) then
 		print("ActionPush_UseAbility has been called on ability that's hidden")
-		print("Stack Trace:", debug.traceback())
+		print("Stack Trace:", safeTraceback())
 		return nil
 	end
     return originalActionPush_UseAbility(self, hAbility)
@@ -321,17 +333,43 @@ end
 -- function CDOTA_Bot_Script:Action_AttackUnit(hUnit, bOnce)
 --     if hUnit:GetUnitName() == 'npc_dota_warlock_minor_imp' then
 -- 		print("Action_AttackUnit has been called on entity npc_dota_warlock_minor_imp")
--- 		print("Stack Trace:", debug.traceback())
+-- 		print("Stack Trace:", safeTraceback())
 -- 		return nil
 -- 	end
 --     return originalAction_AttackUnit(self, hUnit, bOnce)
 -- end
 
+-- Respect core last hits in script-controlled attacks without assuming native
+-- Valve orders pass through Lua. Lazy require avoids initialization cycles.
+local function reserveLaneCreep(bot, target)
+    if not target or target:IsNull() then return false end
+    local name = target:GetUnitName()
+    if not string.find(name, 'npc_dota_creep_goodguys', 1, true)
+        and not string.find(name, 'npc_dota_creep_badguys', 1, true) then return false end
+    local SupportLastHits = require(GetScriptDirectory()..'/FunLib/support_last_hits')
+    return SupportLastHits.ReservedForCore(bot, target) ~= nil
+end
+local originalSupportAttack = CDOTA_Bot_Script.Action_AttackUnit
+function CDOTA_Bot_Script:Action_AttackUnit(target, once)
+    if reserveLaneCreep(self, target) then return end
+    return originalSupportAttack(self, target, once)
+end
+local originalSupportQueuedAttack = CDOTA_Bot_Script.ActionQueue_AttackUnit
+function CDOTA_Bot_Script:ActionQueue_AttackUnit(target, once)
+    if reserveLaneCreep(self, target) then return end
+    return originalSupportQueuedAttack(self, target, once)
+end
+local originalSupportPushedAttack = CDOTA_Bot_Script.ActionPush_AttackUnit
+function CDOTA_Bot_Script:ActionPush_AttackUnit(target, once)
+    if reserveLaneCreep(self, target) then return end
+    return originalSupportPushedAttack(self, target, once)
+end
+
 local originalGetTarget = CDOTA_Bot_Script.GetTarget
 function CDOTA_Bot_Script:GetTarget()
     if not self or not self:IsBot() then
 		-- print("GetTarget has been called on unit is not a bot")
-		-- print("Stack Trace:", debug.traceback())
+		-- print("Stack Trace:", safeTraceback())
 		return nil
 	end
     return originalGetTarget(self)
@@ -341,7 +379,7 @@ local originalGetAttackRange = CDOTA_Bot_Script.GetAttackRange
 function CDOTA_Bot_Script:GetAttackRange()
     if not self:CanBeSeen() then
 		-- print("GetAttackRange has been called on unit can't be seen")
-		-- print("Stack Trace:", debug.traceback())
+		-- print("Stack Trace:", safeTraceback())
 		return 200
 	end
     return originalGetAttackRange(self)
@@ -370,7 +408,7 @@ end
 -- function CDOTA_AttackRecordManager:GetRecordByIndex(idx)
 --     if idx < 0 then
 -- 		print("GetRecordByIndex has been called on unit can't be seen")
--- 		print("Stack Trace:", debug.traceback())
+-- 		print("Stack Trace:", safeTraceback())
 -- 	end
 --     return originalGetRecordByIndex(self)
 -- end
@@ -384,7 +422,7 @@ function CDOTA_Bot_Script:ActionImmediate_SwapItems(intnSlot1, intnSlot2)
 		self.itemSwapTime = 0
 	end
 	-- print("ActionImmediate_SwapItems has been called on unit: "..unitName)
-	-- print("Stack Trace:", debug.traceback())
+	-- print("Stack Trace:", safeTraceback())
 	if #self:GetNearbyHeroes(1000, true, BOT_MODE_NONE) == 0 and DotaTime() - self.itemSwapTime > itemSwapGapTime then
 		self.itemSwapTime = DotaTime()
 		return originalActionImmediate_SwapItems(self, intnSlot1, intnSlot2)
@@ -399,7 +437,7 @@ local originalGetUnitToLocationDistance = CDOTA_Bot_Script.GetUnitToLocationDist
 function CDOTA_Bot_Script:GetUnitToLocationDistance(unit, location)
     if location == nil then
 		print("GetUnitToLocationDistance error arg.")
-		print("Stack Trace:", debug.traceback())
+		print("Stack Trace:", safeTraceback())
 		return 200
 	end
     return originalGetUnitToLocationDistance(self, unit, location)
