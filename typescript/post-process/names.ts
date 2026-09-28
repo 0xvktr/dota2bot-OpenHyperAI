@@ -54,6 +54,7 @@ export const hero_name_table: Record<HeroKey, HeroInfo> = {
     npc_dota_hero_keeper_of_the_light: { urlName: "keeper-of-the-light", visibleName: "Keeper of the Light" },
     npc_dota_hero_kez: { urlName: "kez", visibleName: "Kez" },
     npc_dota_hero_kunkka: { urlName: "kunkka", visibleName: "Kunkka" },
+    npc_dota_hero_largo: { urlName: "largo", visibleName: "Largo" },
     npc_dota_hero_legion_commander: { urlName: "legion-commander", visibleName: "Legion Commander" },
     npc_dota_hero_leshrac: { urlName: "leshrac", visibleName: "Leshrac" },
     npc_dota_hero_lich: { urlName: "lich", visibleName: "Lich" },
