@@ -7,152 +7,35 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local sTempList = {}
-local flag1 = RandomInt(1, 2) == 1 and 'Physical' or 'Magical'
-
-local tTalentTreeList = {
-						{--pos1
-							['t25'] = {10, 0},
-							['t20'] = {10, 0},
-							['t15'] = {10, 0},
-							['t10'] = {10, 0},
-						},
-						{--pos2M
-							['t25'] = {10, 0},
-							['t20'] = {0, 10},
-							['t15'] = {0, 10},
-							['t10'] = {0, 10},
-						},
-						{--pos2P
-							['t25'] = {10, 0},
-							['t20'] = {10, 0},
-							['t15'] = {10, 0},
-							['t10'] = {0, 10},
-						}
+-- Updated to 7.41f from D2PT, position 2 only; forced other roles use this fallback.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/arc_warden')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+local nAbilityBuildList = {3,2,3,1,3,6,3,1,1,1,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- +200 Health
+    t15={10,0}, -- Magnetic Field attack speed
+    t20={10,0}, -- Magnetic Field cooldown
+    t25={0,10}, -- Runic Infusion attributes
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    -- Observed opening with Tango (third-most common), for reliable bot sustain.
+    'item_double_branches', 'item_double_circlet', 'item_ward_observer',
+    'item_tango', 'item_faerie_fire', 'item_bottle',
+    'item_hand_of_midas', 'item_maelstrom', 'item_mjollnir',
+    'item_travel_boots', 'item_orchid', 'item_aghanims_shard',
+    'item_yasha', 'item_manta', 'item_bloodthorn', 'item_sheepstick',
+    'item_travel_boots_2', 'item_swift_blink',
+    -- Late inventory policy: BKB replaces Manta, matching the 55+ minute sample.
+    'item_black_king_bar',
+    -- Permanent late-game continuation, beyond D2PT's displayed progression.
+    'item_ultimate_scepter_2', 'item_moon_shard',
 }
-
-local tAllAbilityBuildList = {
-						{3,1,3,1,3,6,3,1,1,2,6,2,2,2,6},--pos1
-						{3,1,1,3,1,6,1,3,3,2,6,2,2,2,6},--pos2M
-						{3,1,3,1,3,6,3,1,1,2,6,2,2,2,6},--pos2P
-}
-
-local nAbilityBuildList = tAllAbilityBuildList[1]
-if sRole == 'pos_1' then nAbilityBuildList = tAllAbilityBuildList[1] end
-if sRole == 'pos_2'
-then
-	if flag1 == 'Magical'  then nAbilityBuildList = tAllAbilityBuildList[2] end
-	if flag1 == 'Physical' then nAbilityBuildList = tAllAbilityBuildList[3] end
-end
-
-local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[1])
-if sRole == 'pos_1' then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[1]) end
-if sRole == 'pos_2'
-then
-	if flag1 == 'Magical'  then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[2]) end
-	if flag1 == 'Physical' then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[3]) end
-end
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_faerie_fire",
-	"item_slippers",
-	"item_circlet",
-	"item_magic_wand",
-
-	"item_wraith_band",
-	"item_boots",
-	"item_hand_of_midas",
-	"item_diffusal_blade",
-	"item_maelstrom",
-	"item_mjollnir",--
-	"item_travel_boots",
-	"item_manta",--
-	"item_orchid",
-	"item_black_king_bar",--
-	"item_bloodthorn",--
-	"item_moon_shard",
-	"item_sheepstick",--
-	"item_disperser",--
-	-- "item_skadi",--
-	"item_travel_boots_2",--
-	"item_aghanims_shard",
-	"item_ultimate_scepter_2",
-}
-
-if flag1 == 'Magical'
-then
-	sTempList = {
-		"item_tango",
-		"item_double_branches",
-		"item_circlet",
-		"item_faerie_fire",
-
-		"item_bottle",
-		"item_magic_wand",
-		"item_spirit_vessel",
-		"item_boots",
-		"item_hand_of_midas",
-		"item_mjollnir",--
-		"item_travel_boots",
-		"item_blink",
-		"item_octarine_core",--
-		"item_ultimate_scepter",
-		"item_orchid",
-		"item_sheepstick",--
-		"item_overwhelming_blink",--
-		"item_bloodthorn",--
-		"item_moon_shard",
-		"item_travel_boots_2",--
-		"item_ultimate_scepter_2",
-		"item_aghanims_shard",
-	}
-else
-	sTempList = {
-		"item_tango",
-		"item_double_branches",
-		"item_faerie_fire",
-
-		"item_bottle",
-		"item_spirit_vessel",
-		"item_magic_wand",
-		"item_boots",
-		"item_hand_of_midas",
-		"item_mjollnir",--
-		"item_travel_boots",
-		"item_orchid",
-		"item_manta",--
-		"item_greater_crit",--
-		"item_bloodthorn",--
-		"item_moon_shard",
-		"item_skadi",--
-		"item_travel_boots_2",--
-		"item_aghanims_shard",
-		"item_ultimate_scepter_2",
-	}
-end
-
-sRoleItemsBuyList['pos_2'] = sTempList
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	'item_travel_boots',
-	'item_magic_wand',
-
-	"item_sheepstick",
-	"item_hand_of_midas",
-
+X.sSellList = {
+    'item_mjollnir', 'item_bottle',
+    'item_sheepstick', 'item_hand_of_midas',
+    'item_black_king_bar', 'item_manta',
 }
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_ranged_carry' }, {} end
@@ -160,6 +43,10 @@ if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList']
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- D2PT finishes Flux at 10 and takes the first talent at 11; respect custom builds.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

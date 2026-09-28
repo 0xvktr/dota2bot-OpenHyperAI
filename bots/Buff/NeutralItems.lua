@@ -1,3 +1,4 @@
+local HeroBuildPreferences = require('bots.FunLib.hero_build_preferences')
 if NeutralItems == nil
 then
     NeutralItems = {}
@@ -205,7 +206,7 @@ local enhancements = {
     { name = "item_enhancement_manic",    tier = 5, roles = {1, 1, 1, 1, 1}, realName = "Manic Enhancement" },
 }
 
-function NeutralItems:GetRandomEnhanByTier(tier)
+function NeutralItems:GetRandomEnhanByTier(tier, hero)
     local filtered = {}
     for _, enh in ipairs(enhancements) do
         if enh.tier == tier then
@@ -218,7 +219,7 @@ function NeutralItems:GetRandomEnhanByTier(tier)
     end
 
     -- Return a random enhancement from the filtered list.
-    return filtered[math.random(#filtered)]
+    return HeroBuildPreferences.Select(hero, 'enhancement', tier, filtered, true) or filtered[math.random(#filtered)]
 end
 
 
@@ -314,6 +315,9 @@ function NeutralItems.GiveNeutralItems(TeamRadiant, TeamDire)
 end
 
 function NeutralItems.GiveItem(itemName, hero, isTierDone, nTier)
+    local pools = {Tier1NeutralItems, Tier2NeutralItems, Tier3NeutralItems, Tier4NeutralItems, Tier5NeutralItems}
+    -- Buff has no position allocator: use the hero's documented primary role if unknown.
+    itemName = HeroBuildPreferences.Select(hero, 'neutral', nTier, pools[nTier] or {}, true) or itemName
     NeutralItems:RemoveEnhan(hero)
     if hero:HasRoomForItem(itemName, true, true)
     then
@@ -329,7 +333,7 @@ function NeutralItems.GiveItem(itemName, hero, isTierDone, nTier)
         else
             hero:AddItem(item)
         end
-        local enhancement = NeutralItems:GetRandomEnhanByTier(nTier)
+        local enhancement = NeutralItems:GetRandomEnhanByTier(nTier, hero)
         if enhancement then
             local enha = CreateItem(enhancement.name, hero, hero)
             enha:SetPurchaseTime(0)

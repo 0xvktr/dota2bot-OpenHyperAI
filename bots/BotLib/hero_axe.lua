@@ -16,80 +16,44 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {0, 10},
-						['t20'] = {0, 10},
-						['t15'] = {10, 0},
-						['t10'] = {0, 10},
+-- Updated to 7.41f from D2PT, position 3 only; forced other roles use this fallback.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/axe')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+local nAbilityBuildList = {2,3,3,1,3,6,3,1,1,1,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- Movement speed per active Battle Hunger
+    t15={0,10}, -- Battle Hunger damage
+    t20={10,0}, -- Counter Helix damage
+    t25={0,10}, -- Berserker's Call radius
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    'item_quelling_blade', 'item_gauntlets', 'item_double_branches',
+    'item_circlet', 'item_tango',
+    'item_double_bracer', 'item_magic_wand', 'item_phase_boots',
+    'item_blade_mail', 'item_blink', 'item_aghanims_shard',
+    'item_black_king_bar', 'item_ultimate_scepter', 'item_shivas_guard',
+    -- Late upgrades/slot policy beyond the displayed core progression.
+    'item_ultimate_scepter_2', 'item_overwhelming_blink', 'item_lotus_orb',
+    'item_travel_boots', 'item_travel_boots_2', 'item_moon_shard',
 }
-
-local tAllAbilityBuildList = {
-	{2,3,1,3,3,6,3,2,2,2,6,1,1,1,6},--pos3
+X.sSellList = {
+    'item_blade_mail', 'item_quelling_blade',
+    'item_blink', 'item_bracer', -- Repeated purchase ticks sell both Bracers.
+    'item_ultimate_scepter', 'item_magic_wand',
+    'item_travel_boots', 'item_phase_boots',
 }
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_sven_outfit",
-	"item_blade_mail",--
-	"item_blink",
-	"item_aghanims_shard",
-	"item_black_king_bar",--
-	"item_ultimate_scepter",
-	"item_travel_boots",
-	"item_overwhelming_blink",--
-	"item_abyssal_blade",--
-	"item_ultimate_scepter_2",
-	"item_moon_shard",
-	"item_heart",--
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_3'] = {
-
-	"item_tank_outfit",
-	"item_crimson_guard",--
-	"item_blade_mail",--
-	"item_blink",
-	"item_aghanims_shard",
-	"item_heavens_halberd",--
-	"item_travel_boots",
-	"item_assault",--
-	"item_ultimate_scepter_2",
-	"item_moon_shard",
-	"item_heart",--
-	"item_overwhelming_blink",--
-	"item_travel_boots_2",--
-
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_3']
-
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-	"item_travel_boots",
-	"item_quelling_blade",
-
-	"item_abyssal_blade",
-	"item_magic_wand",
-}
-
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_tank' }, {"item_heavens_halberd", 'item_quelling_blade'} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Finish Berserker's Call at 10; first talent at 11. Respect custom builds.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
@@ -113,14 +77,6 @@ npc_dota_hero_axe
 "Ability4"		"generic_hidden"
 "Ability5"		"generic_hidden"
 "Ability6"		"axe_culling_blade"
-"Ability10"		"special_bonus_strength_8"
-"Ability11"		"special_bonus_movement_speed_20"
-"Ability12"		"special_bonus_mp_regen_2"
-"Ability13"		"special_bonus_attack_speed_35"
-"Ability14"		"special_bonus_hp_regen_20"
-"Ability15"		"special_bonus_unique_axe_3"
-"Ability16"		"special_bonus_unique_axe_2"
-"Ability17"		"special_bonus_unique_axe"
 
 modifier_axe_berserkers_call
 modifier_axe_berserkers_call_armor
@@ -137,7 +93,8 @@ local abilityW = bot:GetAbilityByName( sAbilityList[2] )
 local abilityE = bot:GetAbilityByName( sAbilityList[3] )
 local abilityR = bot:GetAbilityByName( sAbilityList[6] )
 local talent7 = bot:GetAbilityByName( sTalentList[7] )
-local talent5 = bot:GetAbilityByName( sTalentList[5] )
+-- 7.41f: Culling Blade damage is the level-25 left talent, not level 20.
+local cullingDamageTalent = bot:GetAbilityByName( sTalentList[8] )
 
 local castQDesire, castQTarget
 local castWDesire, castWTarget
@@ -515,7 +472,7 @@ function X.ConsiderR()
 	local nManaCost = abilityR:GetManaCost()
 	
 	local nKillDamage = 150 + 100 * nSkillLV
-	if talent5:IsTrained() then nKillDamage = nKillDamage + talent5:GetSpecialValueInt( 'value' ) end
+	if cullingDamageTalent:IsTrained() then nKillDamage = nKillDamage + cullingDamageTalent:GetSpecialValueInt( 'value' ) end
 	
 	local nDamageType = DAMAGE_TYPE_PURE
 	local nInRangeEnemyList = J.GetAroundEnemyHeroList( nCastRange )

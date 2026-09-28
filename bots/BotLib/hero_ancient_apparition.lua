@@ -7,101 +7,42 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
+-- Updated to 7.41f: D2PT position 5. Other roles use this forced-pick fallback.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/ancient_apparition')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
 local tTalentTreeList = {
-						['t25'] = {10, 0},
-						['t20'] = {0, 10},
-						['t15'] = {0, 10},
-						['t10'] = {10, 0},
+    t10={10,0}, -- Cold Feet damage
+    t15={10,0}, -- Cold Feet break distance
+    t20={0,10}, -- Ice Blast Frostbitten duration
+    t25={0,10}, -- AoE Cold Feet
 }
-
-local tAllAbilityBuildList = {
-						{3,1,3,2,3,6,2,1,3,1,6,2,1,2,6},--pos4,5
+local nAbilityBuildList = {3,1,2,2,2,6,2,1,1,1,6,3,3,3,6}
+local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList)
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    'item_double_branches', 'item_magic_stick', 'item_ward_sentry',
+    'item_tango', 'item_faerie_fire', 'item_blood_grenade',
+    'item_magic_wand', 'item_arcane_boots', 'item_aghanims_shard',
+    -- D2PT displayed progression beyond the three majority-purchased core items.
+    'item_force_staff', 'item_cyclone', 'item_octarine_core',
+    -- Bot late-game continuation: natural upgrades, then permanent consumables.
+    'item_wind_waker', 'item_hurricane_pike',
+    'item_mekansm', 'item_guardian_greaves',
+    'item_ultimate_scepter_2', 'item_moon_shard',
 }
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-
-	"item_crystal_maiden_outfit",
-	"item_force_staff",
-	"item_hand_of_midas",
-	"item_ultimate_scepter",
-	"item_aghanims_shard",
-	"item_orchid",
-	"item_black_king_bar",--
-	"item_hurricane_pike",--
-	"item_travel_boots",
-	"item_ultimate_scepter_2",
-	"item_bloodthorn",--
-	"item_travel_boots_2",--
-	"item_mystic_staff",--
-	"item_sheepstick",--
-
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_4'] = {
-    "item_blood_grenade",
-
-	'item_priest_outfit',
-	"item_mekansm",
-	"item_glimmer_cape",--
-	"item_aghanims_shard",
-	"item_guardian_greaves",--
-	"item_spirit_vessel",--
-	--"item_holy_locket",
-	"item_ultimate_scepter",
-	"item_sheepstick",--
-	"item_mystic_staff",--
-	"item_ultimate_scepter_2",
-	"item_shivas_guard",--
-
-}
-
-sRoleItemsBuyList['pos_5'] = {
-
-	"item_mage_outfit",
-	"item_ancient_janggo",
-	"item_glimmer_cape",--
-	"item_boots_of_bearing",--
-	"item_pipe",--
-	--"item_holy_locket",
-	"item_ultimate_scepter",
-	"item_aghanims_shard",
-	"item_mystic_staff",--
-	"item_ultimate_scepter_2",
-	"item_sheepstick",--
-	"item_cyclone",
-    "item_wind_waker",--
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-Pos4SellList = {
-	"item_magic_wand",
-}
-
-Pos5SellList = {
-	"item_magic_wand",
-}
-
-X['sSellList'] = {
-	"item_ultimate_scepter",
-	"item_magic_wand",
-}
+X.sSellList = {'item_octarine_core', 'item_magic_wand'}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Max Cold Feet at 10; take the first talent at 11, preserving custom orders.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
+
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

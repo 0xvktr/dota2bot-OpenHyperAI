@@ -8,6 +8,7 @@ local Role = require( GetScriptDirectory()..'/FunLib/aba_role' )
 local J = require( GetScriptDirectory()..'/FunLib/jmz_func')
 local Utils = require( GetScriptDirectory()..'/FunLib/utils')
 
+local AlchemistScepter = require(GetScriptDirectory()..'/FunLib/alchemist_scepter')
 local X = {}
 
 if bot:IsInvulnerable()
@@ -1142,6 +1143,8 @@ function ItemPurchaseThink()
 		bot:ActionImmediate_SellItem(bot:GetItemInSlot(bot:FindItemSlot('item_mask_of_madness')))
 	end
 
+
+	AlchemistScepter.UpdatePurchase(bot, J, BotBuild.enableScepterGifts)
 
 	if #bot.purchaseListInReverseOrder == 0 then
 		_resetCurrentTarget()

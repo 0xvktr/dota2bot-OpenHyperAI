@@ -7,156 +7,85 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {10, 0},
-						['t20'] = {0, 10},
-						['t15'] = {10, 0},
-						['t10'] = {10, 0},
-}
-
-local tAllAbilityBuildList = {
-						{2,3,2,1,2,6,2,1,1,1,6,3,3,3,6},--pos4,5
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
+-- Updated to 7.41f from D2PT on 2026-09-27; see Builds/abaddon.lua for samples.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/abaddon')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+local isSupport = sRole == 'pos_4' or sRole == 'pos_5'
+local tTalentTreeList
+local nAbilityBuildList
+if isSupport then
+    -- D2PT pos 4/5: Shield, then max Coil; Curse at level 10, first talent at 11.
+    tTalentTreeList = { t10={10,0}, t15={10,0}, t20={0,10}, t25={10,0} }
+    nAbilityBuildList = {2,1,1,2,1,6,1,2,2,3,6,3,3,3,6}
+else
+    -- D2PT pos 1/3: max Shield, then Curse. Levels after 10 are a legal continuation.
+    tTalentTreeList = { t10={0,10}, t15={0,10}, t20={10,0}, t25={0,10} }
+    nAbilityBuildList = {2,3,2,3,2,6,2,3,3,1,6,1,1,1,6}
+end
+local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList)
+local defaultAbilityBuild = nAbilityBuildList
+local defaultTalentBuild = nTalentBuildList
 local sRoleItemsBuyList = {}
 
-local sUtility = {"item_lotus_orb", "item_crimson_guard", "item_heavens_halberd"}
-local nUtility = sUtility[RandomInt(1, #sUtility)]
+-- Updated to 7.41f: carry. Components are resolved by the game's recipe API.
+sRoleItemsBuyList.pos_1 = {
+    'item_tango', 'item_quelling_blade', 'item_branches', 'item_circlet', 'item_magic_stick',
+    'item_null_talisman', 'item_magic_wand', 'item_phase_boots',
+    'item_radiance', 'item_yasha', 'item_manta', 'item_blink', 'item_orchid', 'item_bloodthorn',
+    -- Bot late-game continuation: slot-free upgrades, then finish existing equipment.
+    'item_aghanims_shard', 'item_ultimate_scepter_2', 'item_overwhelming_blink',
+    'item_basher', 'item_abyssal_blade', 'item_moon_shard',
+}
+-- Mid skipped: one match. Explicit player overrides use the carry fallback, not a validated mid build.
+sRoleItemsBuyList.pos_2 = sRoleItemsBuyList.pos_1
 
-sRoleItemsBuyList['pos_1'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_orb_of_frost",
-    "item_circlet",
-
-    "item_wraith_band",
-    "item_magic_wand",
-    "item_orb_of_corrosion",
-    "item_phase_boots",
-    "item_echo_sabre",
-    "item_manta",--
-    "item_harpoon",--
-    "item_black_king_bar",--
-    "item_skadi",--
-    "item_aghanims_shard",
-    "item_bloodthorn",--
-    "item_travel_boots_2",--
-    "item_moon_shard",
-    "item_ultimate_scepter_2",
+-- Updated to 7.41f: offlane brings Blink forward between Yasha and Manta.
+sRoleItemsBuyList.pos_3 = {
+    'item_tango', 'item_quelling_blade', 'item_branches', 'item_circlet', 'item_magic_stick',
+    'item_null_talisman', 'item_magic_wand', 'item_phase_boots',
+    'item_radiance', 'item_yasha', 'item_blink', 'item_manta', 'item_orchid',
+    -- Natural Orchid upgrade followed by bot late-game continuation.
+    'item_bloodthorn', 'item_aghanims_shard', 'item_ultimate_scepter_2',
+    'item_overwhelming_blink', 'item_basher', 'item_abyssal_blade', 'item_moon_shard',
 }
 
-sRoleItemsBuyList['pos_2'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_orb_of_frost",
-    "item_circlet",
-
-    "item_bottle",
-    "item_magic_wand",
-    "item_wraith_band",
-    "item_orb_of_corrosion",
-    "item_phase_boots",
-    "item_echo_sabre",
-    "item_manta",--
-    "item_assault",--
-    "item_harpoon",--
-    "item_aghanims_shard",
-    "item_basher",
-    "item_heart",--
-    "item_ultimate_scepter",
-    "item_travel_boots",
-    "item_abyssal_blade",--
-    "item_travel_boots_2",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-}
-sRoleItemsBuyList['pos_3'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_quelling_blade",
-
-    "item_gloves",
-    "item_magic_wand",
-    "item_orb_of_corrosion",
-    "item_phase_boots",
-    "item_radiance",--
-    "item_consecrated_wraps",--
-    "item_crimson_guard",--
-    "item_assault",--
-    nUtility,--
-    "item_ultimate_scepter",
-    "item_travel_boots",
-    "item_heart",--
-    "item_ultimate_scepter_2",
-    "item_travel_boots_2",--
-    "item_aghanims_shard",
-    "item_moon_shard",
+-- Updated to 7.41f: most-played position 4 build, including Pavise -> Solar Crest.
+sRoleItemsBuyList.pos_4 = {
+    'item_tango', 'item_double_branches', 'item_magic_stick', 'item_ward_sentry', 'item_blood_grenade',
+    'item_magic_wand', 'item_arcane_boots', 'item_pavise', 'item_holy_locket',
+    'item_solar_crest', 'item_mekansm', 'item_guardian_greaves',
+    -- Late-game continuation, not additional D2PT core items.
+    'item_ultimate_scepter', 'item_aghanims_shard', 'item_ultimate_scepter_2',
+    'item_blink', 'item_overwhelming_blink', 'item_moon_shard',
 }
 
-sRoleItemsBuyList['pos_4'] = {
-	"item_tank_outfit",
-	"item_echo_sabre",
-	"item_aghanims_shard",
-	"item_consecrated_wraps",--
-	"item_crimson_guard",
-	"item_ultimate_scepter",
-	"item_heavens_halberd",
-	"item_assault",
-	"item_travel_boots",
-	"item_moon_shard",
-	"item_sheepstick",
-	"item_ultimate_scepter_2",
-	"item_octarine_core",
-	"item_travel_boots_2",
+-- Updated to 7.41f: position 5. Greaves consolidates the existing boots and Mek.
+sRoleItemsBuyList.pos_5 = {
+    'item_tango', 'item_double_branches', 'item_magic_stick', 'item_ward_sentry', 'item_blood_grenade',
+    'item_magic_wand', 'item_arcane_boots', 'item_holy_locket', 'item_mekansm',
+    'item_blink', 'item_ultimate_scepter',
+    -- Natural upgrades / bot late-game continuation.
+    'item_guardian_greaves', 'item_aghanims_shard', 'item_ultimate_scepter_2',
+    'item_overwhelming_blink', 'item_moon_shard',
 }
-
-sRoleItemsBuyList['pos_5'] = {
-	'item_mage_outfit',
-	"item_ancient_janggo",
-	"item_glimmer_cape",--
-	"item_boots_of_bearing",--
-	"item_pipe",--
-	"item_aghanims_shard",
-	"item_cyclone",
-    "item_shivas_guard",--
-	"item_sheepstick",--
-    "item_heart",--
-	"item_octarine_core",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
+X.sBuyList = sRoleItemsBuyList[sRole] or sRoleItemsBuyList.pos_3
+X.sSellList = {
+    'item_radiance', 'item_quelling_blade',
+    'item_manta', 'item_null_talisman',
+    'item_bloodthorn', 'item_magic_wand',
 }
-
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-
-X['sSellList'] = {
-	"item_ultimate_scepter",
-	"item_magic_wand",
-
-	"item_assault",
-	"item_magic_wand",
-
-    "item_heart",
-    "item_orb_of_corrosion",
-
-	"item_assault",
-    "item_bottle",
-
-	"item_assault",
-	"item_ancient_janggo",
-}
-
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Preserve user-provided skill builds. The default support build delays its first talent.
+if isSupport and nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
+
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

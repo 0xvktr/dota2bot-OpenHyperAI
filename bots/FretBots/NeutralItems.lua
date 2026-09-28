@@ -1,3 +1,4 @@
+local HeroBuildPreferences = require('bots.FunLib.hero_build_preferences')
 -- Methods for the creation / removal of neutral items for the bots.
 
  -- global debug flag
@@ -111,7 +112,7 @@ function NeutralItems:RemoveEnhancement(unit)
 	end
 end
 
-function NeutralItems:GetRandomEnhancementByTier(tier)
+function NeutralItems:GetRandomEnhancementByTier(tier, bot)
     local filtered = {}
     for _, enh in ipairs(masterNeutralTable.enhancements) do
         if enh.tier == tier then
@@ -124,7 +125,7 @@ function NeutralItems:GetRandomEnhancementByTier(tier)
     end
 
     -- Return a random enhancement from the filtered list.
-    return filtered[math.random(#filtered)]
+    return HeroBuildPreferences.Select(bot, 'enhancement', tier, filtered) or filtered[math.random(#filtered)]
 end
 
 -- Creates a specific item, inserts it into the bot
@@ -134,7 +135,7 @@ function NeutralItems:CreateAndInsert(bot, itemName, tier)
 		item:SetPurchaseTime(0)
 		bot:AddItem(item)
 
-		local enhancement = NeutralItems:GetRandomEnhancementByTier(tier)
+		local enhancement = NeutralItems:GetRandomEnhancementByTier(tier, bot)
 		if enhancement then
 			local enha = CreateItem(enhancement.name, bot, bot)
 			enha:SetPurchaseTime(0)
@@ -303,6 +304,18 @@ end
 	-- if we made it this far,
 	-- No one found
 	return nil
+end
+
+-- Choose only among the offered items. Missing D2PT coverage preserves legacy scoring.
+function NeutralItems:ChooseItem(bot, tier, items)
+    local preferred = HeroBuildPreferences.Select(bot, 'neutral', tier, items)
+    if preferred then return preferred end
+    local best, bestDesire = nil, 0
+    for _, item in ipairs(items) do
+        local desire = self:GetBotDesireForItem(bot, item)
+        if best == nil or desire > bestDesire then best, bestDesire = item, desire end
+    end
+    return best
 end
 
 -- Returns the 'goodness' of an item for a bot, higher is better

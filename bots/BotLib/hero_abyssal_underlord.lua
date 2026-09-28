@@ -7,109 +7,40 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
+-- Updated to 7.41f from D2PT; source samples and neutral preferences live beside this file.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/abyssal_underlord')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+
 local tTalentTreeList = {
-						['t25'] = {0, 10},
-						['t20'] = {0, 10},
-						['t15'] = {10, 0},
-						['t10'] = {10, 0},
+    t10 = {0,10}, -- Invading Force movement bonus / damage reduction
+    t15 = {10,0}, -- Firestorm cooldown
+    t20 = {0,10}, -- Firestorm burn damage
+    t25 = {0,10}, -- Pit of Malice root duration
 }
+-- D2PT first ten levels; finish Pit at 10 and delay the first talent to 11.
+local nAbilityBuildList = {1,3,1,2,1,6,1,2,2,2,6,3,3,3,6}
+local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList)
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
 
-local tAllAbilityBuildList = {
-						{1,3,1,3,1,2,1,6,2,2,2,6,3,3,6},--pos3
+-- Updated to 7.41f: position 3 only. Starting option 2 includes lane regeneration.
+local offlaneBuyList = {
+    'item_tango', 'item_quelling_blade', 'item_double_gauntlets', 'item_double_branches',
+    'item_bracer', 'item_soul_ring', 'item_magic_wand', 'item_power_treads',
+    'item_rod_of_atos', 'item_ultimate_scepter', 'item_aghanims_shard',
+    'item_gungir', 'item_black_king_bar',
+    -- Absorb Scepter before the late-game items to free its inventory slot.
+    'item_ultimate_scepter_2', 'item_crellas_crozier', 'item_sheepstick',
+    -- Bot late-game continuation; not additional D2PT core items.
+    'item_travel_boots', 'item_travel_boots_2', 'item_moon_shard',
 }
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-local sUtility = {"item_lotus_orb", "item_crimson_guard", "item_heavens_halberd"}
-local nUtility = sUtility[RandomInt(1, #sUtility)]
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_bristleback_outfit",
-	"item_blade_mail",--
-	"item_heavens_halberd",--
-	"item_lotus_orb",--
-	"item_black_king_bar",--
-	"item_aghanims_shard",
-	"item_travel_boots",
-	"item_abyssal_blade",--
-	-- "item_heart",--
-	"item_moon_shard",
-    "item_ultimate_scepter_2",
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_3'] = {
-	"item_tank_outfit",
-	"item_crimson_guard",
-	"item_heavens_halberd",
-	"item_lotus_orb",
-	"item_aghanims_shard",
-	"item_gungir",--
-	"item_travel_boots",
-	"item_assault",
-	"item_heart",
-	"item_moon_shard",
-    "item_ultimate_scepter_2",
-	"item_travel_boots_2",
-}
-
-sRoleItemsBuyList['pos_4'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_quelling_blade",
-    "item_double_gauntlets",
-
-    "item_bracer",
-    "item_helm_of_iron_will",
-    "item_soul_ring",
-    "item_arcane_boots",
-    "item_magic_wand",
-    "item_veil_of_discord",
-    "item_mekansm",
-    "item_pipe",--
-    "item_guardian_greaves",--
-    nUtility,--
-    "item_aghanims_shard",
-    "item_shivas_guard",--
-    "item_octarine_core",--
-    "item_sheepstick",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-	'item_mage_outfit',
-	"item_ancient_janggo",
-	"item_glimmer_cape",--
-	"item_boots_of_bearing",--
-	"item_pipe",--
-	"item_aghanims_shard",
-	"item_cyclone",
-    "item_shivas_guard",--
-	"item_sheepstick",--
-    "item_heart",--
-	"item_octarine_core",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-	"item_travel_boots",
-	"item_quelling_blade",
-
-	"item_abyssal_blade",
-	"item_magic_wand",
-
-	"item_shivas_guard",
-	"item_bracer",
+-- Positions 1/2/4/5 are excluded from automatic drafting. Explicit picks use this fallback.
+X.sBuyList = offlaneBuyList
+X.sSellList = {
+    'item_rod_of_atos', 'item_quelling_blade',
+    'item_gungir', 'item_bracer',
+    'item_black_king_bar', 'item_magic_wand',
+    'item_crellas_crozier', 'item_soul_ring',
 }
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
@@ -117,6 +48,10 @@ if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList']
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
+
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

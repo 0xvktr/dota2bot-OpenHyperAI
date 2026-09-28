@@ -8,62 +8,33 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
+-- Updated to 7.41f from D2PT, carry only. Other roles retain this forced-pick fallback.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/alchemist')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
 local tTalentTreeList = {
-						['t25'] = {0, 10},
-						['t20'] = {0, 10},
-						['t15'] = {10, 0},
-						['t10'] = {10, 0},
+    t10={10,0}, -- Unstable Concoction radius
+    t15={10,0}, -- Greevil's Greed damage per stack
+    t20={0,10}, -- Chemical Rage base attack time
+    t25={0,10}, -- Chemical Rage movement speed
 }
-
-local tAllAbilityBuildList = {
-						{2,1,1,2,1,6,1,2,2,3,6,3,3,3,6},--pos1
+local nAbilityBuildList = {2,1,1,2,1,6,1,2,2,3,6,3,3,3,6}
+local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList)
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+local carryBuyList = {
+    'item_tango', 'item_quelling_blade', 'item_double_gauntlets', 'item_double_branches',
+    'item_magic_wand', 'item_soul_ring', 'item_phase_boots',
+    'item_radiance', 'item_blink', 'item_black_king_bar', 'item_assault',
+    'item_basher', 'item_abyssal_blade',
+    -- Late continuation: natural Blink upgrade and permanent consumables.
+    'item_aghanims_shard', 'item_swift_blink', 'item_moon_shard',
+    'item_ultimate_scepter_2', 'item_travel_boots', 'item_travel_boots_2',
 }
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_bristleback_outfit",
-	"item_radiance",--
-	"item_travel_boots",
-	"item_blade_mail",--
-	"item_heavens_halberd",--
-    "item_blink",
-	"item_black_king_bar",--
-    "item_aghanims_shard",
-	"item_abyssal_blade",--
-	"item_overwhelming_blink",--
-	"item_moon_shard",
-    "item_ultimate_scepter_2",
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_assault",
-	"item_magic_wand",
-
-	"item_abyssal_blade",
-	"item_quelling_blade",
-
-	"item_assault",
-	"item_ancient_janggo",
-
-	"item_assault",
-	"item_soul_ring",
+X.sBuyList = carryBuyList
+X.sSellList = {
+    'item_radiance', 'item_quelling_blade',
+    'item_assault', 'item_magic_wand',
+    'item_basher', 'item_soul_ring',
 }
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
@@ -71,6 +42,13 @@ if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList']
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- D2PT takes Corrosive Weaponry at 10, then the first talent at 11.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
+-- Custom item builds and special modes do not automatically opt into gift spending.
+X.enableScepterGifts = sRole == 'pos_1' and X.sBuyList == carryBuyList
+
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

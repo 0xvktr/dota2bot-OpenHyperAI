@@ -3,69 +3,17 @@ local ____exports = {}
 local ____heroes = require(GetScriptDirectory().."/ts_libs/dota/heroes")
 local HeroName = ____heroes.HeroName
 local HeroPositions = {
-    [HeroName.Abaddon] = {
-        25,
-        5,
-        30,
-        20,
-        50
-    },
-    [HeroName.Underlord] = {
-        5,
-        20,
-        80,
-        5,
-        0
-    },
-    [HeroName.Alchemist] = {
-        50,
-        30,
-        15,
-        5,
-        0
-    },
-    [HeroName.AncientApparition] = {
-        5,
-        25,
-        10,
-        30,
-        50
-    },
-    [HeroName.Antimage] = {
-        90,
-        5,
-        5,
-        0,
-        0
-    },
-    [HeroName.ArcWarden] = {
-        30,
-        60,
-        5,
-        5,
-        0
-    },
-    [HeroName.Axe] = {
-        30,
-        5,
-        80,
-        5,
-        0
-    },
-    [HeroName.Bane] = {
-        0,
-        20,
-        10,
-        30,
-        40
-    },
-    [HeroName.Batrider] = {
-        5,
-        60,
-        30,
-        5,
-        0
-    },
+    -- D2PT 7.41f, 2026-09-27; same calculation as the TypeScript source.
+    [HeroName.Abaddon] = {44, 0, 51, 49, 78},
+    -- D2PT 7.41f: offlane only; 45.3% WR, role rating 24.
+    [HeroName.Underlord] = {0, 0, 54, 0, 0},
+    [HeroName.Alchemist] = {61, 0, 0, 0, 0},
+    [HeroName.AncientApparition] = {0, 0, 0, 0, 74},
+    [HeroName.Antimage] = {94, 0, 0, 0, 0},
+    [HeroName.ArcWarden] = {0, 75, 0, 0, 0},
+    [HeroName.Axe] = {0, 0, 100, 0, 0},
+    [HeroName.Bane] = {0, 0, 0, 62, 71},
+    [HeroName.Batrider] = {0, 63, 63, 0, 0},
     [HeroName.Beastmaster] = {
         5,
         35,

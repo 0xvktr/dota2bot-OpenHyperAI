@@ -5,15 +5,19 @@ type HeroPositionMap = {
 
 // Hero names: https://github.com/forest0xia/dota2bot-OpenHyperAI/discussions/71
 const HeroPositions: HeroPositionMap = {
-    [HeroName.Abaddon]: [25, 5, 30, 20, 50],
-    [HeroName.Underlord]: [5, 20, 80, 5, 0],
-    [HeroName.Alchemist]: [50, 30, 15, 5, 0],
-    [HeroName.AncientApparition]: [5, 25, 10, 30, 50],
-    [HeroName.Antimage]: [90, 5, 5, 0, 0],
-    [HeroName.ArcWarden]: [30, 60, 5, 5, 0],
-    [HeroName.Axe]: [30, 5, 80, 5, 0],
-    [HeroName.Bane]: [0, 20, 10, 30, 40],
-    [HeroName.Batrider]: [5, 60, 30, 5, 0],
+    // D2PT 7.41f, 2026-09-27. Updated roles; mid excluded (1 match).
+    // round(30 + 60 * sqrt(roleMatches / 957) * shrunkWinRate / 0.5).
+    // shrunkWinRate uses 50 prior matches at 50%; see docs/D2PT_BUILD_UPDATES.md.
+    [HeroName.Abaddon]: [44, 0, 51, 49, 78],
+    // D2PT 7.41f: offlane only, 45.3% WR; 30 freshness baseline + 24 role rating.
+    [HeroName.Underlord]: [0, 0, 54, 0, 0],
+    [HeroName.Alchemist]: [61, 0, 0, 0, 0], // D2PT 7.41f: carry only, 30 + rating 31.
+    [HeroName.AncientApparition]: [0, 0, 0, 0, 74], // D2PT 7.41f: pos 5, 30 + rating 44; separate bot-quality cap remains.
+    [HeroName.Antimage]: [94, 0, 0, 0, 0], // D2PT 7.41f: carry only, 30 + rating 64.
+    [HeroName.ArcWarden]: [0, 75, 0, 0, 0],
+    [HeroName.Axe]: [0, 0, 100, 0, 0],
+    [HeroName.Bane]: [0, 0, 0, 62, 71],
+    [HeroName.Batrider] : [0, 63, 63, 0, 0],
     [HeroName.Beastmaster]: [5, 35, 65, 35, 0],
     [HeroName.Bloodseeker]: [45, 40, 35, 0, 0],
     [HeroName.BountyHunter]: [0, 45, 30, 50, 35],

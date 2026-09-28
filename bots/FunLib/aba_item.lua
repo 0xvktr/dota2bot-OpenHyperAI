@@ -1162,7 +1162,14 @@ function Item.IsItemInTargetHero( sItemName, bot )
 
 	if string.find( sItemName, 'PvN_' ) ~= nil then return Item.IsItemInHero( 'item_moon_shard' ) end
 
-	if sItemName == 'item_ultimate_scepter' and bot:HasScepter() then return true end
+    -- A gift may be cast between purchase ticks, before the queue sees the item.
+    if sItemName == 'item_ultimate_scepter' and bot:GetUnitName() == 'npc_dota_hero_alchemist'
+        and bot.alchemistGiftPending and bot.alchemistGiftCastTarget ~= nil
+        and not bot.alchemistGiftCastTarget:IsNull() and bot.alchemistGiftCastTarget:HasScepter()
+        and bot:FindItemSlot(sItemName) < 0 then return true end
+	if sItemName == 'item_ultimate_scepter' and bot:HasScepter()
+        and not (bot:GetUnitName() == 'npc_dota_hero_alchemist' and bot.alchemistGiftPending)
+    then return true end
 	
 	if sItemName == 'item_moon_shard' and bot:HasModifier( "modifier_item_moon_shard_consumed" ) then return true end
 

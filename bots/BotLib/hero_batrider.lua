@@ -7,163 +7,57 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						{--pos2
-                            ['t25'] = {10, 0},
-                            ['t20'] = {10, 0},
-                            ['t15'] = {10, 0},
-                            ['t10'] = {0, 10},
-                        },
-                        {--pos3
-                            ['t25'] = {10, 0},
-                            ['t20'] = {10, 0},
-                            ['t15'] = {0, 10},
-                            ['t10'] = {0, 10},
-                        }
-}
-
-local tAllAbilityBuildList = {
-						{1,3,1,2,1,6,1,3,3,3,6,2,2,2,6},--pos2
-                        {1,2,1,3,1,6,1,3,3,3,2,6,2,2,6},--pos3
-}
-
-local nAbilityBuildList
-local nTalentBuildList
-
-if sRole == "pos_2"
-then
-    nAbilityBuildList   = tAllAbilityBuildList[1]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[1])
+-- Updated to 7.41f from D2PT: positions 2 and 3; forced other roles use pos 3.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/batrider')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+local nAbilityBuildList = {1,2,1,3,1,6,1,3,3,3,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- Firefly max movement speed
+    t15={0,10}, -- Firefly damage per second
+    t20={0,10}, -- Attacks apply Sticky Napalm
+    t25={10,0}, -- Flamebreak applies Sticky Napalm stacks
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+if sRole == 'pos_2' then
+    X.sBuyList = {
+        'item_tango', 'item_double_branches', 'item_double_branches', 'item_faerie_fire',
+        'item_bottle', 'item_magic_wand', 'item_travel_boots', 'item_blink',
+        'item_black_king_bar', 'item_force_staff', 'item_shivas_guard',
+        'item_aghanims_shard', 'item_sheepstick',
+        -- Reviewed late upgrades after D2PT progression; Blessing needs no seventh slot.
+        'item_hurricane_pike', 'item_overwhelming_blink', 'item_ultimate_scepter_2',
+        'item_travel_boots_2', 'item_moon_shard',
+    }
 else
-    nAbilityBuildList   = tAllAbilityBuildList[2]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[2])
+    X.sBuyList = {
+        'item_double_branches', 'item_circlet', 'item_circlet', 'item_tango', 'item_faerie_fire',
+        'item_null_talisman', 'item_bracer', 'item_magic_wand', 'item_tranquil_boots',
+        'item_ancient_janggo', 'item_boots_of_bearing', 'item_blink', 'item_black_king_bar',
+        -- Force Staff is a common utility branch (34.5%) and appears in late inventories.
+        'item_force_staff', 'item_shivas_guard', 'item_aghanims_shard', 'item_ultimate_scepter',
+        -- Consume Scepter before adding a sixth permanent item.
+        'item_ultimate_scepter_2', 'item_octarine_core', 'item_hurricane_pike',
+        'item_overwhelming_blink', 'item_moon_shard',
+    }
 end
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_2'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_double_branches",
-    "item_faerie_fire",
-
-    "item_bottle",
-    "item_magic_wand",
-    "item_travel_boots",
-    "item_blink",
-    "item_black_king_bar",--
-    "item_octarine_core",--
-    "item_shivas_guard",--
-    "item_ultimate_scepter",
-    "item_refresher",--
-    "item_overwhelming_blink",--
-    "item_ultimate_scepter_2",
-    "item_travel_boots_2",--
-    "item_aghanims_shard",
-    "item_moon_shard",
+-- Purchase/sale pairs free early inventory slots as the main build arrives.
+X.sSellList = {
+    'item_force_staff', 'item_magic_wand',
+    'item_shivas_guard', 'item_bottle',
+    'item_black_king_bar', 'item_bracer',
+    'item_shivas_guard', 'item_null_talisman',
 }
-
-sRoleItemsBuyList['pos_3'] = {
-    "item_tango",
-    "item_gauntlets",
-    "item_circlet",
-    "item_double_branches",
-
-    "item_bracer",
-    "item_boots",
-    "item_magic_wand",
-    "item_wind_lace",
-    "item_blink",
-    "item_black_king_bar",--
-    "item_travel_boots",
-    "item_shivas_guard",--
-    "item_ultimate_scepter",
-    "item_octarine_core",--
-    "item_refresher",--
-    "item_overwhelming_blink",--
-    "item_ultimate_scepter_2",
-    "item_travel_boots_2",--
-    "item_aghanims_shard",
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_4'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_circlet",
-    "item_blood_grenade",
-
-    "item_boots",
-    "item_magic_wand",
-    "item_tranquil_boots",
-    "item_blink",
-    "item_force_staff",--
-    "item_black_king_bar",--
-    "item_boots_of_bearing",--
-    "item_shivas_guard",--
-    "item_wind_waker",--
-    "item_arcane_blink",--
-    "item_aghanims_shard",
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_circlet",
-    "item_blood_grenade",
-
-    "item_boots",
-    "item_magic_wand",
-    "item_arcane_boots",
-    "item_blink",
-    "item_force_staff",--
-    "item_black_king_bar",--
-    "item_guardian_greaves",--
-    "item_shivas_guard",--
-    "item_wind_waker",--
-    "item_arcane_blink",--
-    "item_aghanims_shard",
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-Pos2SellList = {
-    "item_branches",
-	"item_bottle",
-    "item_magic_wand",
-}
-
-Pos3SellList = {
-	"item_magic_wand",
-}
-
-X['sSellList'] = {
-    "item_shivas_guard",
-    "item_branches",
-    "item_shivas_guard",
-	"item_bottle",
-    "item_black_king_bar",
-    "item_magic_wand",
-}
-
-if sRole == "pos_2"
-then
-    X['sSellList'] = Pos2SellList
-else
-    X['sSellList'] = Pos3SellList
-end
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Both popular sequences max Firefly at 10 and take the first talent at 11.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

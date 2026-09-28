@@ -117,7 +117,7 @@ local WeakHeroCount = {
 local WeakHeroes = {
 	-- Weaks, meaning they are too far from being able to apply their power:
 	'npc_dota_hero_chen',
-	'npc_dota_hero_ancient_apparition',
+	'npc_dota_hero_ancient_apparition', -- 7.41f build refreshed; retain execution-quality flag until lobby validation.
 	'npc_dota_hero_tinker',
 	'npc_dota_hero_pangolier',
 	'npc_dota_hero_tusk',
@@ -627,17 +627,15 @@ local function ScoreCandidatesForTeam(team, rolePool, enemyNames, posIndex)
 						if HeroMatchups.IsSynergy and HeroMatchups.IsSynergy(cand, ally) then
 							score = score + 1.5  -- bonus for synergy match
 						end
-						if HeroMatchups.IsCounter and HeroMatchups.IsCounter(ally, cand) then
-							score = score - 0.5  -- small penalty if ally is countered by us (bad pairing)
-						end
+						-- Enemy counter relationships do not imply poor allied synergy.
 					end
 				end
 			end
 
-			-- 3. Role weight multiplier: heroes that fit the position better score higher
+			-- 3. Positive role prior: stronger role weights must also help when matchup scores are negative.
 			if posIndex and HeroPositionMap[cand] then
 				local posWeight = HeroPositionMap[cand][posIndex] or 50
-				score = score * (posWeight / 100)
+				score = score + posWeight / 20
 			end
 
 			-- 4. Weak hero penalty
@@ -675,6 +673,9 @@ local function PickHeroForBotSlot(i, id)
 	local team = TeamOfPlayer(id)
 	local rolePool = tSelectPoolList[i]
 	local preselect = sSelectList[i]
+	-- Pools and role assignments move together when player slots are shuffled.
+	local roleTeam = team == TEAM_RADIANT and 'TEAM_RADIANT' or 'TEAM_DIRE'
+	local position = Role.RoleAssignment[roleTeam][i] or i
 
 	-- Default to preselect for variety path; can be overridden below
 	local pick = preselect
@@ -682,7 +683,7 @@ local function PickHeroForBotSlot(i, id)
 	-- Use matchup data most of the time unless user forced picks
 	if not X.IsInCustomizedPicks(preselect) and RandomInt(1, 5) >= 1 then
 		local enemyNames = GetEnemyHeroNames()
-		local scored = ScoreCandidatesForTeam(team, rolePool, enemyNames, i)
+		local scored = ScoreCandidatesForTeam(team, rolePool, enemyNames, position)
 
 		local teamName = (team == TEAM_RADIANT and 'Radiant' or 'Dire')
 		print('==== top 5 heroes for team: '..teamName..' pos: '..i..' id: '..id..' ====')

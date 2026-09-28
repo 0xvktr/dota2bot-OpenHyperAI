@@ -106,15 +106,7 @@ local function AwardNeutralToBot(bot, tier, team)
 	local items = NeutralItems:GetTokenTableForTier(tier)
 	if items == nil then return false end
 
-	local bestItem, bestDesire = nil, 0
-	for _, item in ipairs(items) do
-		local desire = NeutralItems:GetBotDesireForItem(bot, item)
-		Debug:Print(bot.stats.name..': item: '..item.realName..' : '..desire)
-		if bestItem == nil or desire > bestDesire then
-			bestItem = item
-			bestDesire = desire
-		end
-	end
+	local bestItem = NeutralItems:ChooseItem(bot, tier, items)
 
 	if bestItem then
 		NeutralItems:GiveToUnit(bot, bestItem)

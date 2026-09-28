@@ -1,3 +1,4 @@
+local AlchemistScepter = require(GetScriptDirectory()..'/FunLib/alchemist_scepter')
 local GateProbe = require(GetScriptDirectory()..'/FunLib/twin_gate_probe')
 local LaneRotation = require(GetScriptDirectory()..'/FunLib/lane_rotation')
 local BossCombat = require(GetScriptDirectory()..'/FunLib/boss_combat')
@@ -990,6 +991,8 @@ local function ItemUsageComplement()
 		or X.WillBreakInvisible( bot )
 	then return	BOT_ACTION_DESIRE_NONE end
 
+	AlchemistScepter.Prepare(bot, J)
+
 	hNearbyEnemyHeroList = J.GetNearbyHeroes(bot, 1000, true, BOT_MODE_NONE )
 	hNearbyEnemyTowerList = bot:GetNearbyTowers( 888, true )
 	botTarget = J.GetProperTarget( bot )
@@ -1138,6 +1141,11 @@ end
 
 
 X.ConsiderItemDesire = {}
+
+X.ConsiderItemDesire['item_ultimate_scepter'] = function(hItem)
+    return AlchemistScepter.Consider(bot, hItem, J)
+end
+
 
 --深渊
 X.ConsiderItemDesire["item_abyssal_blade"] = function( hItem )
