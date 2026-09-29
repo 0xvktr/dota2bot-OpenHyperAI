@@ -10,8 +10,8 @@ local sRole = J.Item.GetRoleItemsBuyList( bot )
 local tTalentTreeList = {
 						['t25'] = {10, 0},
 						['t20'] = {0, 10},
-						['t15'] = {0, 10},
-						['t10'] = {10, 0},
+						['t15'] = {10, 0}, -- 7.41b: +Poof Damage moved here from level 10
+						['t10'] = {10, 0}, -- 7.41b: now -Earthbind Cooldown (was +Poof Damage)
 }
 
 local tAllAbilityBuildList = {
