@@ -39,6 +39,7 @@ local HeroPositionMap = require( GetScriptDirectory()..'/FunLib/aba_hero_pos_wei
 local heroUnitNames = require( GetScriptDirectory()..'/FretBots/HeroNames')
 local Customize = require(GetScriptDirectory()..'/FunLib/custom_loader')
 local okMatchupLib, HeroMatchups = pcall(require, GetScriptDirectory()..'/FunLib/aba_matchups')
+local DebugDumps = require(GetScriptDirectory()..'/FunLib/debug_dumps')
 if not okMatchupLib then HeroMatchups = nil end
 HeroPositionMap = HeroPositionMap.GetHeroPositions()
 
@@ -1048,6 +1049,7 @@ end
 --==============================================================================
 
 function UpdateLaneAssignments()
+	DebugDumps.DumpNeutralSpawners()
 	local team = GetTeam() == TEAM_RADIANT and 'TEAM_RADIANT' or 'TEAM_DIRE'
 
 	if GetGameMode() == GAMEMODE_MO then

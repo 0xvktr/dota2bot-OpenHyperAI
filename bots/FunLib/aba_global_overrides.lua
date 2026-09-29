@@ -76,7 +76,9 @@ function GetTeamPlayers(nTeam, bypass)
 end
 
 -- Override the print function
-local orig_print = print
+local orig_print = OhaRawPrint or print
+-- The unfiltered print, for output that must reach the console regardless of DebugMode (FunLib/debug_dumps).
+OhaRawPrint = orig_print
 function print(...)
     if not Utils.DebugMode then return end
 

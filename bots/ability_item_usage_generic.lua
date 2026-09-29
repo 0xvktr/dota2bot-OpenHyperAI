@@ -5,6 +5,7 @@ local LaneRotation = require(GetScriptDirectory()..'/FunLib/lane_rotation')
 local BossCombat = require(GetScriptDirectory()..'/FunLib/boss_combat')
 local LotusUsage = require(GetScriptDirectory()..'/FunLib/lotus_usage')
 local FightResponse = require(GetScriptDirectory()..'/FunLib/fight_response')
+local DebugDumps = require(GetScriptDirectory()..'/FunLib/debug_dumps')
 local X = {}
 local bot = GetBot()
 local botName = bot:GetUnitName()
@@ -8340,6 +8341,7 @@ end
 
 function ItemUsageThink()
 	if RefreshBotHandle() then return end
+	DebugDumps.DumpNeutralSpawners(bot)
     if GateProbe.Active(bot) then return end
     if FightResponse.CancelUnsafeTeleport(bot) then return end
 	if bot:IsInvulnerable() or not bot:IsHero() or not bot:IsAlive() or not string.find(botName, "hero") or bot:IsIllusion() then return end
