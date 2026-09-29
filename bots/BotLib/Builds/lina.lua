@@ -1,0 +1,51 @@
+-- D2PT 7.41f; counts sum to 7519, header 7531. Requested carry (4.5%) is a reviewed exception. Current-tier picks; reviewed attack/caster T5 profiles.
+return {
+    patch='7.41f',
+    updated='2026-09-30',
+    defaultRole='pos_2',
+    source='https://dota2protracker.com/hero/Lina?section=builds',
+    overviewWindow='last 8 days, 7000+',
+    buildWindow='2026-09-15 to 2026-09-29',
+    buildUpdated='2026-09-29',
+    roles={
+        pos_1={matches=339,winRate=43.7,rating=29,weight=42,buildMatches=730,buildWinRate=43,skillMatches=68,openingMatches=157,openingObserved=729},
+        pos_2={matches=6749,winRate=46.5,rating=55,weight=85,buildMatches=10131,buildWinRate=51,skillMatches=2258,openingMatches=4792,openingObserved=10130},
+        pos_3={matches=45,winRate=37.8,skipped=true},
+        pos_4={matches=261,winRate=48.3,skipped=true},
+        pos_5={matches=125,winRate=44,skipped=true},
+    },
+    neutrals={
+        pos_1={tier5Profile='attack',
+            neutral={
+                [1]={item_possessed_mask=27.5,item_weighted_dice=14.3,item_duelist_gloves=14.3,item_dormant_curio=10.6,item_occult_bracelet=10.2,item_polliwog_charm=5.6,item_stonefeather_satchel=4.8},
+                [2]={item_mana_draught=27.0,item_searing_signet=22.5,item_pogo_stick=11.1,item_essence_ring=5.7,item_crippling_crossbow=4.0},
+                [3]={item_serrated_shiv=36.6,item_gunpowder_gauntlets=22.6,item_partisans_brand=9.5,item_spellslinger=5.8,item_unrelenting_eye=3.8},
+                [4]={item_conjurers_catalyst=25.9,item_giant_maul=22.2,item_prophets_pendulum=12.3,item_flayers_bota=10.9,item_enchanters_bauble=7.2,item_idol_of_screeauk=3.4},
+                [5]={item_desolator_2=28.6,item_divine_regalia=21.4,item_fallen_sky=14.3,item_spider_legs=7.1,item_heavy_blade=7.1,item_riftshadow_prism=7.1},
+            },
+            enhancement={
+                [1]={item_enhancement_mystical=68.1,item_enhancement_tough=17.3,item_enhancement_quickened=12.0},
+                [2]={item_enhancement_tough=39.9,item_enhancement_mystical=37.6,item_enhancement_quickened=17.0},
+                [3]={item_enhancement_tough=59.4,item_enhancement_mystical=21.6,item_enhancement_quickened=12.1},
+                [4]={item_enhancement_tough=56.3,item_enhancement_quickened=20.1,item_enhancement_mystical=10.6},
+                [5]={item_enhancement_timeless=35.7,item_enhancement_vampiric=28.6,item_enhancement_fleetfooted=21.4},
+            },
+        },
+        pos_2={tier5Profile='caster',
+            neutral={
+                [1]={item_dormant_curio=17.3,item_possessed_mask=16.3,item_duelist_gloves=15.3,item_weighted_dice=10.9,item_occult_bracelet=10.6,item_stonefeather_satchel=8.0,item_kobold_cup=5.1},
+                [2]={item_searing_signet=36.7,item_mana_draught=23.6,item_pogo_stick=12.6,item_essence_ring=8.9,item_crippling_crossbow=2.6},
+                [3]={item_partisans_brand=21.3,item_serrated_shiv=16.5,item_gunpowder_gauntlets=12.8,item_spellslinger=9.2,item_psychic_headband=4.5},
+                [4]={item_conjurers_catalyst=40.5,item_enchanters_bauble=14.1,item_giant_maul=10.4,item_prophets_pendulum=6.5,item_dandelion_amulet=4.2,item_flayers_bota=4.0},
+                [5]={item_desolator_2=25.4,item_divine_regalia=22.5,item_harmonizer=10.7,item_dezun_bloodrite=7.1,item_fallen_sky=5.3,item_minotaur_horn=4.7},
+            },
+            enhancement={
+                [1]={item_enhancement_mystical=63.9,item_enhancement_quickened=28.3,item_enhancement_tough=7.3},
+                [2]={item_enhancement_mystical=35.1,item_enhancement_keen_eyed=26.2,item_enhancement_quickened=21.5},
+                [3]={item_enhancement_keen_eyed=34.7,item_enhancement_mystical=24.8,item_enhancement_tough=18.4},
+                [4]={item_enhancement_timeless=55.9,item_enhancement_keen_eyed=18.1,item_enhancement_tough=15.3},
+                [5]={item_enhancement_timeless=57.4,item_enhancement_vampiric=24.9,item_enhancement_fleetfooted=8.3},
+            },
+        },
+    },
+}

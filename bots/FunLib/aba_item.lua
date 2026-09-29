@@ -148,6 +148,7 @@ Item['sBasicItems'] = {
 	'item_gem',
 	'item_ghost',
 	'item_gloves',
+	'item_helm_of_iron_will',
 	'item_holy_locket',
 	'item_hyperstone',
 	'item_infused_raindrop',

@@ -8,178 +8,64 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-    {-- pos1/2: right-click focused
-        ['t25'] = {10, 0},
-        ['t20'] = {10, 0},
-        ['t15'] = {0, 10},
-        ['t10'] = {0, 10},
-    },
-    {-- pos3: offlane/utility
-        ['t25'] = {10, 0},
-        ['t20'] = {10, 0},
-        ['t15'] = {0, 10},
-        ['t10'] = {0, 10},
-    },
-    {-- pos4/5: support
-        ['t25'] = {0, 10},
-        ['t20'] = {0, 10},
-        ['t15'] = {10, 0},
-        ['t10'] = {10, 0},
-    }
-}
-
-local tAllAbilityBuildList = {
-    {1,2,1,2,1,6,1,2,2,3,6,3,3,3,6},-- pos1/2: Sprout max first (damage scales for right-click)
-    {3,1,3,2,3,6,3,2,2,2,6,1,1,1,6},-- pos3: Nature's Call max first (push/pressure)
-    {2,1,1,2,1,6,1,2,2,3,6,3,3,3,6},-- pos4/5: Early TP at 1, then Sprout max (ganking)
-}
-
-local nAbilityBuildList
-local nTalentBuildList
-
-if sRole == "pos_1" or sRole == "pos_2" then
-    nAbilityBuildList = tAllAbilityBuildList[1]
-    nTalentBuildList  = J.Skill.GetTalentBuild(tTalentTreeList[1])
-elseif sRole == "pos_3" then
-    nAbilityBuildList = tAllAbilityBuildList[2]
-    nTalentBuildList  = J.Skill.GetTalentBuild(tTalentTreeList[2])
+-- Updated to 7.41f from D2PT: all five positions.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/furion')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Sprout, [2] Teleportation, [3] Nature's Call, [6] Wrath of Nature.
+local nAbilityBuildList = {3,1,3,2,3,6,3,2,2,2,6,1,1,1,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10=sRole == 'pos_4' and {10,0} or {0,10}, -- +25 Wrath base damage / -10s Nature's Call cooldown
+    t15={0,10}, -- +50 Treant movement speed
+    t20={0,10}, -- -20s Wrath of Nature cooldown
+    t25=(sRole == 'pos_1' or sRole == 'pos_2') and {0,10} or {10,0}, -- No Teleport cooldown / 3x Treant health and damage
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+if sRole == 'pos_1' or sRole == 'pos_2' then
+    if sRole == 'pos_1' then
+        X.sBuyList = {'item_magic_wand','item_faerie_fire','item_faerie_fire'}
+    else
+        -- Omit the observed ward: core bots do not run ward placement.
+        X.sBuyList = {'item_double_branches','item_circlet','item_circlet','item_tango','item_faerie_fire','item_magic_wand'}
+    end
+    local core = {'item_power_treads','item_maelstrom','item_mjollnir','item_dragon_lance','item_hurricane_pike','item_black_king_bar',
+        -- Popular damage/sustain continuation; six persistent slots after selling the Wand.
+        'item_lesser_crit','item_greater_crit','item_satanic','item_aghanims_shard',
+        -- Bot policy: consumed late upgrades.
+        'item_ultimate_scepter','item_ultimate_scepter_2','item_moon_shard'}
+    for _, item in ipairs(core) do table.insert(X.sBuyList, item) end
+    X.sSellList = {'item_black_king_bar','item_magic_wand'}
+elseif sRole == 'pos_3' then
+    X.sBuyList = {'item_double_branches','item_circlet','item_circlet','item_tango','item_faerie_fire',
+        'item_magic_wand','item_power_treads','item_orchid','item_aghanims_shard','item_black_king_bar',
+        'item_dragon_lance','item_hurricane_pike','item_bloodthorn',
+        -- Bot policy: global control and a late disable; no second farming-item path.
+        'item_ultimate_scepter','item_ultimate_scepter_2','item_sheepstick'}
+    X.sSellList = {'item_black_king_bar','item_magic_wand'}
+elseif sRole == 'pos_4' then
+    X.sBuyList = {'item_branches','item_circlet','item_magic_stick','item_tango','item_ward_observer','item_ward_sentry','item_blood_grenade',
+        'item_urn_of_shadows','item_magic_wand','item_spirit_vessel','item_power_treads','item_aghanims_shard','item_orchid','item_ultimate_scepter',
+        -- Bot policy: defensive utility plus natural Orchid/Scepter upgrades.
+        'item_force_staff','item_glimmer_cape','item_ultimate_scepter_2','item_bloodthorn','item_black_king_bar'}
+    X.sSellList = {'item_ultimate_scepter','item_magic_wand'}
 else
-    nAbilityBuildList = tAllAbilityBuildList[3]
-    nTalentBuildList  = J.Skill.GetTalentBuild(tTalentTreeList[3])
+    X.sBuyList = {'item_double_branches','item_circlet','item_ward_sentry','item_tango','item_faerie_fire','item_blood_grenade',
+        'item_urn_of_shadows','item_magic_wand','item_spirit_vessel',
+        -- Bot policy: early mobility from the observed Treads option, then the source support core.
+        'item_power_treads','item_aghanims_shard','item_ultimate_scepter',
+        -- Bot policy: practical defensive utility and consumed Scepter upgrade.
+        'item_force_staff','item_glimmer_cape','item_ultimate_scepter_2','item_lotus_orb'}
+    X.sSellList = {'item_ultimate_scepter','item_magic_wand'}
 end
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-    "item_tango",
-    "item_faerie_fire",
-    "item_double_branches",
-    "item_circlet",
-    "item_mantle",
-
-    "item_null_talisman",
-    "item_magic_wand",
-    "item_power_treads",
-    "item_maelstrom",
-    "item_orchid",
-    "item_black_king_bar",--
-    "item_mjollnir",--
-    "item_aghanims_shard",
-    "item_hurricane_pike",--
-    "item_satanic",--
-    "item_bloodthorn",--
-    "item_greater_crit",--
-    "item_moon_shard",
-    "item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_2'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_faerie_fire",
-    "item_double_circlet",
-
-    "item_bottle",
-    "item_null_talisman",
-    "item_magic_wand",
-    "item_power_treads",
-    "item_maelstrom",
-    "item_orchid",
-    "item_black_king_bar",--
-    "item_mjollnir",--
-    "item_aghanims_shard",
-    "item_hurricane_pike",--
-    "item_satanic",--
-    "item_bloodthorn",--
-    "item_greater_crit",--
-    "item_moon_shard",
-    "item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_3'] = {
-    "item_blight_stone",
-    "item_tango",
-    "item_faerie_fire",
-    "item_double_branches",
-
-    "item_magic_wand",
-    "item_power_treads",
-    "item_maelstrom",
-    "item_rod_of_atos",  -- root + Sprout synergy for lockdown
-    "item_black_king_bar",--
-    "item_mjollnir",--
-    "item_aghanims_shard",
-    "item_assault",--
-    "item_hurricane_pike",--
-    "item_sheepstick",--
-    "item_moon_shard",
-    "item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_4'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_blood_grenade",
-    "item_double_circlet",
-
-    "item_tranquil_boots",
-    "item_magic_wand",
-    "item_urn_of_shadows",
-    "item_solar_crest",--
-    "item_aghanims_shard",
-    "item_ancient_janggo",
-    "item_spirit_vessel",
-    "item_boots_of_bearing",--
-    "item_ultimate_scepter",
-    "item_orchid",
-    "item_heavens_halberd",--
-    "item_bloodthorn",--
-    "item_ultimate_scepter_2",
-    "item_sheepstick",--
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_blood_grenade",
-    "item_double_circlet",
-
-    "item_tranquil_boots",
-    "item_magic_wand",
-    "item_urn_of_shadows",
-    "item_solar_crest",--
-    "item_aghanims_shard",
-    "item_mekansm",
-    "item_spirit_vessel",--
-    "item_guardian_greaves",--
-    "item_ultimate_scepter",
-    "item_orchid",
-    "item_heavens_halberd",--
-    "item_bloodthorn",--
-    "item_ultimate_scepter_2",
-    "item_sheepstick",--
-    "item_moon_shard",
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-	"item_black_king_bar",
-	"item_quelling_blade",
-	"item_null_talisman",
-	"item_ultimate_scepter",
-	"item_magic_wand",
-	"item_cyclone",
-}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_mid' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
+-- Fourth Teleportation point at 10, then the first talent at 11. Preserve custom progressions.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
 

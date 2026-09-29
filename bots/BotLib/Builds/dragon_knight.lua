@@ -1,0 +1,64 @@
+-- Retrieved 2026-09-30. Overview: last 8 days, 7000+; builds: Sep 15-29, updated Sep 29.
+-- Role counts sum to 9926; overview reports 9947.
+return {
+    patch='7.41f', updated='2026-09-30', defaultRole='pos_3',
+    source='https://dota2protracker.com/hero/Dragon%20Knight?section=builds',
+    roles={
+        pos_1={matches=550,winRate=52.5,rating=41,weight=52,buildMatches=666,buildWinRate=52,skillMatches=185,openingMatches=68,openingObserved=665},
+        pos_2={matches=4661,winRate=53.4,rating=76,weight=100,buildMatches=7005,buildWinRate=54,skillMatches=2401,openingMatches=578,openingObserved=7002},
+        pos_3={matches=4673,winRate=52.2,rating=63,weight=93,buildMatches=6902,buildWinRate=52,skillMatches=1859,openingMatches=1080,openingObserved=6894},
+        pos_4={matches=32,winRate=46.9,skipped=true},
+        pos_5={matches=10,winRate=40.0,skipped=true},
+    },
+    -- Current-tier observations only; sparse T5 picks use reviewed role suitability.
+    neutrals={
+        pos_1={tier5Profile='attack',
+            neutral={
+                [1]={item_possessed_mask=18.3,item_chipped_vest=16.5,item_duelist_gloves=16.1,item_weighted_dice=14.9,item_dormant_curio=9.6,item_occult_bracelet=6.8,item_stonefeather_satchel=5.6},
+                [2]={item_mana_draught=18.6,item_defiant_shell=16.7,item_searing_signet=14.1,item_poor_mans_shield=7.7,item_crippling_crossbow=7.4,item_pogo_stick=6.6,item_medallion_of_courage=6.4},
+                [3]={item_gunpowder_gauntlets=27,item_serrated_shiv=26.1,item_cloak_of_flames=17.6,item_partisans_brand=7.9,item_unrelenting_eye=4.7,item_stormcrafter=3},
+                [4]={item_conjurers_catalyst=19.9,item_giant_maul=19.5,item_flayers_bota=15.5,item_enchanters_bauble=7.9,item_rattlecage=7.2,item_prophets_pendulum=5.8},
+                [5]={item_desolator_2=60,item_divine_regalia=20,item_minotaur_horn=10},
+            },
+            enhancement={
+                [1]={item_enhancement_tough=62.9,item_enhancement_quickened=21.4,item_enhancement_brawny=10.2},
+                [2]={item_enhancement_tough=63.5,item_enhancement_quickened=13.7,item_enhancement_crude=12},
+                [3]={item_enhancement_tough=64.3,item_enhancement_crude=15.3,item_enhancement_brawny=12.1},
+                [4]={item_enhancement_tough=46.9,item_enhancement_crude=17.7,item_enhancement_timeless=14.1},
+                [5]={item_enhancement_fleetfooted=40,item_enhancement_vampiric=30,item_enhancement_evolved=30},
+            },
+        },
+        pos_2={tier5Profile='tank',
+            neutral={
+                [1]={item_duelist_gloves=21.9,item_chipped_vest=18.6,item_possessed_mask=12.4,item_dormant_curio=10.4,item_weighted_dice=8.6,item_occult_bracelet=7.6,item_dagger_of_ristul=5.7},
+                [2]={item_searing_signet=24.4,item_mana_draught=14.7,item_defiant_shell=11.1,item_crippling_crossbow=9.5,item_poor_mans_shield=7.5,item_pogo_stick=6.4,item_essence_ring=5.3},
+                [3]={item_cloak_of_flames=28.2,item_gunpowder_gauntlets=23.8,item_serrated_shiv=18.2,item_partisans_brand=9.6,item_stormcrafter=3.6,item_unrelenting_eye=3.4,item_jidi_pollen_bag=2.9},
+                [4]={item_conjurers_catalyst=34,item_giant_maul=17.3,item_prophets_pendulum=8.5,item_rattlecage=8.4,item_flayers_bota=6.2,item_enchanters_bauble=5.9},
+                [5]={item_desolator_2=21.3,item_dezun_bloodrite=17.5,item_minotaur_horn=11.3,item_fallen_sky=8.8,item_divine_regalia=8.8,item_demonicon=7.5},
+            },
+            enhancement={
+                [1]={item_enhancement_tough=53.4,item_enhancement_quickened=21.2,item_enhancement_brawny=19.6},
+                [2]={item_enhancement_tough=59.5,item_enhancement_brawny=17.2,item_enhancement_quickened=14.5},
+                [3]={item_enhancement_tough=62.6,item_enhancement_brawny=15.9,item_enhancement_quickened=11},
+                [4]={item_enhancement_tough=41.3,item_enhancement_timeless=30.8,item_enhancement_quickened=11.3},
+                [5]={item_enhancement_evolved=56.3,item_enhancement_timeless=21.3,item_enhancement_fleetfooted=17.5},
+            },
+        },
+        pos_3={tier5Profile='tank',
+            neutral={
+                [1]={item_chipped_vest=21.9,item_duelist_gloves=18.9,item_possessed_mask=13.1,item_weighted_dice=9.4,item_dormant_curio=8.4,item_occult_bracelet=7.1,item_ash_legion_shield=5.7},
+                [2]={item_searing_signet=24.7,item_mana_draught=17,item_defiant_shell=11.3,item_crippling_crossbow=9.5,item_poor_mans_shield=7.9,item_pogo_stick=5.6,item_essence_ring=5.3},
+                [3]={item_cloak_of_flames=31.7,item_gunpowder_gauntlets=21.4,item_serrated_shiv=15.2,item_partisans_brand=8.5,item_unrelenting_eye=4.1,item_stormcrafter=3.9,item_jidi_pollen_bag=3.4},
+                [4]={item_conjurers_catalyst=31.5,item_giant_maul=18.4,item_prophets_pendulum=8.9,item_rattlecage=8.6,item_flayers_bota=5.5,item_enchanters_bauble=5.3},
+                [5]={item_fallen_sky=20,item_dezun_bloodrite=20,item_desolator_2=15.3,item_divine_regalia=10.6,item_minotaur_horn=8.2,item_demonicon=7.1},
+            },
+            enhancement={
+                [1]={item_enhancement_tough=52.8,item_enhancement_quickened=19.2,item_enhancement_brawny=18.4},
+                [2]={item_enhancement_tough=56,item_enhancement_brawny=20.5,item_enhancement_quickened=16.1},
+                [3]={item_enhancement_tough=61.3,item_enhancement_brawny=18.6,item_enhancement_quickened=12.1},
+                [4]={item_enhancement_tough=42,item_enhancement_timeless=25.3,item_enhancement_quickened=14.3},
+                [5]={item_enhancement_evolved=43.5,item_enhancement_timeless=35.3,item_enhancement_fleetfooted=15.3},
+            },
+        },
+    },
+}

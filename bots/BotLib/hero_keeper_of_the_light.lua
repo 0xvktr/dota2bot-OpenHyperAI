@@ -9,119 +9,50 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						{
-                            ['t25'] = {10, 0},
-                            ['t20'] = {0, 10},
-                            ['t15'] = {0, 10},
-                            ['t10'] = {10, 0},
-                        },
-                        {
-                            ['t25'] = {0, 10},
-                            ['t20'] = {0, 10},
-                            ['t15'] = {0, 10},
-                            ['t10'] = {10, 0},
-                        }
-}
-
-local tAllAbilityBuildList = {
-						{1,3,1,3,1,6,1,3,3,2,6,2,2,2,6},--pos2
-                        {1,3,1,3,1,6,1,3,3,2,6,2,2,2,6},--pos4,5
-}
-
-local nAbilityBuildList = tAllAbilityBuildList[1]
-if sRole == 'pos_2' then nAbilityBuildList = tAllAbilityBuildList[1] end
-if sRole == 'pos_4' then nAbilityBuildList = tAllAbilityBuildList[2] end
-if sRole == 'pos_5' then nAbilityBuildList = tAllAbilityBuildList[2] end
-
-local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[1])
-if sRole == 'pos_2' then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[1]) end
-if sRole == 'pos_4' then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[2]) end
-if sRole == 'pos_5' then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[2]) end
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_2'] = {
-    "item_faerie_fire",
-    "item_mantle",
-    "item_circlet",
-    "item_double_branches",
-    "item_tango",
-
-    "item_null_talisman",
-    "item_boots",
-    "item_magic_wand",
-    "item_spirit_vessel",
-    "item_dagon_2",
-    "item_travel_boots",
-    "item_black_king_bar",--
-    "item_octarine_core",--
-    "item_dagon_5",--
-    "item_kaya_and_sange",--
-    "item_sheepstick",--
-    "item_ultimate_scepter",
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-    "item_travel_boots_2",--
-    "item_aghanims_shard",
-}
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_2']
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_2']
-
-sRoleItemsBuyList['pos_4'] = {
-    "item_double_tango",
-    "item_faerie_fire",
-    "item_clarity",
-    "item_blood_grenade",
-
-    "item_boots",
-    "item_urn_of_shadows", -- Alternative: item_essence_distiller (if not going spirit_vessel)
-    "item_arcane_boots",
-    "item_glimmer_cape",--
-    "item_spirit_vessel",--
-	"item_kaya_and_sange",--
-    "item_guardian_greaves",--
-    "item_octarine_core",--
-    "item_sheepstick",--
-    "item_aghanims_shard",
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-    "item_double_tango",
-    "item_faerie_fire",
-    "item_blood_grenade",
-
-    "item_arcane_boots",
-    "item_solar_crest",--
-    "item_glimmer_cape",--
-    "item_mekansm",
-    "item_cyclone",
-    "item_guardian_greaves",--
-    "item_lotus_orb",--
-    "item_sheepstick",--
-    "item_wind_waker",--
-    "item_ultimate_scepter_2",
-    "item_aghanims_shard",
-    "item_moon_shard",
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-}
+-- Updated to 7.41f from D2PT: mid and support; forced other roles use mid.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/keeper_of_the_light')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Illuminate, [2] Blinding Light, [3] Chakra Magic, [6] Spirit Form.
+local nAbilityBuildList = {1,3,1,3,1,6,1,3,3,2,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- -2s Illuminate cooldown
+    t15=sRole == 'pos_4' and {0,10} or {10,0}, -- +25% Spirit Form speed / +90 Blinding Light damage
+    t20={0,10}, -- +15s Spirit Form duration
+    t25={10,0}, -- +200 Illuminate damage
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+if sRole == 'pos_4' then
+    X.sBuyList = {
+        'item_boots', 'item_ward_observer', 'item_ward_sentry', 'item_blood_grenade',
+        'item_tranquil_boots', 'item_magic_wand', 'item_holy_locket', 'item_force_staff',
+        'item_glimmer_cape', 'item_aghanims_shard',
+        -- Bot policy: teamfight Scepter, late disable/defence, and natural boot upgrade.
+        'item_ultimate_scepter', 'item_ultimate_scepter_2', 'item_sheepstick',
+        'item_ancient_janggo', 'item_boots_of_bearing', 'item_lotus_orb',
+    }
+    X.sSellList = {}
+else
+    X.sBuyList = {
+        'item_ring_of_protection', 'item_double_branches', 'item_circlet', 'item_tango', 'item_faerie_fire',
+        'item_urn_of_shadows', 'item_magic_wand', 'item_spirit_vessel', 'item_travel_boots',
+        'item_octarine_core', 'item_aghanims_shard',
+        -- Bot policy: protection and teamfight utility; Blessing frees a late slot.
+        'item_black_king_bar', 'item_ultimate_scepter', 'item_ultimate_scepter_2',
+        'item_sheepstick', 'item_travel_boots_2',
+    }
+    X.sSellList = {'item_black_king_bar','item_magic_wand'}
+end
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_mid' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Blinding Light at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

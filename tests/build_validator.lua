@@ -58,6 +58,7 @@ end
 
 -- Hero level needed for the next point in `name`, given `taken` earlier points in it.
 local function requiredLevel(name, taken)
+    if name == 'special_bonus_attributes' then return 6 + 2 * taken end
     local slot = abilitySlot(name)
     if slot == 6 then return 6 * (taken + 1) end
     if slot then return 2 * taken + 1 end
@@ -69,11 +70,17 @@ end
 -- everything behind it, so a legal build never leaves a learnable ability stuck behind it.
 -- The second talent of an already-chosen tier is rejected by the engine and costs no point.
 local function checkSkillList(list, label, report)
-    for i = 1, ABILITY_PICKS + TALENT_COUNT do
+    local attributes = 0
+    for _, name in ipairs(list) do
+        if name == 'special_bonus_attributes' then attributes = attributes + 1 end
+    end
+    if attributes > 7 then return report('attribute bonus is leveled more than 7 times') end
+    local totalPicks = ABILITY_PICKS + TALENT_COUNT + attributes
+    for i = 1, totalPicks do
         if list[i] == nil then return report('skill list has no entry at level '..i) end
     end
-    if list[ABILITY_PICKS + TALENT_COUNT + 1] ~= nil then
-        return report('skill list is longer than '..(ABILITY_PICKS + TALENT_COUNT)..' entries')
+    if list[totalPicks + 1] ~= nil then
+        return report('skill list is longer than '..totalPicks..' entries')
     end
 
     local counts, abilityTotal = {}, 0
@@ -85,7 +92,7 @@ local function checkSkillList(list, label, report)
                 return report('level '..i..' levels ability slot '..slot..' (innate/hidden slots cannot be leveled)')
             end
             abilityTotal = abilityTotal + 1
-        elseif not talentTier(name) then
+        elseif name ~= 'special_bonus_attributes' and not talentTier(name) then
             return report('level '..i..' has unexpected entry '..tostring(name))
         end
     end
@@ -134,7 +141,7 @@ local function checkSkillList(list, label, report)
         if points > 0 and queue[1] then
             local pending = {}
             for j, name in ipairs(queue) do
-                if j > 1 and abilitySlot(name) then
+                if j > 1 and (abilitySlot(name) or name == 'special_bonus_attributes') then
                     local held = (taken[name] or 0) + (pending[name] or 0)
                     if requiredLevel(name, held) <= level then
                         return report(string.format('at hero level %d %s (needs level %d) blocks %s, which could be learned now',

@@ -7,135 +7,61 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {0, 10},
-						['t20'] = {0, 10},
-						['t15'] = {0, 10},
-						['t10'] = {0, 10},
-}
-
-local tAllAbilityBuildList = {
-						{1,2,1,2,1,6,1,2,2,3,6,3,3,3,6},--pos2
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_2'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_faerie_fire",
-    "item_quelling_blade",
-
-    "item_bottle",
-    "item_magic_wand",
-    "item_boots",
-    "item_urn_of_shadows",
-    "item_spirit_vessel",
-    "item_blade_mail",
-    "item_heart",--
-    "item_black_king_bar",--
-    "item_travel_boots",
-    "item_shivas_guard",--
-    "item_octarine_core",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-    "item_sheepstick",--
-
-    "item_aghanims_shard",
-    "item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_1'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_faerie_fire",
-    "item_quelling_blade",
-    "item_magic_wand",
-
-    "item_boots",
-    "item_urn_of_shadows",
-    "item_spirit_vessel",
-    "item_blade_mail",
-    "item_heart",--
-    "item_black_king_bar",--
-    "item_travel_boots",
-    "item_shivas_guard",--
-    "item_octarine_core",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-    "item_sheepstick",--
-
-    "item_aghanims_shard",
-    "item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_3'] = {
-	"item_tank_outfit",
-	"item_aghanims_shard",
-	"item_crimson_guard",--
-	"item_heavens_halberd",--
-	"item_lotus_orb",--
-	"item_assault",--
-	"item_travel_boots",
-	"item_ultimate_scepter_2",
-	"item_moon_shard",
-	"item_heart",--
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_4'] = {
-	'item_priest_outfit',
-	"item_mekansm",
-	"item_glimmer_cape",
-	"item_aghanims_shard",
-	"item_guardian_greaves",
-	"item_spirit_vessel",
-	--"item_holy_locket",
-	"item_ultimate_scepter",
-	"item_sheepstick",
-	"item_mystic_staff",
-	"item_ultimate_scepter_2",
-	"item_shivas_guard",
-    "item_moon_shard",
-    "item_wind_waker",
-}
-
-
-sRoleItemsBuyList['pos_5'] = {
-	'item_mage_outfit',
-	"item_ancient_janggo",
-	"item_glimmer_cape",--
-	"item_boots_of_bearing",--
-	"item_pipe",--
-	"item_aghanims_shard",
-	"item_cyclone",
-    "item_shivas_guard",--
-	"item_sheepstick",--
-    "item_heart",--
-	"item_octarine_core",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-	"item_travel_boots",
-	"item_quelling_blade",
-
-	"item_abyssal_blade",
-	"item_magic_wand",
-}
+-- Updated to 7.41f from D2PT: mid, offlane and support; skipped roles use mid without wards.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/earth_spirit')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Boulder Smash, [2] Rolling Boulder, [3] Geomagnetic Grip, [6] Magnetize.
+local nAbilityBuildList
+if sRole == 'pos_3' or sRole == 'pos_4' then
+    nAbilityBuildList = {1,2,1,3,1,6,1,3,3,3,6,2,2,2,6}
+else
+    nAbilityBuildList = {1,3,1,2,1,6,1,3,3,3,6,2,2,2,6}
+end
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- +150 Rolling Boulder distance
+    t15={10,0}, -- +80 Boulder Smash damage
+    t20={0,10}, -- +35 Magnetize damage per second
+    t25={0,10}, -- Magnetize self
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+if sRole == 'pos_4' then
+    -- One charge of each ward produces the observed combined dispenser.
+    X.sBuyList = {'item_boots', 'item_ward_observer', 'item_ward_sentry', 'item_blood_grenade',
+        'item_urn_of_shadows', 'item_magic_wand',
+        -- Bot policy: Tranquils before larger utilities.
+        'item_tranquil_boots', 'item_essence_distiller',
+        'item_aether_lens', 'item_blink', 'item_aghanims_shard', 'item_cyclone',
+        -- Bot policy: Scepter/Blessing and Overwhelming Blink.
+        'item_ultimate_scepter', 'item_ultimate_scepter_2', 'item_overwhelming_blink'}
+    -- Distiller consumes Urn; Vessel is an alternative path.
+    X.sSellList = {'item_ultimate_scepter', 'item_magic_wand'}
+else
+    if sRole == 'pos_3' then
+        X.sBuyList = {'item_double_branches', 'item_branches', 'item_circlet', 'item_magic_stick', 'item_faerie_fire',
+            'item_bracer', 'item_urn_of_shadows', 'item_magic_wand', 'item_power_treads'}
+        X.sSellList = {'item_black_king_bar', 'item_magic_wand', 'item_shivas_guard', 'item_bracer'}
+    else
+        X.sBuyList = {'item_double_branches', 'item_double_branches', 'item_tango', 'item_faerie_fire',
+            'item_bottle', 'item_magic_wand', 'item_urn_of_shadows', 'item_power_treads'}
+        X.sSellList = {'item_black_king_bar', 'item_magic_wand', 'item_shivas_guard', 'item_bottle'}
+    end
+    for _, item in ipairs({'item_spirit_vessel', 'item_kaya', 'item_black_king_bar',
+        'item_kaya_and_sange', 'item_shivas_guard',
+        -- Bot policy: late Bloodstone and Shard.
+        'item_bloodstone', 'item_aghanims_shard'}) do table.insert(X.sBuyList, item) end
+    -- Optional Veil is omitted: the current Shiva recipe does not consume it.
+end
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- D2PT spends level 10 on Grip; first talent comes at 11. Preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

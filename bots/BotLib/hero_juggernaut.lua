@@ -16,69 +16,37 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {0, 10},
-						['t20'] = {0, 10},
-						['t15'] = {10, 0},
-						['t10'] = {0, 10},
+-- Updated to 7.41f from D2PT: carry only; forced other roles use carry.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/juggernaut')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Blade Fury, [2] Healing Ward, [3] Blade Dance, [6] Omnislash.
+local nAbilityBuildList = {1,2,1,3,1,6,1,3,3,3,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- -1s Bladeform stack gain interval
+    t15={0,10}, -- -15s Omnislash cooldown
+    t20={0,10}, -- +15% Blade Dance critical damage
+    t25={10,0}, -- +40% Blade Dance lifesteal
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    'item_quelling_blade','item_double_branches','item_magic_stick','item_tango','item_faerie_fire',
+    'item_magic_wand','item_power_treads','item_bfury','item_yasha','item_manta',
+    'item_butterfly','item_blink','item_ultimate_scepter','item_swift_blink',
+    -- Bot policy: consume Scepter, add a disable, then replace farming cleave with sustain.
+    'item_ultimate_scepter_2','item_basher','item_abyssal_blade','item_satanic',
+    'item_aghanims_shard','item_moon_shard',
 }
-
-local tAllAbilityBuildList = {
-						{1,2,1,3,1,6,1,2,2,2,6,3,3,3,6},--pos1
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_slippers",
-	"item_circlet",
-	"item_quelling_blade",
-
-	"item_wraith_band",
-	"item_magic_wand",
-	"item_power_treads",
-	"item_maelstrom",
-	"item_manta",--
-	"item_mjollnir",--
-	"item_skadi",--
-	"item_aghanims_shard",
-	"item_basher",
-	"item_butterfly",--
-	"item_moon_shard",
-	"item_abyssal_blade",--
-	"item_travel_boots_2",--
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-}
-
+X.sSellList = {'item_ultimate_scepter','item_magic_wand','item_satanic','item_bfury'}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_melee_carry' }, {"item_power_treads", 'item_quelling_blade'} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
+-- Fourth Blade Dance point at 10, then the first talent at 11. Preserve custom progressions.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
 

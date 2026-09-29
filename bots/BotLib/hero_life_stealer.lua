@@ -7,102 +7,35 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {0, 10},
-						['t20'] = {10, 0},
-						['t15'] = {10, 0},
-						['t10'] = {10, 0},
+-- Updated to 7.41f from D2PT: carry only; forced other roles use carry.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/life_stealer')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Rage, [2] Open Wounds, [3] Feast, [6] Infest.
+local nAbilityBuildList = {3,2,3,1,3,6,3,1,1,1,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- +15 movement speed
+    t15={10,0}, -- +50 attack speed against Open Wounds targets
+    t20={10,0}, -- +25% Open Wounds lifesteal
+    t25={10,0}, -- +1s Rage duration
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    'item_quelling_blade','item_double_gauntlets','item_gauntlets','item_faerie_fire',
+    'item_phase_boots','item_magic_wand','item_radiance','item_armlet','item_yasha','item_manta','item_ultimate_scepter',
+    -- Bot policy: consume Scepter, then the popular disable/armor continuation in six slots.
+    'item_ultimate_scepter_2','item_basher','item_abyssal_blade','item_assault','item_aghanims_shard','item_moon_shard',
 }
-
-local tAllAbilityBuildList = {
-						{2,3,1,3,3,6,3,2,2,2,1,6,1,1,6},--pos1
-						-- {2,3,3,3,6,3,2,2,2,6,6},--pos1
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRandom = RandomInt(1, 2) == 1 and "item_radiance" or "item_desolator"
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-    "item_tango",
-    "item_branches",
-    "item_faerie_fire",
-    "item_quelling_blade",
-    "item_double_gauntlets",
-
-    "item_orb_of_corrosion",
-	"item_magic_wand",
-    "item_phase_boots",
-    "item_armlet",
-    sRandom,--
-    "item_aghanims_shard",
-    "item_assault",--
-    "item_basher",
-    "item_nullifier",--
-    "item_monkey_king_bar",--
-    "item_travel_boots",
-    "item_abyssal_blade",--
-    "item_moon_shard",
-    "item_travel_boots_2",--
-    "item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_4'] = {
-	'item_priest_outfit',
-	"item_hand_of_midas",
-	"item_mekansm",
-	"item_glimmer_cape",--
-	"item_guardian_greaves",--
-    "item_basher",
-    "item_monkey_king_bar",--
-	"item_assault",--
-	"item_heavens_halberd",--
-	"item_aghanims_shard",
-    "item_abyssal_blade",--
-	"item_ultimate_scepter",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-	'item_priest_outfit',
-	"item_hand_of_midas",
-	"item_mekansm",
-	"item_glimmer_cape",--
-	"item_pipe",--
-    "item_basher",
-    "item_monkey_king_bar",--
-	"item_assault",--
-	"item_heavens_halberd",--
-	"item_aghanims_shard",
-    "item_abyssal_blade",--
-	"item_ultimate_scepter",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-}
+X.sSellList = {'item_radiance','item_quelling_blade','item_basher','item_magic_wand'}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_mid' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
+-- Fourth Rage point at 10, then the first talent at 11. Preserve custom progressions.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
 

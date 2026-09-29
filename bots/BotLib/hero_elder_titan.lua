@@ -7,125 +7,65 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-	{--pos4,5
-	['t25'] = {0, 10},
-	['t20'] = {10, 0},
-	['t15'] = {0, 10},
-	['t10'] = {10, 0},
-},
-	{--pos1,3
-	['t25'] = {0, 10},
-	['t20'] = {0, 10},
-	['t15'] = {10, 0},
-	['t10'] = {10, 0},
-}
-}
-
-local tAllAbilityBuildList = {
-    {2,3,2,3,2,3,2,3,6,1,1,1,1,6,6},--pos1
-    {2,1,2,3,2,6,2,3,3,3,6,1,1,1,6},--pos3
-}
-
-
-local nAbilityBuildList
-
-local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[1])
-
-if sRole == "pos_1"
-then
-    nAbilityBuildList   = tAllAbilityBuildList[1]
+-- Updated to 7.41f from D2PT: hard support, offlane and support; skipped roles use pos 5 without wards.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/elder_titan')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Echo Stomp, [2] Astral Spirit, [3] Natural Order, [6] Earth Splitter.
+local nAbilityBuildList, nTalentBuildList
+if sRole == 'pos_3' then
+    -- D2PT offlane delays Earth Splitter past level 10.
+    nAbilityBuildList = {2,3,2,3,2,3,2,3,1,1,6,1,1,6,6}
+    nTalentBuildList = J.Skill.GetTalentBuild({
+        t10={0,10}, -- +2.5% Astral Spirit move speed per hero
+        t15={10,0}, -- Momentum grants 20% attack speed
+        t20={0,10}, -- +30 Astral Spirit hero attack damage
+        t25={10,0}, -- 100% cleave
+    })
 else
-    nAbilityBuildList   = tAllAbilityBuildList[2]
+    nAbilityBuildList = {2,3,2,1,1,6,1,1,3,3,6,3,2,2,6}
+    nTalentBuildList = J.Skill.GetTalentBuild({
+        t10={10,0}, -- +150 Echo Stomp wake damage threshold
+        t15={0,10}, -- +75 Echo Stomp damage
+        t20=sRole == 'pos_4' and {0,10} or {10,0}, -- +30 Spirit hero damage / +150 Natural Order radius
+        t25=sRole == 'pos_4' and {10,0} or {0,10}, -- 100% cleave / -60s Earth Splitter cooldown
+    })
 end
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_bristleback_outfit",
-	"item_blade_mail",--
-	"item_heavens_halberd",--
-	"item_lotus_orb",--
-	"item_black_king_bar",--
-	"item_travel_boots",
-	"item_abyssal_blade",--
-	-- "item_heart",--
-	"item_moon_shard",
-	"item_aghanims_shard",--bugged
-    "item_ultimate_scepter_2",
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_3'] = {
-	"item_tank_outfit",
-	"item_vanguard",
-	"item_crimson_guard",--
-	"item_heavens_halberd",--
-    "item_shivas_guard",--
-	"item_assault",--
-	"item_travel_boots",
-	"item_ultimate_scepter_2",
-	"item_moon_shard",
-	"item_heart",--
-	"item_aghanims_shard",--bugged
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_4'] = {
-	'item_priest_outfit',
-	"item_mekansm",
-	"item_glimmer_cape",
-	"item_guardian_greaves",
-	"item_spirit_vessel",
-	"item_lotus_orb",
-	"item_gungir",--
-	--"item_holy_locket",
-	"item_ultimate_scepter",
-	"item_sheepstick",
-	"item_mystic_staff",
-	"item_ultimate_scepter_2",
-	"item_shivas_guard",
-	"item_aghanims_shard",--bugged
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-	'item_mage_outfit',
-	"item_glimmer_cape",
-
-    "item_pavise",
-    "item_solar_crest",--
-	"item_lotus_orb",--
-	"item_pipe",--
-
-	"item_spirit_vessel",--
-	"item_ultimate_scepter",
-	"item_shivas_guard",--
-	"item_mystic_staff",
-	"item_ultimate_scepter_2",
-    "item_moon_shard",
-	"item_aghanims_shard",--bugged
-	"item_sheepstick",--
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-	"item_travel_boots",
-	"item_quelling_blade",
-
-	"item_abyssal_blade",
-	"item_magic_wand",
-}
-
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+if sRole == 'pos_3' then
+    X.sBuyList = {'item_quelling_blade', 'item_tango', 'item_enchanted_mango', 'item_blight_stone',
+        'item_phase_boots', 'item_lifesteal', 'item_soul_ring', 'item_mask_of_madness',
+        'item_ultimate_scepter', 'item_echo_sabre', 'item_aghanims_shard', 'item_lesser_crit',
+        'item_harpoon', 'item_greater_crit',
+        -- Bot policy: Blessing and late BKB/Nullifier.
+        'item_ultimate_scepter_2', 'item_black_king_bar', 'item_nullifier'}
+    X.sSellList = {'item_echo_sabre', 'item_quelling_blade', 'item_lesser_crit', 'item_blight_stone',
+        'item_black_king_bar', 'item_soul_ring'}
+elseif sRole == 'pos_4' then
+    X.sBuyList = {'item_boots', 'item_ward_observer', 'item_ward_sentry', 'item_blood_grenade',
+        'item_tranquil_boots', 'item_magic_wand', 'item_soul_ring', 'item_ancient_janggo',
+        'item_cyclone', 'item_aghanims_shard', 'item_boots_of_bearing', 'item_ultimate_scepter',
+        -- Bot policy: late positioning and natural upgrades.
+        'item_force_staff', 'item_ultimate_scepter_2', 'item_wind_waker'}
+    X.sSellList = {'item_force_staff', 'item_magic_wand'}
+else
+    X.sBuyList = {'item_boots', 'item_tango',
+        'item_tranquil_boots', 'item_magic_wand', 'item_ancient_janggo', 'item_cyclone',
+        'item_aghanims_shard', 'item_boots_of_bearing',
+        -- Bot policy: Force Staff, Scepter and Wind Waker.
+        'item_force_staff', 'item_ultimate_scepter', 'item_ultimate_scepter_2', 'item_wind_waker'}
+    X.sSellList = {'item_ultimate_scepter', 'item_magic_wand'}
+end
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- D2PT spends level 10 on an ability; first talent comes at 11. Preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

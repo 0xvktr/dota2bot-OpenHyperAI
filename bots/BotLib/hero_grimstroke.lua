@@ -7,112 +7,37 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {--pos4,5
-                        ['t25'] = {0, 10},
-                        ['t20'] = {10, 0},
-                        ['t15'] = {10, 0},
-                        ['t10'] = {10, 0},
-}
-
-local tAllAbilityBuildList = {
-						{1,3,3,2,3,6,3,2,2,2,6,1,1,1,6},--pos4,5
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild(tAllAbilityBuildList)
-
-local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList)
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_mage_outfit",
-	"item_shadow_amulet",
-	"item_shivas_guard",
-	"item_cyclone",
-	"item_glimmer_cape",
-    "item_ultimate_scepter",
-	"item_sheepstick",
-    "item_aghanims_shard",
-	"item_bloodthorn",
-	"item_wind_waker",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_3'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_faerie_fire",
-	"item_circlet",
-
-	"item_magic_wand",
-	"item_boots",
-	"item_ring_of_basilius",
-	"item_arcane_boots",
-	"item_shivas_guard",--
-	"item_rod_of_atos",
-	"item_gungir",--
-	"item_cyclone",
-	"item_bloodstone",--
-	"item_black_king_bar",--
-	"item_aghanims_shard",
-	'item_heavens_halberd',--
-    "item_wind_waker",
-	"item_refresher",--
-    "item_travel_boots",
-    "item_travel_boots_2",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_4'] = {
-    "item_blood_grenade",
-	"item_priest_outfit",
-	"item_mekansm",
-	"item_glimmer_cape",
-	"item_guardian_greaves",
-    "item_ultimate_scepter",
-	"item_spirit_vessel",
---	"item_wraith_pact",
-	"item_shivas_guard",
-	"item_sheepstick",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-    "item_blood_grenade",
-	"item_mage_outfit",
-	"item_ancient_janggo",
-	"item_glimmer_cape",
-	"item_boots_of_bearing",
-	"item_pipe",
-    "item_ultimate_scepter",
-	"item_spirit_vessel",
---	"item_wraith_pact",
-	"item_shivas_guard",
-	"item_sheepstick",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-}
+-- Updated to 7.41f from D2PT: support/hard support; forced cores use pos 5 without wards.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/grimstroke')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Stroke of Fate, [2] Phantom's Embrace, [3] Ink Swell, [6] Soulbind.
+local nAbilityBuildList = {1,3,1,2,1,6,1,2,2,2,6,3,3,3,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- +65 Phantom's Embrace DPS
+    t15={0,10}, -- +25% Soulbind reflected spell damage
+    t20={0,10}, -- +80% Stroke of Fate damage
+    t25={10,0}, -- +70% Stroke of Fate speed/range
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {'item_double_branches','item_magic_stick','item_tango'}
+if sRole == 'pos_4' then table.insert(X.sBuyList,'item_ward_observer') end
+if sRole == 'pos_4' or sRole == 'pos_5' then table.insert(X.sBuyList,'item_ward_sentry') end
+local core = {'item_faerie_fire','item_blood_grenade','item_magic_wand','item_arcane_boots','item_blink',
+    'item_glimmer_cape','item_aghanims_shard','item_ultimate_scepter','item_sheepstick',
+    -- Bot policy: late cast range/cooldown utility and natural upgrades; six persistent slots.
+    'item_aether_lens','item_ultimate_scepter_2','item_overwhelming_blink','item_octarine_core'}
+for _, item in ipairs(core) do table.insert(X.sBuyList,item) end
+X.sSellList = {'item_ultimate_scepter','item_magic_wand'}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
+-- Fourth Phantom's Embrace point at 10, then the first talent at 11. Preserve custom progressions.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
 

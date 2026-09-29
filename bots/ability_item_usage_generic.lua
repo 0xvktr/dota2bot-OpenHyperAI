@@ -309,7 +309,8 @@ local function AbilityLevelUpComplement()
 			return
 		end
 
-		if not abilityToLevelup:IsHidden()
+		-- Attribute points are learnable despite the inherited ability being hidden.
+		if (not abilityToLevelup:IsHidden() or abilityName == 'special_bonus_attributes')
 		    and botLevel >= abilityToLevelup:GetHeroLevelRequiredToUpgrade()
 			and abilityToLevelup:CanAbilityBeUpgraded()
 			and abilityToLevelup:GetLevel() < abilityToLevelup:GetMaxLevel()

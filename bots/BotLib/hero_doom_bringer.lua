@@ -7,111 +7,50 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						{--pos2
-                            ['t25'] = {0, 10},
-                            ['t20'] = {0, 10},
-                            ['t15'] = {0, 10},
-                            ['t10'] = {10, 0},
-                        },
-                        {--pos3
-                            ['t25'] = {0, 10},
-                            ['t20'] = {0, 10},
-                            ['t15'] = {0, 10},
-                            ['t10'] = {10, 0},
-                        }
-}
-
-local tAllAbilityBuildList = {
-						{1,2,1,2,1,6,2,2,1,3,6,3,3,3,6},--pos2
-                        {2,1,2,3,2,6,2,1,1,1,6,3,3,3,6},--pos3
-}
-
-local nAbilityBuildList
-local nTalentBuildList
-
-if sRole == "pos_2"
-then
-    nAbilityBuildList   = tAllAbilityBuildList[1]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[1])
+-- Updated to 7.41f from D2PT: offlane and reviewed carry; forced other roles use offlane.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/doom_bringer')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Devour, [2] Scorched Earth, [3] Infernal Blade, [6] Doom.
+local nAbilityBuildList = {3,2,2,1,2,6,2,1,1,1,6,3,3,3,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- +10% magic resistance
+    t15={10,0}, -- +1.5% Infernal Blade max-health damage
+    t20={10,0}, -- +66 damage
+    t25={0,10}, -- Doom applies mute
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+if sRole == 'pos_1' then
+    X.sBuyList = {
+        'item_quelling_blade', 'item_gauntlets', 'item_double_branches', 'item_circlet', 'item_tango',
+        'item_bracer', 'item_magic_wand', 'item_phase_boots', 'item_radiance',
+        'item_aghanims_shard', 'item_blink', 'item_black_king_bar',
+        -- Bot policy: late Scepter/Blessing and natural upgrades.
+        'item_shivas_guard', 'item_ultimate_scepter', 'item_ultimate_scepter_2',
+        'item_overwhelming_blink', 'item_refresher', 'item_travel_boots',
+    }
+    X.sSellList = {'item_black_king_bar','item_magic_wand','item_shivas_guard','item_bracer'}
 else
-    nAbilityBuildList   = tAllAbilityBuildList[2]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[2])
+    X.sBuyList = {
+        'item_double_gauntlets', 'item_double_branches', 'item_magic_stick',
+        -- Condense the observed double Bracer to one; inventory upkeep clears the spare Gauntlets.
+        'item_bracer', 'item_magic_wand', 'item_phase_boots', 'item_ancient_janggo',
+        'item_blink', 'item_aghanims_shard', 'item_black_king_bar', 'item_shivas_guard',
+        -- Bot policy: Scepter/Blessing and late Refresher/Travel Boots.
+        'item_ultimate_scepter', 'item_ultimate_scepter_2', 'item_overwhelming_blink',
+        'item_refresher', 'item_travel_boots',
+    }
+    X.sSellList = {'item_black_king_bar','item_magic_wand','item_shivas_guard','item_bracer'}
 end
-
-local sUtility = {"item_crimson_guard", "item_pipe", "item_lotus_orb", "item_heavens_halberd"}
-local nUtility = sUtility[RandomInt(1, #sUtility)]
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_2'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_quelling_blade",
-    "item_magic_stick",
-
-    "item_bottle",
-    "item_magic_wand",
-    "item_helm_of_iron_will",
-    "item_boots",
-    "item_phase_boots",
-    "item_shivas_guard",--
-    "item_blink",
-    "item_black_king_bar",--
-    "item_octarine_core",--
-    "item_travel_boots",
-    "item_aghanims_shard",
-    "item_overwhelming_blink",--
-    "item_refresher",--
-    "item_travel_boots_2",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_3'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_quelling_blade",
-    "item_magic_stick",
-    "item_enchanted_mango",
-
-    "item_magic_wand",
-    "item_helm_of_iron_will",
-    "item_boots",
-    "item_phase_boots",
-    "item_shivas_guard",--
-    "item_blink",
-    "item_black_king_bar",--
-    "item_octarine_core",--
-    nUtility,--
-    "item_aghanims_shard",
-    "item_overwhelming_blink",--
-    "item_refresher",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_3']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_power_treads",
-	"item_quelling_blade",
-
-}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
+-- Fourth Devour point at level 10, then the first talent at 11. Preserve custom progressions.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
 
@@ -127,7 +66,6 @@ local Doom          = bot:GetAbilityByName('doom_bringer_doom')
 local DevourAbility1 = bot:GetAbilityByName('doom_bringer_empty1')
 local DevourAbility2 = bot:GetAbilityByName('doom_bringer_empty2')
 
-local DevourAncientTalent = bot:GetAbilityByName('special_bonus_unique_doom_2')
 
 local DevourDesire, DevourTarget
 local ScorchedEarthDesire
@@ -246,7 +184,7 @@ function X.ConsiderDevour()
         --         then
         --             if creep:IsAncientCreep()
         --             and creep:GetUnitName() == 'npc_dota_neutral_black_dragon'
-        --             and DevourAncientTalent:IsTrained()
+        --             and Devour:GetSpecialValueInt('can_target_ancient') == 1
         --             then
         --                 return BOT_ACTION_DESIRE_HIGH, creep
         --             end
@@ -308,7 +246,7 @@ function X.ConsiderDevour()
                 if nCreepTarget ~= nil
                 then
                     if nCreepTarget:IsAncientCreep()
-                    and DevourAncientTalent:IsTrained()
+                    and Devour:GetSpecialValueInt('can_target_ancient') == 1
                     then
                         return BOT_ACTION_DESIRE_HIGH, nCreepTarget
                     end

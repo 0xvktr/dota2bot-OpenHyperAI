@@ -16,156 +16,50 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						{--pos1
-							['t25'] = {10, 0},
-							['t20'] = {10, 0},
-							['t15'] = {0, 10},
-							['t10'] = {0, 10},
-						},
-						{--pos2
-							['t25'] = {0, 10},
-							['t20'] = {0, 10},
-							['t15'] = {10, 0},
-							['t10'] = {10, 0},
-						}
-}
-
-local tAllAbilityBuildList = {
-						{2,3,3,1,3,6,3,2,2,2,6,1,1,1,6},--pos1
-						{1,3,1,2,1,6,1,2,2,2,6,3,3,3,6},--pos2
-}
-
-local nAbilityBuildList
-local nTalentBuildList
-
-if sRole == "pos_2"
-then
-    nAbilityBuildList   = tAllAbilityBuildList[2]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[2])
+-- Updated to 7.41f from D2PT: mid and reviewed carry; forced other roles use mid.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/lina')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Dragon Slave, [2] Light Strike Array, [3] Fiery Soul, [6] Laguna Blade.
+local nAbilityBuildList = {1,3,1,3,1,6,1,3,3,2,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10=sRole == 'pos_1' and {0,10} or {10,0}, -- +25 damage / -3s Dragon Slave cooldown
+    t15=sRole == 'pos_1' and {0,10} or {10,0}, -- Fiery Soul magic resistance / +110 Light Strike Array damage
+    t20=sRole == 'pos_1' and {10,0} or {0,10}, -- Fiery Soul attack/move speed / -20s Laguna Blade cooldown
+    t25={10,0}, -- 150% critical attacks against Laguna Blade targets
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+if sRole == 'pos_1' then
+    X.sBuyList = {
+        'item_magic_wand','item_faerie_fire','item_faerie_fire','item_null_talisman','item_falcon_blade',
+        'item_maelstrom','item_travel_boots','item_dragon_lance','item_mjollnir','item_hurricane_pike','item_black_king_bar',
+        -- Bot policy: the observed critical/sustain continuation replaces the early Falcon Blade.
+        'item_lesser_crit','item_greater_crit','item_aghanims_shard','item_satanic',
+        'item_ultimate_scepter','item_ultimate_scepter_2','item_moon_shard',
+    }
+    X.sSellList = {'item_hurricane_pike','item_magic_wand','item_black_king_bar','item_null_talisman','item_satanic','item_falcon_blade'}
 else
-    nAbilityBuildList   = tAllAbilityBuildList[1]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[1])
+    -- Omit the observed ward: core bots do not run ward placement.
+    X.sBuyList = {
+        'item_double_branches','item_double_branches','item_tango','item_faerie_fire',
+        'item_bottle','item_null_talisman','item_magic_wand','item_travel_boots','item_kaya','item_ultimate_scepter',
+        'item_yasha_and_kaya','item_blink','item_black_king_bar',
+        -- Bot policy: consume Scepter, then late control/burst and natural boot upgrade.
+        'item_ultimate_scepter_2','item_sheepstick','item_ethereal_blade','item_aghanims_shard','item_travel_boots_2',
+    }
+    X.sSellList = {'item_blink','item_bottle','item_black_king_bar','item_magic_wand','item_sheepstick','item_null_talisman'}
 end
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_crystal_maiden_outfit",
-	"item_cyclone",
-	"item_force_staff",
-	"item_hurricane_pike",
-	"item_orchid",
-	"item_black_king_bar",
-	"item_bloodthorn",
-	"item_aghanims_shard",
-	"item_ultimate_scepter",
-	"item_wind_waker",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-	"item_monkey_king_bar",
-}
-
-sRoleItemsBuyList['pos_2'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_faerie_fire",
-
-	'item_null_talisman',
-    "item_bottle",
-	'item_null_talisman',
-    "item_magic_wand",
-    "item_boots",
-
-	"item_arcane_boots",
-	"item_orchid",
-	"item_maelstrom",
-	"item_mjollnir",--
-	"item_black_king_bar",--
-	"item_bloodthorn",--
-	"item_invis_sword",
-	"item_silver_edge",--
-	"item_sheepstick",--
-	"item_moon_shard",
-	"item_travel_boots",
-	"item_travel_boots_2",--
-	"item_ultimate_scepter",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_3'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_faerie_fire",
-
-	"item_magic_wand",
-	"item_null_talisman",
-	"item_boots",
-	"item_travel_boots",
-	"item_aether_lens",--
-	"item_aghanims_shard",
-	"item_ultimate_scepter",
-	"item_black_king_bar",--
-	"item_octarine_core",--
-	"item_sheepstick",--
-	"item_ultimate_scepter_2",
-	"item_travel_boots_2",--
-	"item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_4'] = {
-	"item_priest_outfit",
-	"item_mekansm",
-	"item_glimmer_cape",
-	"item_aghanims_shard",
-	"item_guardian_greaves",
-	"item_spirit_vessel",
---	"item_wraith_pact",
-	"item_ultimate_scepter",
-	"item_shivas_guard",
-	"item_silver_edge",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-	"item_sheepstick",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-    "item_blood_grenade",
-	"item_mage_outfit",
-	"item_ancient_janggo",
-	"item_glimmer_cape",
-	"item_boots_of_bearing",
-	"item_pipe",
-    "item_ultimate_scepter",
-	"item_cyclone",
---	"item_wraith_pact",
-	"item_shivas_guard",
-	"item_sheepstick",
-	"item_silver_edge",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_null_talisman",
-
-	"item_silver_edge",
-	"item_glimmer_cape",
-}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_mage' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
+-- First Light Strike Array point at 10, then the first talent at 11. Preserve custom progressions.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 X['bDeafaultAbility'] = false
-X['bDeafaultItem'] = true
-
+X['bDeafaultItem'] = false
 
 function X.MinionThink(hMinionUnit)
 
@@ -211,7 +105,6 @@ local abilityE = bot:GetAbilityByName( sAbilityList[3] )
 local abilityR = bot:GetAbilityByName( sAbilityList[6] )
 local FlameCloak = bot:GetAbilityByName( 'lina_flame_cloak' )
 local talent2 = bot:GetAbilityByName( sTalentList[2] )
-local talent4 = bot:GetAbilityByName( sTalentList[4] )
 local talent7 = bot:GetAbilityByName( sTalentList[7] )
 
 local castQDesire, castQLocation
@@ -222,7 +115,6 @@ local FlameCloakDesire
 
 local nKeepMana, nMP, nHP, nLV, hEnemyList, hAllyList, botTarget, sMotive
 local aetherRange = 0
-local talent4Damage = 0
 
 
 
@@ -234,7 +126,6 @@ function X.SkillsComplement()
 
 	nKeepMana = 400
 	aetherRange = 0
-	talent4Damage = 0
 	nLV = bot:GetLevel()
 	nMP = bot:GetMana()/bot:GetMaxMana()
 	nHP = bot:GetHealth()/bot:GetMaxHealth()
@@ -247,7 +138,6 @@ function X.SkillsComplement()
 	local aether = J.IsItemAvailable( "item_aether_lens" )
 	if aether ~= nil then aetherRange = 250 end
 --	if talent2:IsTrained() then aetherRange = aetherRange + talent2:GetSpecialValueInt( "value" ) end
-	if talent4:IsTrained() then talent4Damage = talent4Damage + talent4:GetSpecialValueInt( "value" ) end
 
 	FlameCloakDesire = X.ConsiderFlameCloak()
 	if (FlameCloakDesire > 0)
@@ -514,7 +404,8 @@ function X.ConsiderW()
 	local nCastRange = abilityW:GetCastRange() + aetherRange
 	local nCastPoint = abilityW:GetCastPoint() + 0.5
 	local nManaCost = abilityW:GetManaCost()
-	local nDamage = abilityW:GetSpecialValueInt( 'light_strike_array_damage' ) + talent4Damage
+	-- The engine special includes the current Light Strike Array damage talent.
+	local nDamage = abilityW:GetSpecialValueInt('light_strike_array_damage')
 	local nDamageType = DAMAGE_TYPE_MAGICAL
 	local nRadius 	 = abilityW:GetSpecialValueInt( "light_strike_array_aoe" )
 

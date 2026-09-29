@@ -9,89 +9,31 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {0, 10},
-						['t20'] = {10, 0},
-						['t15'] = {0, 10},
-						['t10'] = {10, 0},
+-- Updated to 7.41f from D2PT: mid; forced other roles use this build.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/ember_spirit')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Chains, [2] Sleight, [3] Flame Guard, [6] Fire Remnant.
+local nAbilityBuildList = {3,2,3,1,3,6,3,1,1,1,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- +165 Flame Guard barrier
+    t15={0,10}, -- +100% Flame Guard DPS
+    t20={0,10}, -- +50 Sleight of Fist hero damage
+    t25={0,10}, -- 2 Sleight of Fist charges
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    'item_tango', 'item_double_branches', 'item_double_branches', 'item_faerie_fire',
+    'item_bottle', 'item_magic_wand', 'item_urn_of_shadows', 'item_phase_boots',
+    'item_spirit_vessel', 'item_kaya', 'item_aghanims_shard', 'item_black_king_bar',
+    'item_ultimate_scepter', 'item_kaya_and_sange', 'item_shivas_guard', 'item_refresher',
+    -- Bot policy: consume Scepter, then add cooldown utility within six slots.
+    'item_ultimate_scepter_2', 'item_octarine_core',
 }
-
-local tAllAbilityBuildList = {
-						{3,2,2,3,2,6,2,1,1,1,1,3,3,6,6},--pos2
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_2'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_faerie_fire",
-    "item_quelling_blade",
-
-	"item_bottle",
-    "item_magic_wand",
-	"item_boots",
-    "item_phase_boots",
-	"item_mage_slayer",
-    "item_maelstrom",
-	"item_kaya_and_sange",--
-    "item_black_king_bar",--
-    "item_shivas_guard",--
-    "item_ultimate_scepter",
-    "item_mjollnir",--
-    "item_travel_boots",
-    "item_aghanims_shard",
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-    "item_octarine_core",--
-    "item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_3'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_faerie_fire",
-    "item_quelling_blade",
-
-    "item_magic_wand",
-	"item_boots",
-    "item_phase_boots",
-	"item_mage_slayer",
-    "item_maelstrom",
-	"item_kaya_and_sange",--
-    "item_black_king_bar",--
-    "item_shivas_guard",--
-    "item_ultimate_scepter",
-    "item_mjollnir",--
-    "item_travel_boots",
-    "item_aghanims_shard",
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-    "item_octarine_core",--
-    "item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_3'] 
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_3']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-	"item_ultimate_scepter",
-	"item_magic_wand",
-
-	"item_cyclone",
-	"item_magic_wand",
-	
-	"item_travel_boots",
-	"item_quelling_blade",
+X.sSellList = {
+    'item_black_king_bar', 'item_bottle',
+    'item_ultimate_scepter', 'item_magic_wand',
+    'item_shivas_guard', 'item_spirit_vessel',
 }
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_mid' }, {} end
@@ -99,6 +41,10 @@ if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList']
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Chains at level 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

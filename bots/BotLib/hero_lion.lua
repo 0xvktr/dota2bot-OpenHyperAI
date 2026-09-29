@@ -16,125 +16,59 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {10, 0},
-						['t20'] = {10, 0},
-						['t15'] = {10, 0},
-						['t10'] = {0, 10},
-}
-
-local tAllAbilityBuildList = {
-						{1,3,1,2,3,6,1,1,3,3,6,2,2,2,6},
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_4'] = {
-	"item_blood_grenade",
-	"item_priest_outfit",
-	"item_mekansm",
-	"item_glimmer_cape",--
-	"item_blink",
-	"item_guardian_greaves",--
-	"item_aghanims_shard",
-	"item_spirit_vessel",--
-	"item_ultimate_scepter",
---	"item_wraith_pact",
-	"item_shivas_guard",--
-	"item_moon_shard",
-	"item_octarine_core",--
-	"item_overwhelming_blink",--
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-    "item_blood_grenade",
-	"item_mage_outfit",
-	"item_ancient_janggo",
-	"item_glimmer_cape",
-	"item_boots_of_bearing",
-	"item_pipe",
-	"item_blink",
-    "item_ultimate_scepter",
-	-- "item_cyclone",
---	"item_wraith_pact",
-	"item_shivas_guard",
-	"item_sheepstick",
-	"item_moon_shard",
-	"item_overwhelming_blink",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_1'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_faerie_fire",
-
-    "item_double_null_talisman",
-    "item_power_treads",
-    "item_magic_wand",
-    "item_kaya",
-    "item_ultimate_scepter",
-    "item_kaya_and_sange",--
-	"item_force_staff",
-	"item_hurricane_pike",--
-	"item_orchid",
-	"item_aghanims_shard",
-	"item_bloodthorn",--
-	"item_sheepstick",--
-	"item_moon_shard",
-	"item_octarine_core",--
-	"item_overwhelming_blink",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_2'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_faerie_fire",
-
-    "item_double_null_talisman",
-    "item_power_treads",
-    "item_magic_wand",
-    "item_kaya",
-    "item_ultimate_scepter",
-    "item_kaya_and_sange",--
-    "item_aether_lens",
-    "item_black_king_bar",--
-    "item_shivas_guard",--
-    "item_aghanims_shard",
-	"item_octarine_core",--
-    -- "item_sheepstick",--
-    "item_moon_shard",
-    "item_ultimate_scepter_2",
-    "item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_2']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-	"item_octarine_core",--
-	"item_hand_of_midas",
-}
+-- Updated to 7.41f from D2PT: hard support/support/mid; forced other roles use hard support.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/lion')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Earth Spike, [2] Hex, [3] Mana Drain, [6] Finger of Death.
+local nAbilityBuildList = sRole == 'pos_2'
+    and {1,3,1,3,1,6,1,2,3,3,6,2,2,2,6}
+    or {1,3,1,2,1,6,1,3,3,3,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- +20 movement speed
+    t15=sRole == 'pos_2' and {10,0} or {0,10}, -- Hell and Back amplification / -2s Hex cooldown
+    t20=sRole == 'pos_5' and {10,0} or {0,10}, -- Earth Spike cone / +20 Finger damage per kill
+    t25=sRole == 'pos_5' and {10,0} or {0,10}, -- +600 Earth Spike range / +250 AoE Hex
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+if sRole == 'pos_2' then
+    -- Omit the observed ward: core bots do not run ward placement.
+    X.sBuyList = {
+        'item_double_branches','item_circlet','item_circlet','item_tango','item_faerie_fire',
+        'item_magic_wand','item_power_treads','item_blink','item_echo_sabre','item_invis_sword',
+        'item_lesser_crit','item_black_king_bar','item_harpoon','item_greater_crit',
+        -- Bot policy: natural invisibility/Blink upgrades and consumed Scepter preserve six slots.
+        'item_silver_edge','item_ultimate_scepter','item_ultimate_scepter_2','item_overwhelming_blink',
+    }
+    X.sSellList = {'item_black_king_bar','item_magic_wand'}
+else
+    if sRole == 'pos_4' then
+        -- Dispenser's 1+1 charges do not identify ward types; bot policy buys one of each.
+        X.sBuyList = {'item_boots','item_ward_observer','item_ward_sentry','item_blood_grenade'}
+    else
+        X.sBuyList = {'item_double_branches','item_magic_stick','item_tango','item_faerie_fire','item_blood_grenade'}
+        if sRole == 'pos_5' then table.insert(X.sBuyList,'item_ward_sentry') end
+    end
+    local core = {'item_magic_wand','item_tranquil_boots','item_blink','item_glimmer_cape','item_force_staff','item_aether_lens'}
+    for _, item in ipairs(core) do table.insert(X.sBuyList,item) end
+    if sRole ~= 'pos_4' then table.insert(X.sBuyList,'item_aghanims_shard') end
+    -- Bot policy: late Finger upgrades/disable and natural Blink upgrade fit six persistent slots.
+    local late = {'item_ultimate_scepter','item_ultimate_scepter_2','item_sheepstick','item_overwhelming_blink'}
+    for _, item in ipairs(late) do table.insert(X.sBuyList,item) end
+    if sRole == 'pos_4' then table.insert(X.sBuyList,'item_aghanims_shard') end
+    X.sSellList = {'item_aether_lens','item_magic_wand'}
+end
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_mage' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
+-- Fourth Mana Drain point at 10, then the first talent at 11. Preserve custom progressions.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 X['bDeafaultAbility'] = false
-X['bDeafaultItem'] = true
+X['bDeafaultItem'] = false
 
 function X.MinionThink(hMinionUnit)
 
@@ -179,8 +113,7 @@ local abilityW = bot:GetAbilityByName( sAbilityList[2] )
 local abilityE = bot:GetAbilityByName( sAbilityList[3] )
 local abilityR = bot:GetAbilityByName( sAbilityList[6] )
 local talent4 = bot:GetAbilityByName( sTalentList[4] )
-local talent5 = bot:GetAbilityByName( sTalentList[5] )
-local talent8 = bot:GetAbilityByName( sTalentList[8] )
+local HexAoETalent = bot:GetAbilityByName('special_bonus_unique_lion_4')
 
 local castQDesire, castQLocation
 local castWDesire, castWTarget
@@ -261,7 +194,7 @@ function X.SkillsComplement()
 
 		J.SetQueuePtToINT( bot, true )
 
-		if talent8:IsTrained()
+		if HexAoETalent:IsTrained()
 		then
 			bot:ActionQueue_UseAbilityOnLocation( abilityW, castWTarget )
 		else
@@ -531,12 +464,12 @@ function X.ConsiderW()
 	for _, npcEnemy in pairs( nInBonusEnemyList )
 	do
 		if J.IsValidHero( npcEnemy )
-			and ( J.CanCastOnTargetAdvanced( npcEnemy ) or talent8:IsTrained() )
+			and ( J.CanCastOnTargetAdvanced( npcEnemy ) or HexAoETalent:IsTrained() )
 			and J.CanCastOnNonMagicImmune( npcEnemy )
 		then
 			if npcEnemy:IsChanneling()
 			then
-				if talent8:IsTrained()
+				if HexAoETalent:IsTrained()
 				then
 					return BOT_ACTION_DESIRE_HIGH, npcEnemy:GetLocation(), 'W-打断吟唱:'..J.Chat.GetNormName( npcEnemy )
 				else
@@ -547,7 +480,7 @@ function X.ConsiderW()
 			if npcEnemy:IsCastingAbility()
 				and J.IsInRange( bot, npcEnemy, nCastRange + 50 )
 			then
-				if talent8:IsTrained()
+				if HexAoETalent:IsTrained()
 				then
 					return BOT_ACTION_DESIRE_HIGH, npcEnemy:GetLocation(), 'W-打断施法:'..J.Chat.GetNormName( npcEnemy )
 				else
@@ -563,7 +496,7 @@ function X.ConsiderW()
 		and ( #nInBonusEnemyList >= 2 or #hAllyList >= 3 )
 	then
 
-		if talent8:IsTrained()
+		if HexAoETalent:IsTrained()
 		then
 			local nAoeLoc = J.GetAoeEnemyHeroLocation( bot, nCastRange, 250, 2 )
 			if nAoeLoc ~= nil
@@ -579,7 +512,7 @@ function X.ConsiderW()
 		do
 			if J.IsValid( npcEnemy )
 				and J.CanCastOnNonMagicImmune( npcEnemy )
-				and ( J.CanCastOnTargetAdvanced( npcEnemy ) or talent8:IsTrained() )
+				and ( J.CanCastOnTargetAdvanced( npcEnemy ) or HexAoETalent:IsTrained() )
 				and not J.IsDisabled( npcEnemy )
 				and not J.IsTaunted( npcEnemy )
 				and not npcEnemy:IsDisarmed()
@@ -596,7 +529,7 @@ function X.ConsiderW()
 		if npcMostDangerousEnemy ~= nil
 			and J.IsInRange( bot, npcMostDangerousEnemy, nCastRange + 50 )
 		then
-			if talent8:IsTrained()
+			if HexAoETalent:IsTrained()
 			then
 				return BOT_ACTION_DESIRE_HIGH, npcMostDangerousEnemy:GetLocation(), 'W-团战:'..J.Chat.GetNormName( npcMostDangerousEnemy )
 			else
@@ -612,13 +545,13 @@ function X.ConsiderW()
 	then
 		if J.IsValidHero( botTarget )
 			and J.CanCastOnNonMagicImmune( botTarget )
-			and ( J.CanCastOnTargetAdvanced( botTarget ) or talent8:IsTrained() )
+			and ( J.CanCastOnTargetAdvanced( botTarget ) or HexAoETalent:IsTrained() )
 			and J.IsInRange( bot, botTarget, nCastRange + 150 )
 			and not J.IsDisabled( botTarget )
 			and not J.IsTaunted( botTarget )
 			and not botTarget:IsDisarmed()
 		then
-			if talent8:IsTrained()
+			if HexAoETalent:IsTrained()
 			then
 				return BOT_ACTION_DESIRE_HIGH, botTarget:GetLocation(), 'W-进攻:'..J.Chat.GetNormName( botTarget )
 			else
@@ -637,12 +570,12 @@ function X.ConsiderW()
 		do
 			if J.IsValid( npcEnemy )
 				and J.CanCastOnNonMagicImmune( npcEnemy )
-				and ( J.CanCastOnTargetAdvanced( npcEnemy ) or talent8:IsTrained() )
+				and ( J.CanCastOnTargetAdvanced( npcEnemy ) or HexAoETalent:IsTrained() )
 				and not J.IsDisabled( npcEnemy )
 				and not J.IsTaunted( npcEnemy )
 				and not npcEnemy:IsDisarmed()
 			then
-				if talent8:IsTrained()
+				if HexAoETalent:IsTrained()
 				then
 					return BOT_ACTION_DESIRE_HIGH, npcEnemy:GetLocation(), 'W-保护自己:'..J.Chat.GetNormName( npcEnemy )
 				else
@@ -662,12 +595,12 @@ function X.ConsiderW()
 				and ( bot:WasRecentlyDamagedByHero( npcEnemy, 4.0 )
 						or GetUnitToUnitDistance( bot, npcEnemy ) <= 600 )
 				and J.CanCastOnNonMagicImmune( npcEnemy )
-				and ( J.CanCastOnTargetAdvanced( npcEnemy ) or talent8:IsTrained() )
+				and ( J.CanCastOnTargetAdvanced( npcEnemy ) or HexAoETalent:IsTrained() )
 				and not J.IsDisabled( npcEnemy )
 				and not J.IsTaunted( npcEnemy )
 				and not npcEnemy:IsDisarmed()
 			then
-				if talent8:IsTrained()
+				if HexAoETalent:IsTrained()
 				then
 					return BOT_ACTION_DESIRE_HIGH, npcEnemy:GetLocation(), 'W-撤退:'..J.Chat.GetNormName( npcEnemy )
 				else
@@ -685,7 +618,7 @@ function X.ConsiderW()
 			and not J.IsDisabled( botTarget )
 			and not botTarget:IsDisarmed()
 		then
-			if talent8:IsTrained()
+			if HexAoETalent:IsTrained()
 			then
 				return BOT_ACTION_DESIRE_HIGH, botTarget:GetLocation(), 'W-肉山:'..J.Chat.GetNormName( botTarget )
 			else
@@ -1003,8 +936,8 @@ end
 
 function X.GetAbilityRDamageBonus()
 
-	local nTalantDamage = talent5:IsTrained() and talent5:GetSpecialValueInt( 'value' ) or 0
-	local nDamageBonus = abilityR:GetSpecialValueInt( 'damage_per_kill' ) + nTalantDamage
+	-- The engine special includes the current damage-per-kill talent.
+	local nDamageBonus = abilityR:GetSpecialValueInt('damage_per_kill')
 	local sModifierName = "modifier_lion_finger_of_death_kill_counter"
 	local nModifierCount = J.GetModifierCount( bot, sModifierName )
 	

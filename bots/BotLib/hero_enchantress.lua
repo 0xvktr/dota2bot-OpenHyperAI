@@ -7,138 +7,64 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-                        {--pos3
-                            ['t25'] = {0, 10},
-                            ['t20'] = {0, 10},
-                            ['t15'] = {0, 10},
-                            ['t10'] = {10, 0},
-                        },
-                        {--pos4,5
-                            ['t25'] = {0, 10},
-                            ['t20'] = {0, 10},
-                            ['t15'] = {0, 10},
-                            ['t10'] = {10, 0},
-                        }
-}
-
-local tAllAbilityBuildList = {
-                        {1,3,1,3,1,6,1,2,3,3,6,2,2,2,6},--pos3
-						{2,3,2,3,2,6,2,1,1,1,1,6,3,3,6},--pos4,5
-}
-
-local nAbilityBuildList = tAllAbilityBuildList[1]
-if sRole == 'pos_3' then nAbilityBuildList = tAllAbilityBuildList[1] end
-if sRole == 'pos_4' then nAbilityBuildList = tAllAbilityBuildList[2] end
-if sRole == 'pos_5' then nAbilityBuildList = tAllAbilityBuildList[2] end
-
-local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[1]) 
-if sRole == 'pos_3' then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[1]) end
-if sRole == 'pos_4' then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[2]) end
-if sRole == 'pos_5' then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[2]) end
-
-local sUtility = {"item_heavens_halberd", "item_crimson_guard"}
-local nUtility = sUtility[RandomInt(1, #sUtility)]
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_3'] = {
-    "item_tango",
-    "item_magic_stick",
-    "item_double_branches",
-    "item_circlet",
-
-    "item_magic_wand",
-    "item_bracer",
-    "item_power_treads",
-    "item_mage_slayer",--
-    "item_force_staff",
-    "item_hurricane_pike",--
-    nUtility,--
-    "item_pipe",--
-    "item_assault",--
-    "item_moon_shard",
-    "item_travel_boots_2",--
-    "item_aghanims_shard",
-    "item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_4'] = {
-    "item_double_tango",
-    "item_double_branches",
-    "item_faerie_fire",
-    "item_blood_grenade",
-
-    "item_magic_wand",
-    "item_boots",
-    "item_force_staff",
-    "item_guardian_greaves",--
-    "item_hurricane_pike",--
-    "item_aghanims_shard",
-    "item_mage_slayer",--
-    "item_moon_shard",--
-    "item_bloodthorn",--
-    "item_sheepstick",--
-    "item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-    "item_double_tango",
-    "item_double_branches",
-    "item_faerie_fire",
-    "item_blood_grenade",
-
-    "item_magic_wand",
-    "item_boots",
-    "item_force_staff",
-    "item_pavise",
-    "item_pipe",
-    "item_solar_crest",--
-    "item_hurricane_pike",--
-    "item_aghanims_shard",
-    "item_boots_of_bearing",--
-    "item_moon_shard",--
-    "item_bloodthorn",--
-    "item_sheepstick",--
-    "item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_ranged_carry_outfit",
-	"item_dragon_lance",
-	"item_point_booster",
-    "item_force_staff",
-	"item_hurricane_pike", --
-	"item_black_king_bar",--
-	"item_travel_boots",
-    "item_mage_slayer",--
-	"item_bloodthorn",--
-	"item_sheepstick",--
-    "item_aghanims_shard",
-	"item_moon_shard",
-	"item_travel_boots_2",--
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_ultimate_scepter",
-	"item_magic_wand",
-
-	"item_cyclone",
-	"item_magic_wand",
-
-}
+-- Updated to 7.41f from D2PT: offlane and both supports; forced carry/mid use pos 5.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/enchantress')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Impetus, [2] Enchant, [3] Nature's Attendants, [6] Untouchable.
+local nAbilityBuildList = sRole == 'pos_3'
+    and {1,3,1,3,1,6,1,2,2,2,6,3,3,2,6}
+    or {3,2,2,3,2,6,2,3,3,1,6,1,1,1,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- +5 Enchanted creep armor
+    t15={0,10}, -- +30 Enchanted creep attack speed
+    t20={10,0}, -- +150 health and +25 damage to Enchanted creeps
+    t25={0,10}, -- +6.5% Impetus damage
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+if sRole == 'pos_3' then
+    X.sBuyList = {
+        'item_tango', 'item_double_branches', 'item_circlet', 'item_circlet', 'item_faerie_fire',
+        'item_null_talisman', 'item_magic_wand', 'item_power_treads', 'item_ultimate_scepter',
+        -- Prefer the robust Pike progression over the less-played Orchid branch.
+        'item_dragon_lance', 'item_blink', 'item_force_staff', 'item_aghanims_shard',
+        'item_hurricane_pike', 'item_black_king_bar',
+        -- Bot policy: consume Scepter, upgrade Blink, then add late disable/damage.
+        'item_ultimate_scepter_2', 'item_swift_blink', 'item_sheepstick', 'item_moon_shard',
+    }
+    X.sSellList = {'item_hurricane_pike','item_null_talisman','item_black_king_bar','item_magic_wand'}
+elseif sRole == 'pos_4' then
+    X.sBuyList = {
+        'item_tango', 'item_branches', 'item_circlet', 'item_magic_stick',
+        'item_ward_observer', 'item_ward_sentry', 'item_blood_grenade',
+        'item_magic_wand', 'item_power_treads', 'item_ultimate_scepter',
+        'item_dragon_lance', 'item_force_staff', 'item_aghanims_shard', 'item_orchid', 'item_hurricane_pike',
+        -- Bot policy: upgrade Orchid, protect attacks, and add late disable within six slots.
+        'item_bloodthorn', 'item_black_king_bar', 'item_ultimate_scepter_2', 'item_sheepstick', 'item_moon_shard',
+    }
+    X.sSellList = {'item_black_king_bar','item_magic_wand'}
+else
+    X.sBuyList = {
+        'item_tango', 'item_double_branches', 'item_circlet',
+        'item_faerie_fire', 'item_blood_grenade',
+        'item_magic_wand', 'item_power_treads', 'item_ultimate_scepter',
+        'item_force_staff', 'item_dragon_lance', 'item_aghanims_shard', 'item_hurricane_pike', 'item_witch_blade',
+        -- Bot policy: natural upgrade, attack protection, and late disable within six slots.
+        'item_revenants_brooch', 'item_black_king_bar', 'item_ultimate_scepter_2', 'item_sheepstick', 'item_moon_shard',
+    }
+    if sRole == 'pos_5' then table.insert(X.sBuyList, 4, 'item_ward_sentry') end
+    X.sSellList = {'item_black_king_bar','item_magic_wand'}
+end
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- D2PT takes a basic at level 10, then the first talent; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

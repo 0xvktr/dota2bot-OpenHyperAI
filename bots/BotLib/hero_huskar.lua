@@ -16,68 +16,37 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {10, 0},
-						['t20'] = {10, 0},
-						['t15'] = {0, 10},
-						['t10'] = {0, 10},
+-- Updated to 7.41f from D2PT: mid only; forced other roles use mid.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/huskar')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Inner Fire, [2] Burning Spear, [3] Berserker's Blood, [6] Life Break.
+local nAbilityBuildList = {2,3,3,2,3,6,3,1,2,2,6,1,1,1,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- +0.75s Inner Fire duration
+    t15={10,0}, -- +12% lifesteal
+    t20={0,10}, -- +30% Berserker's Blood regeneration
+    t25={10,0}, -- +22% Life Break damage
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    'item_double_gauntlets','item_gauntlets','item_tango','item_faerie_fire',
+    'item_helm_of_iron_will','item_magic_wand','item_armlet','item_power_treads',
+    'item_blink','item_black_king_bar','item_aghanims_shard','item_ultimate_scepter',
+    -- Bot policy: consume Scepter, then reach/sustain and a natural Blink upgrade.
+    'item_ultimate_scepter_2','item_dragon_lance','item_hurricane_pike','item_satanic',
+    'item_overwhelming_blink','item_moon_shard',
 }
-
-local tAllAbilityBuildList = {
-						{1,3,2,2,3,6,3,3,2,2,1,6,1,1,6},--pos2
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_2'] = {
-	"item_tango",
-	"item_faerie_fire",
-	"item_gauntlets",
-	"item_gauntlets",
-	"item_gauntlets",
-
-	"item_boots",
-	"item_armlet",
-	"item_black_king_bar",--
-	"item_sange",
-	"item_ultimate_scepter",
-	"item_heavens_halberd",--
-	"item_travel_boots",
-	"item_satanic",--
-	"item_aghanims_shard",
-	"item_assault",--
-	"item_travel_boots_2",--
-	"item_ultimate_scepter_2",
-	"item_sheepstick",--
-	"item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_2']
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-}
+X.sSellList = {'item_satanic','item_magic_wand'}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_huskar' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
+-- Fourth Burning Spear point at 10, then the first talent at 11. Preserve custom progressions.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
 
@@ -678,6 +647,5 @@ end
 
 return X
 -- dota2jmz@163.com QQ:2462331592..
-
 
 

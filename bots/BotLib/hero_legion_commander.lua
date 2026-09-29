@@ -8,71 +8,35 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {10, 0},
-						['t20'] = {10, 0},
-						['t15'] = {10, 0},
-						['t10'] = {0, 10},
-}
-
-local tAllAbilityBuildList = {
-						{1,3,1,2,1,6,1,3,3,3,6,2,2,2,6},--pos3
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local utilityItems = {"item_crimson_guard", "item_pipe", "item_heavens_halberd"}
-local sCrimsonPipeHalberd = utilityItems[RandomInt(1, #utilityItems)]
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_3'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_quelling_blade",
-
-	"item_magic_wand",
-	"item_bracer",
-	"item_phase_boots",
-	"item_blade_mail",
-	"item_blink",
-	"item_black_king_bar",--
-	sCrimsonPipeHalberd,--
-	"item_assault",--
-	"item_greater_crit",--
-	"item_overwhelming_blink",--
-	"item_travel_boots_2",--
-	"item_moon_shard",
-	"item_aghanims_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_3']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-}
-
+-- Updated to 7.41f from D2PT: offlane; forced other roles use offlane.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/legion_commander')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Overwhelming Odds, [2] Press the Attack, [3] Moment of Courage, [6] Duel.
+local nAbilityBuildList = {1,3,1,2,1,6,1,3,3,3,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- -2s Overwhelming Odds cooldown
+    t15={10,0}, -- +35 Overwhelming Odds damage per hero
+    t20={0,10}, -- +0.75s Duel duration
+    t25={10,0}, -- Duel victory advances cooldown by 30s
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+-- Condense the observed double Bracer to one temporary lane item.
+X.sBuyList = {'item_quelling_blade','item_gauntlets','item_double_branches','item_circlet','item_tango',
+    'item_bracer','item_magic_wand','item_phase_boots','item_blink','item_blade_mail','item_black_king_bar',
+    'item_aghanims_shard','item_assault','item_lesser_crit',
+    -- Bot policy: finish damage and Blink upgrades, then consumed late upgrades.
+    'item_greater_crit','item_overwhelming_blink','item_ultimate_scepter','item_ultimate_scepter_2','item_moon_shard'}
+X.sSellList = {'item_blade_mail','item_quelling_blade','item_black_king_bar','item_magic_wand','item_assault','item_bracer'}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_tank' }, {"item_power_treads", 'item_quelling_blade'} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
+-- Moment of Courage at 10, first talent at 11; preserve custom builds.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
 
@@ -119,7 +83,6 @@ local abilityW = bot:GetAbilityByName( sAbilityList[2] )
 local abilityE = bot:GetAbilityByName( sAbilityList[3] )
 local abilityR = bot:GetAbilityByName( sAbilityList[6] )
 local talent2 = bot:GetAbilityByName( sTalentList[2] )
-local talent5 = bot:GetAbilityByName( sTalentList[5] )
 
 local castQDesire, castQTarget
 local castWDesire, castWTarget
@@ -161,7 +124,7 @@ function X.SkillsComplement()
 			and abilityW:IsFullyCastable()
 			and bot:GetMana() > abilityW:GetManaCost() + abilityR:GetManaCost()
 		then
-			if talent5:IsTrained()
+			if J.CheckBitfieldFlag(abilityW:GetBehavior(), ABILITY_BEHAVIOR_POINT)
 			then
 				bot:ActionQueue_UseAbilityOnLocation( abilityW, bot:GetLocation() )
 			else
@@ -202,7 +165,7 @@ function X.SkillsComplement()
 
 		J.SetQueuePtToINT( bot, true )
 
-		if talent5:IsTrained()
+		if J.CheckBitfieldFlag(abilityW:GetBehavior(), ABILITY_BEHAVIOR_POINT)
 		then
 			bot:ActionQueue_UseAbilityOnLocation( abilityW, castWTarget:GetLocation() )
 		else

@@ -16,130 +16,57 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						{--pos2
-							['t25'] = {10, 0},
-							['t20'] = {0, 10},
-							['t15'] = {10, 0},
-							['t10'] = {0, 10},
-						},
-						{--pos3
-							['t25'] = {10, 0},
-							['t20'] = {0, 10},
-							['t15'] = {10, 0},
-							['t10'] = {0, 10},
-						},
-}
-
-local tAllAbilityBuildList = {
-	{1,2,1,3,3,6,3,3,1,1,6,2,2,2,6},--pos2
-	{1,2,3,3,3,6,3,1,1,1,6,2,2,2,6},--pos3
-}
-
-local nAbilityBuildList
-local nTalentBuildList
-
-if sRole == "pos_2"
-then
-    nAbilityBuildList   = tAllAbilityBuildList[1]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[1])
+-- Updated to 7.41f from D2PT: carry, mid and offlane; forced supports use offlane.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/dragon_knight')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Breathe Fire, [2] Dragon Tail, [3] Wyrm's Wrath, [6] Elder Dragon Form.
+local nAbilityBuildList = sRole == 'pos_2'
+    and {1,3,1,2,1,6,1,3,3,3,6,2,2,2,6}
+    or {1,2,1,3,1,6,1,3,3,3,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10=sRole == 'pos_1' and {0,10} or {10,0}, -- +15 damage (carry), -2s Breathe Fire cooldown (mid/offlane)
+    t15={10,0}, -- +300 Health
+    t20={10,0}, -- +220 Breathe Fire damage
+    t25={10,0}, -- +50% Wyrm's Wrath damage/area
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+if sRole == 'pos_1' then
+    X.sBuyList = {
+        'item_quelling_blade', 'item_gauntlets', 'item_branches', 'item_magic_stick', 'item_tango',
+        'item_bracer', 'item_magic_wand', 'item_soul_ring', 'item_power_treads', 'item_radiance',
+        'item_blink', 'item_aghanims_shard', 'item_black_king_bar', 'item_octarine_core',
+        -- Bot policy: Scepter/Blessing, Shiva and Overwhelming Blink.
+        'item_ultimate_scepter', 'item_ultimate_scepter_2', 'item_shivas_guard', 'item_overwhelming_blink',
+    }
 else
-    nAbilityBuildList   = tAllAbilityBuildList[2]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[2])
+    if sRole == 'pos_2' then
+        -- Omit the observed ward: core bots do not run ward placement. Condense double Bracer to one.
+        X.sBuyList = {'item_double_gauntlets','item_double_branches','item_branches','item_circlet'}
+    else
+        X.sBuyList = {'item_double_gauntlets','item_double_branches','item_magic_stick'}
+    end
+    local core = {
+        'item_bracer', 'item_magic_wand', 'item_soul_ring', 'item_power_treads', 'item_blink',
+        'item_aghanims_shard', 'item_black_king_bar', 'item_octarine_core', 'item_shivas_guard',
+        -- Bot policy: Scepter/Blessing and Overwhelming Blink.
+        'item_ultimate_scepter', 'item_ultimate_scepter_2', 'item_overwhelming_blink',
+    }
+    for _, item in ipairs(core) do table.insert(X.sBuyList, item) end
 end
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_2'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_quelling_blade",
-	"item_circlet",
-	"item_gauntlets",
-
-	"item_bottle",
-	"item_magic_wand",
-	"item_bracer",
-	"item_power_treads",
-	"item_maelstrom",
-	"item_dragon_lance",
-	"item_black_king_bar",--
-	"item_mjollnir",--
-	"item_aghanims_shard",
-	"item_greater_crit",--
-	"item_hurricane_pike",--
-	"item_assault",--
-	"item_ultimate_scepter_2",
-	"item_moon_shard",
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_quelling_blade",
-	"item_circlet",
-	"item_gauntlets",
-
-	"item_magic_wand",
-	"item_bracer",
-	"item_power_treads",
-	"item_armlet",
-	"item_yasha",
-	"item_black_king_bar",--
-	"item_sange_and_yasha",--
-	"item_greater_crit",--
-	"item_aghanims_shard",
-	"item_satanic",--
-	"item_ultimate_scepter_2",
-	"item_bloodthorn",--
-	"item_moon_shard",
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_2']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_2']
-
-sRoleItemsBuyList['pos_3'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_quelling_blade",
-	"item_circlet",
-	"item_gauntlets",
-
-	"item_magic_wand",
-	"item_bracer",
-	"item_power_treads",
-	"item_orchid",
-	"item_crimson_guard",--
-	"item_black_king_bar",--
-	"item_heavens_halberd",--
-	"item_aghanims_shard",
-	"item_overwhelming_blink",--
-	"item_bloodthorn",--
-	"item_ultimate_scepter_2",
-	"item_moon_shard",
-	"item_travel_boots_2",--
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-X['sSellList'] = {
-
-	"item_power_treads", "item_quelling_blade",
-
-	"item_crimson_guard", "item_quelling_blade",
-	"item_black_king_bar", "item_magic_wand",
-	"item_heavens_halberd", "item_bracer",
+X.sSellList = {
+    'item_black_king_bar','item_magic_wand', 'item_octarine_core','item_soul_ring',
+    'item_shivas_guard','item_bracer',
 }
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_tank' }, {"item_power_treads", 'item_quelling_blade'} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
-
+-- Fourth Wyrm's Wrath point at 10, then the first talent at 11. Preserve custom progressions.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
 

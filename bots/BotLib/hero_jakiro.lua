@@ -16,123 +16,44 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {10, 0},
-						['t20'] = {10, 0},
-						['t15'] = {10, 0},
-						['t10'] = {0, 10},
-}
-
-local tAllAbilityBuildList = {
-						{1,3,1,2,1,6,1,2,2,2,6,3,3,3,6},--pos4,5
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_3'] = {
-	"item_mage_outfit",
-	"item_ancient_janggo",
-	"item_glimmer_cape",
-	"item_boots_of_bearing",
-	"item_rod_of_atos",
-	"item_mjollnir",--
-	"item_aghanims_shard",
-	"item_veil_of_discord",
-	"item_cyclone",
-	"item_shivas_guard",
-	"item_sheepstick",
-	"item_wind_waker",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_4'] = {
-	"item_blood_grenade",
-	"item_priest_outfit",
-	"item_mekansm",
-	"item_glimmer_cape",
-	"item_aghanims_shard",
-	"item_guardian_greaves",
-	"item_spirit_vessel",
---	"item_wraith_pact",
-	"item_ultimate_scepter",
-	"item_shivas_guard",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-	"item_sheepstick",
-
-}
-
-sRoleItemsBuyList['pos_5'] = {
-	"item_blood_grenade",
-
-	'item_mage_outfit',
-	'item_ancient_janggo',
-	'item_glimmer_cape',
-	'item_boots_of_bearing',
-	'item_pipe',
-	"item_shivas_guard",
-	'item_cyclone',
-	'item_sheepstick',
-	"item_wind_waker",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_2'] = {
-	"item_crystal_maiden_outfit",
-	-- "item_falcon_blade",
-    "item_witch_blade",
-    "item_orchid",
-    "item_force_staff",
-    "item_ultimate_scepter",
-    "item_hurricane_pike",--
-    "item_yasha_and_kaya",--
-    -- "item_black_king_bar",--
-	"item_bloodthorn",--
-	-- "item_mjollnir",--
-    "item_sphere",--
-    "item_aghanims_shard",
-    "item_skadi",--
-    "item_moon_shard",
-    "item_ultimate_scepter_2",
-    "item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_2']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-	"item_ultimate_scepter",
-	"item_magic_wand",
-
-	"item_cyclone",
-	"item_magic_wand",
-
-	"item_shivas_guard",
-	'item_magic_wand',
-
-	"item_skadi",--
-    "item_witch_blade",
-}
+-- Updated to 7.41f from D2PT: pos 5/4; forced other roles use pos 5.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/jakiro')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Dual Breath, [2] Ice Path, [3] Liquid Fire (linked with Liquid Ice), [6] Macropyre.
+local nAbilityBuildList = {3,1,3,2,3,6,3,2,2,2,6,1,1,1,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- +30 Liquid Fire attack-speed slow
+    t15={0,10}, -- +175 attack range
+    t20={10,0}, -- +25 Macropyre damage
+    t25={0,10}, -- +100% Dual Breath damage/range
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {'item_double_branches','item_magic_stick','item_tango','item_blood_grenade'}
+if sRole == 'pos_4' or sRole == 'pos_5' then
+    table.insert(X.sBuyList,'item_ward_sentry')
+    if sRole == 'pos_5' then table.insert(X.sBuyList,'item_ward_sentry') end
+end
+local utility = sRole == 'pos_4' and {'item_cyclone','item_glimmer_cape'} or {'item_glimmer_cape','item_cyclone'}
+local core = {'item_magic_wand','item_arcane_boots'}
+for _, item in ipairs(core) do table.insert(X.sBuyList,item) end
+for _, item in ipairs(utility) do table.insert(X.sBuyList,item) end
+local continuation = {'item_force_staff','item_aghanims_shard','item_ultimate_scepter',
+    -- Bot policy: natural upgrades and late disables in six persistent slots.
+    'item_ultimate_scepter_2','item_wind_waker','item_sheepstick','item_blink'}
+for _, item in ipairs(continuation) do table.insert(X.sBuyList,item) end
+X.sSellList = {'item_ultimate_scepter','item_magic_wand'}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_mage' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
+-- Fourth Ice Path point at 10, then the first talent at 11. Preserve custom progressions.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 X['bDeafaultAbility'] = false
-X['bDeafaultItem'] = true
+X['bDeafaultItem'] = false
 
 function X.MinionThink(hMinionUnit)
 
@@ -177,7 +98,7 @@ modifier_jakiro_macropyre_burn
 local abilityQ = bot:GetAbilityByName('jakiro_dual_breath')
 local abilityW = bot:GetAbilityByName('jakiro_ice_path')
 local abilityE = bot:GetAbilityByName('jakiro_liquid_fire')
-local abilityAS = bot:GetAbilityByName('jakiro_liquid_frost')
+local abilityAS = bot:GetAbilityByName('jakiro_liquid_ice')
 local abilityR = bot:GetAbilityByName('jakiro_macropyre')
 
 local castQDesire, castQTarget
@@ -601,72 +522,20 @@ function X.ConsiderE()
 end
 
 function X.ConsiderAS()
-	if not J.CanCastAbility(abilityAS) then return 0 end
+    if not J.CanCastAbility(abilityAS) then return 0 end
 
-	local nCastRange = bot:GetAttackRange() + 200
-	if nCastRange > 1300 then nCastRange = 1300 end
-
-	local botTarget = J.GetProperTarget( bot )
-	local aTarget = bot:GetAttackTarget()
-	local nEnemyHeroes = bot:GetNearbyHeroes( nCastRange, true, BOT_MODE_NONE )
-
-
-	if J.IsValidBuilding(aTarget)
-		and J.IsInRange( aTarget, bot, nCastRange )
-	then
-		return BOT_ACTION_DESIRE_HIGH, aTarget
-	end
-
-
-	if aTarget == nil and #nEnemyHeroes == 0
-	then
-		local hEnemyTowerList = bot:GetNearbyTowers( nCastRange + 36, true )
-		local hEnemyBarrackList = bot:GetNearbyBarracks( nCastRange + 36, true )
-		local hTarget = hEnemyTowerList[1]
-		if hTarget == nil then hTarget = hEnemyBarrackList[1] end
-		if hTarget ~= nil
-			and not hTarget:IsAttackImmune()
-			and not hTarget:IsInvulnerable()
-			and not hTarget:HasModifier( "modifier_fountain_glyph" )
-			and not hTarget:HasModifier( "modifier_backdoor_protection_active" )
-		then
-			return BOT_ACTION_DESIRE_HIGH, hTarget
-		end
-	end
-
-
-	if ( J.IsPushing( bot ) or J.IsDefending( bot ) )
-	then
-		local towers = bot:GetNearbyTowers( nCastRange, true )
-		if J.IsValidBuilding(towers[1]) and J.CanBeAttacked(towers[1])
-		then
-			return BOT_ACTION_DESIRE_HIGH, towers[1]
-		end
-		local barracks = bot:GetNearbyBarracks( nCastRange, true )
-		if J.IsValidBuilding(barracks[1]) and J.CanBeAttacked(barracks[1])
-		then
-			return BOT_ACTION_DESIRE_HIGH, barracks[1]
-		end
-	end
-
-
-	if J.IsGoingOnSomeone( bot )
-	then
-		if J.IsValidHero( botTarget )
-			and J.CanCastOnNonMagicImmune( botTarget )
-			and J.IsInRange( botTarget, bot, nCastRange )
-		then
-			return BOT_ACTION_DESIRE_HIGH, botTarget
-		end
-	end
-
-
-	return BOT_ACTION_DESIRE_NONE
-
+    -- Liquid Ice targets heroes/basic units; buildings are valid only for Liquid Fire.
+    local nCastRange = J.GetProperCastRange(false, bot, abilityAS:GetCastRange())
+    local target = J.GetProperTarget(bot)
+    if J.IsGoingOnSomeone(bot)
+        and J.IsValidHero(target)
+        and J.CanCastOnNonMagicImmune(target)
+        and J.IsInRange(target, bot, nCastRange)
+    then
+        return BOT_ACTION_DESIRE_HIGH, target
+    end
+    return BOT_ACTION_DESIRE_NONE
 end
-
-
-
 
 function X.ConsiderR()
 	if not J.CanCastAbility(abilityR) then return 0 end

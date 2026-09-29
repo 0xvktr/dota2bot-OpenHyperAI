@@ -29,118 +29,22 @@ local HeroPositions = {
     [HeroName.Dawnbreaker] = {0, 42, 98, 0, 0},
     [HeroName.Dazzle] = {0, 0, 0, 39, 100},
     [HeroName.DeathProphet] = {0, 51, 56, 0, 0}, -- D2PT 7.41f; mid/offlane only.
-    [HeroName.Disruptor] = {
-        0,
-        5,
-        10,
-        30,
-        55
-    },
-    [HeroName.Doom] = {
-        15,
-        25,
-        85,
-        5,
-        0
-    },
-    [HeroName.DragonKnight] = {
-        55,
-        70,
-        35,
-        10,
-        0
-    },
-    [HeroName.DrowRanger] = {
-        70,
-        35,
-        5,
-        0,
-        0
-    },
-    [HeroName.EarthSpirit] = {
-        0,
-        5,
-        30,
-        70,
-        15
-    },
-    [HeroName.Earthshaker] = {
-        0,
-        5,
-        35,
-        70,
-        15
-    },
-    [HeroName.ElderTitan] = {
-        0,
-        5,
-        20,
-        30,
-        15
-    },
-    [HeroName.EmberSpirit] = {
-        15,
-        70,
-        15,
-        0,
-        0
-    },
-    [HeroName.Enchantress] = {
-        0,
-        5,
-        20,
-        35,
-        50
-    },
-    [HeroName.Enigma] = {
-        0,
-        35,
-        65,
-        30,
-        0
-    },
-    [HeroName.FacelessVoid] = {
-        60,
-        0,
-        25,
-        5,
-        0
-    },
-    [HeroName.NaturesProphet] = {
-        75,
-        25,
-        80,
-        60,
-        0
-    },
-    [HeroName.Grimstroke] = {
-        0,
-        5,
-        10,
-        35,
-        50
-    },
-    [HeroName.Gyrocopter] = {
-        60,
-        5,
-        25,
-        20,
-        10
-    },
-    [HeroName.Hoodwink] = {
-        0,
-        5,
-        10,
-        25,
-        20
-    },
-    [HeroName.Huskar] = {
-        35,
-        50,
-        35,
-        0,
-        0
-    },
+    [HeroName.Disruptor] = {0, 0, 0, 42, 100}, -- D2PT 7.41f
+    [HeroName.Doom] = {38, 0, 86, 0, 0}, -- D2PT 7.41f
+    [HeroName.DragonKnight] = {52, 100, 93, 0, 0}, -- D2PT 7.41f
+    [HeroName.DrowRanger] = {59, 0, 0, 0, 0}, -- D2PT 7.41f
+    [HeroName.EarthSpirit] = {0, 87, 55, 68, 0}, -- D2PT 7.41f
+    [HeroName.Earthshaker] = {0, 80, 58, 68, 0}, -- D2PT 7.41f
+    [HeroName.ElderTitan] = {0, 0, 41, 40, 49}, -- D2PT 7.41f
+    [HeroName.EmberSpirit] = {0, 100, 0, 0, 0}, -- D2PT 7.41f
+    [HeroName.Enchantress] = {0, 0, 48, 41, 52}, -- D2PT 7.41f
+    [HeroName.Enigma] = {0, 0, 100, 0, 0}, -- D2PT 7.41f
+    [HeroName.FacelessVoid] = {72, 0, 0, 0, 0}, -- D2PT 7.41f
+    [HeroName.NaturesProphet] = {55, 47, 45, 37, 36}, -- D2PT 7.41f
+    [HeroName.Grimstroke] = {0, 0, 0, 80, 84}, -- D2PT 7.41f
+    [HeroName.Gyrocopter] = {44, 0, 0, 46, 43}, -- D2PT 7.41f
+    [HeroName.Hoodwink] = {0, 0, 0, 47, 63}, -- D2PT 7.41f
+    [HeroName.Huskar] = {0, 71, 0, 0, 0}, -- D2PT 7.41f
     [HeroName.Invoker] = {
         30,
         70,
@@ -148,76 +52,17 @@ local HeroPositions = {
         30,
         0
     },
-    [HeroName.Jakiro] = {
-        0,
-        35,
-        30,
-        60,
-        65
-    },
-    [HeroName.Juggernaut] = {
-        80,
-        15,
-        15,
-        0,
-        0
-    },
-    [HeroName.KeeperOfTheLight] = {
-        0,
-        15,
-        10,
-        25,
-        25
-    },
-    [HeroName.Kunkka] = {
-        35,
-        85,
-        35,
-        5,
-        0
-    },
-    [HeroName.LegionCommander] = {
-        5,
-        35,
-        65,
-        5,
-        0
-    },
-    [HeroName.Leshrac] = {
-        15,
-        30,
-        25,
-        25,
-        20
-    },
-    [HeroName.Lich] = {
-        10,
-        35,
-        20,
-        80,
-        80
-    },
-    [HeroName.Lifestealer] = {
-        20,
-        0,
-        20,
-        0,
-        0
-    },
-    [HeroName.Lina] = {
-        75,
-        70,
-        5,
-        66,
-        30
-    },
-    [HeroName.Lion] = {
-        30,
-        45,
-        10,
-        30,
-        45
-    },
+    [HeroName.Jakiro] = {0, 0, 0, 35, 38}, -- D2PT 7.41f
+    [HeroName.Juggernaut] = {94, 0, 0, 0, 0}, -- D2PT 7.41f
+    [HeroName.KeeperOfTheLight] = {0, 96, 0, 62, 0}, -- D2PT 7.41f
+    [HeroName.Kunkka] = {0, 47, 58, 0, 0}, -- D2PT 7.41f
+    [HeroName.Largo] = {0, 44, 47, 46, 48}, -- D2PT 7.41f
+    [HeroName.LegionCommander] = {0, 0, 97, 0, 0}, -- D2PT 7.41f
+    [HeroName.Leshrac] = {0, 63, 0, 0, 0}, -- D2PT 7.41f
+    [HeroName.Lich] = {0, 0, 0, 40, 94}, -- D2PT 7.41f
+    [HeroName.Lifestealer] = {92, 0, 0, 0, 0}, -- D2PT 7.41f
+    [HeroName.Lina] = {42, 85, 0, 0, 0}, -- D2PT 7.41f
+    [HeroName.Lion] = {0, 53, 0, 85, 90}, -- D2PT 7.41f
     [HeroName.LoneDruid] = {
         20,
         25,
@@ -225,27 +70,9 @@ local HeroPositions = {
         0,
         0
     },
-    [HeroName.Luna] = {
-        70,
-        5,
-        15,
-        0,
-        0
-    },
-    [HeroName.Lycan] = {
-        45,
-        45,
-        45,
-        5,
-        0
-    },
-    [HeroName.Magnus] = {
-        5,
-        15,
-        85,
-        5,
-        0
-    },
+    [HeroName.Luna] = {94, 0, 0, 0, 0}, -- D2PT 7.41f
+    [HeroName.Lycan] = {0, 0, 66, 0, 0}, -- D2PT 7.41f
+    [HeroName.Magnus] = {0, 55, 78, 0, 0}, -- D2PT 7.41f
     [HeroName.Marci] = {
         0,
         5,
@@ -736,13 +563,6 @@ local HeroPositions = {
         0,
         0
     },
-    [HeroName.Largo] = {
-        0,
-        5,
-        0,
-        40,
-        40
-    }
 }
 function ____exports.GetHeroPositions()
     return HeroPositions

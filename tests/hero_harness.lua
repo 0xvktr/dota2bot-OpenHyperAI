@@ -9,6 +9,7 @@ local H = { realDofile = realDofile }
 local state = { role = 'pos_1', custom = false, unit = 'npc_dota_hero_abaddon' }
 
 function GetScriptDirectory() return 'bots' end
+function GameTime() return 0 end
 
 local bot = {}
 function bot.GetAbilityByName() return {} end

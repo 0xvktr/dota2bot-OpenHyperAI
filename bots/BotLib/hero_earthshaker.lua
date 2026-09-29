@@ -7,109 +7,68 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {--pos4,5
-                        ['t25'] = {0, 10},
-                        ['t20'] = {0, 10},
-                        ['t15'] = {10, 0},
-                        ['t10'] = {10, 0},
-}
-
-local tAllAbilityBuildList = {
-						{1,2,3,3,3,6,3,1,1,1,6,2,2,2,6},--pos4,5
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild(tAllAbilityBuildList)
-
-local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList)
-
-local sRoleItemsBuyList = {}
-
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_sven_outfit",
-	"item_echo_sabre",
-	"item_hand_of_midas",
-	"item_aghanims_shard",
-	"item_blink",
-	"item_ultimate_scepter",
-	"item_black_king_bar",
-	"item_travel_boots",
-	"item_satanic",
-	"item_overwhelming_blink",
-	"item_greater_crit",
-	"item_abyssal_blade",
-	"item_moon_shard",
-	"item_travel_boots_2",
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_3'] = {
-	"item_tank_outfit",
-	"item_crimson_guard",
-	"item_aghanims_shard",
-	"item_heavens_halberd",
-	"item_blink",
-	"item_lotus_orb",
-	"item_ultimate_scepter",
-	"item_travel_boots",
-	"item_assault",
-	"item_ultimate_scepter_2",
-	"item_heart",
-	"item_moon_shard",
-	"item_overwhelming_blink",
-	"item_travel_boots_2",
-}
-
-sRoleItemsBuyList['pos_4'] = {
-	"item_priest_outfit",
-	"item_blink",
-	"item_mekansm",
-	"item_glimmer_cape",--
-	"item_aghanims_shard",--
-	"item_guardian_greaves",--
-	"item_spirit_vessel",--
-	"item_ultimate_scepter",
---	"item_wraith_pact",
-	"item_overwhelming_blink",--
-	"item_ultimate_scepter_2",
-	"item_sheepstick",--
-	"item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-	'item_mage_outfit',
-	"item_blink",
-	"item_glimmer_cape",--
-	"item_boots_of_bearing",--
-	"item_pipe",--
-	"item_aghanims_shard",
-	"item_cyclone",
-    "item_shivas_guard",--
-	"item_sheepstick",--
-	"item_ultimate_scepter",
-    "item_heart",--
-	"item_octarine_core",--
-	"item_overwhelming_blink",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-	"item_travel_boots",
-	"item_quelling_blade",
-
-	"item_abyssal_blade",
-	"item_magic_wand",
-}
+-- Updated to 7.41f from D2PT: mid, offlane and support; skipped roles use mid without wards.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/earthshaker')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Fissure, [2] Enchant Totem, [3] Aftershock, [6] Echo Slam.
+local nAbilityBuildList, nTalentBuildList
+if sRole == 'pos_3' or sRole == 'pos_4' then
+    if sRole == 'pos_3' then
+        nAbilityBuildList = {1,2,3,3,3,6,3,1,1,1,6,2,2,2,6}
+    else
+        nAbilityBuildList = {1,2,3,1,1,6,1,3,3,3,6,2,2,2,6}
+    end
+    nTalentBuildList = J.Skill.GetTalentBuild({
+        t10={10,0}, -- +75 Fissure damage
+        t15={10,0}, -- +50 Aftershock damage
+        t20={0,10}, -- +50 Echo damage
+        t25={0,10}, -- -50% Echo Slam cooldown
+    })
+else
+    nAbilityBuildList = {2,3,3,1,3,6,3,2,2,2,6,1,1,1,6}
+    nTalentBuildList = J.Skill.GetTalentBuild({
+        t10={0,10}, -- +25 base damage
+        t15={10,0}, -- +50 Aftershock damage
+        t20={10,0}, -- +65% Enchant Totem damage
+        t25={10,0}, -- -1.5s Enchant Totem cooldown
+    })
+end
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+if sRole == 'pos_4' then
+    X.sBuyList = {'item_boots', 'item_ward_observer', 'item_ward_sentry', 'item_blood_grenade',
+        'item_arcane_boots', 'item_magic_wand', 'item_blink', 'item_aghanims_shard',
+        'item_kaya', 'item_cyclone', 'item_yasha_and_kaya', 'item_refresher',
+        -- Bot policy: Octarine and Overwhelming Blink.
+        'item_octarine_core', 'item_overwhelming_blink'}
+    X.sSellList = {'item_octarine_core', 'item_magic_wand'}
+elseif sRole == 'pos_3' then
+    X.sBuyList = {'item_double_gauntlets', 'item_double_branches', 'item_magic_stick',
+        'item_soul_ring', 'item_magic_wand',
+        -- Bot policy: basic boots bridge the displayed late Travel Boots purchase.
+        'item_boots', 'item_blink', 'item_aghanims_shard', 'item_kaya', 'item_yasha_and_kaya',
+        'item_travel_boots', 'item_black_king_bar', 'item_octarine_core', 'item_refresher',
+        -- Bot policy: upgrade Blink after the six-slot core.
+        'item_overwhelming_blink'}
+    X.sSellList = {'item_octarine_core', 'item_soul_ring', 'item_refresher', 'item_magic_wand'}
+else
+    X.sBuyList = {'item_double_branches', 'item_double_branches', 'item_tango', 'item_faerie_fire',
+        'item_bottle', 'item_magic_wand', 'item_power_treads', 'item_blink', 'item_ultimate_scepter',
+        'item_aghanims_shard', 'item_black_king_bar', 'item_octarine_core',
+        -- Bot policy: Blessing, Refresher and Overwhelming Blink.
+        'item_ultimate_scepter_2', 'item_refresher', 'item_overwhelming_blink'}
+    X.sSellList = {'item_black_king_bar', 'item_bottle', 'item_octarine_core', 'item_magic_wand'}
+end
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Every role spends level 10 on an ability; first talent comes at 11. Preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

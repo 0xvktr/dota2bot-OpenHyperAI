@@ -7,69 +7,37 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {--pos1
-						['t25'] = {0, 10},
-						['t20'] = {0, 10},
-						['t15'] = {0, 10},
-						['t10'] = {0, 10},
+-- Updated to 7.41f from D2PT: carry only; forced other roles use carry.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/luna')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Lucent Beam, [2] Lunar Orbit, [3] Moon Glaives, [6] Eclipse.
+local nAbilityBuildList = {1,3,1,3,1,6,1,3,3,2,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- -5% Moon Glaives damage reduction
+    t15={0,10}, -- +1 Lunar Orbit glaive
+    t20={10,0}, -- +1.5x Lunar Orbit damage/speed
+    t25={0,10}, -- +25/+50 Lunar Blessing damage
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    'item_branches','item_magic_wand','item_faerie_fire',
+    'item_power_treads','item_lifesteal','item_mask_of_madness','item_yasha','item_manta',
+    'item_blink','item_butterfly','item_black_king_bar','item_aghanims_shard',
+    -- Bot policy: upgrade Blink and replace Mask of Madness with late sustain.
+    'item_swift_blink','item_satanic','item_moon_shard',
 }
-
-local tAllAbilityBuildList = {
-						-- {1,3,3,2,3,2,3,2,2,1,1,1,6,6,6},--pos1
-						{1,3,1,3,1,6,1,3,3,2,6,2,2,2,6},--pos1
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild(tAllAbilityBuildList)
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_slippers",
-	"item_circlet",
-	"item_quelling_blade",
-	"item_magic_wand",
-
-	"item_wraith_band",
-	"item_power_treads",
-	"item_mask_of_madness",
-	"item_manta",--
-	"item_black_king_bar",--
-	"item_aghanims_shard",
-	"item_angels_demise",--
-	"item_satanic",--
-	"item_moon_shard",
-	"item_butterfly",--
-	"item_hydras_breath",--
-	"item_travel_boots_2",--
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-}
+X.sSellList = {'item_butterfly','item_magic_wand','item_satanic','item_mask_of_madness'}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_ranged_carry' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
@@ -83,14 +51,12 @@ local LucentBeam 	= bot:GetAbilityByName('luna_lucent_beam')
 local LunarOrbit    = bot:GetAbilityByName("luna_lunar_orbit")
 -- local LunarBlessing = bot:GetAbilityByName('luna_lunar_blessing')
 local Eclipse 		= bot:GetAbilityByName('luna_eclipse')
-local talent6 		= bot:GetAbilityByName(sTalentList[6])
 
 local LucentBeamDesire, LucentBeamTarget
 local MoonGlaivesDesire
 local LunarOrbitDesire
 local EclipseDesire
 
-local talent6BonusDamage = 0
 
 local botTarget
 
@@ -100,7 +66,6 @@ function X.SkillsComplement()
 	botTarget = J.GetProperTarget(bot)
 	J.ConsiderTarget()
 
-	if talent6:IsTrained() then talent6BonusDamage = talent6:GetSpecialValueInt('value') end
 
 	-- MoonGlaivesDesire = X.ConsiderMoonGlaives()
 	-- if MoonGlaivesDesire > 0
@@ -163,7 +128,7 @@ function X.ConsiderLucentBeam()
 
 	local nCastRange = J.GetProperCastRange(false, bot, LucentBeam:GetCastRange())
 	local nAbilityLevel = LucentBeam:GetLevel()
-	local nDamage = LucentBeam:GetSpecialValueInt('beam_damage') + talent6BonusDamage
+	local nDamage = LucentBeam:GetSpecialValueInt('beam_damage')
 
 	local nEnemyHeroes = J.GetNearbyHeroes(bot,nCastRange + 300, true, BOT_MODE_NONE)
 	for _, enemyHero in pairs(nEnemyHeroes)

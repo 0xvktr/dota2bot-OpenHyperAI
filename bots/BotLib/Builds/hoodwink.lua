@@ -1,0 +1,51 @@
+-- D2PT 7.41f; role counts sum to 8408, header 8426. Current-tier picks; reviewed support T5 profile.
+return {
+    patch='7.41f',
+    updated='2026-09-30',
+    defaultRole='pos_4',
+    source='https://dota2protracker.com/hero/Hoodwink?section=builds',
+    overviewWindow='last 8 days, 7000+',
+    buildWindow='2026-09-15 to 2026-09-29',
+    buildUpdated='2026-09-29',
+    roles={
+        pos_1={matches=13,winRate=38.5,skipped=true},
+        pos_2={matches=22,winRate=31.8,skipped=true},
+        pos_3={matches=41,winRate=36.6,skipped=true},
+        pos_4={matches=5477,winRate=47.4,rating=17,weight=47,buildMatches=9712,buildWinRate=47,skillMatches=1934,openingMatches=650,openingObserved=9701},
+        pos_5={matches=2855,winRate=48.5,rating=33,weight=63,buildMatches=4905,buildWinRate=49,skillMatches=958,openingMatches=260,openingObserved=4903},
+    },
+    neutrals={
+        pos_4={tier5Profile='support',
+            neutral={
+                [1]={item_dormant_curio=16.2,item_ash_legion_shield=15.8,item_polliwog_charm=13.4,item_kobold_cup=13.1,item_stonefeather_satchel=9.5,item_foragers_kit=8.7,item_duelist_gloves=6.8},
+                [2]={item_searing_signet=27.5,item_mana_draught=22.7,item_pogo_stick=15.0,item_essence_ring=12.9,item_crippling_crossbow=7.1,item_medallion_of_courage=5.0},
+                [3]={item_partisans_brand=14.9,item_gunpowder_gauntlets=14.8,item_psychic_headband=10.8,item_serrated_shiv=8.9,item_spellslinger=7.2},
+                [4]={item_conjurers_catalyst=36.7,item_enchanters_bauble=12.6,item_dandelion_amulet=10.7,item_prophets_pendulum=9.9,item_giant_maul=8.3,item_idol_of_screeauk=4.3},
+                [5]={item_demonicon=16.3,item_desolator_2=14.4,item_dezun_bloodrite=14.4,item_fallen_sky=13.5,item_divine_regalia=7.7,item_spider_legs=5.8},
+            },
+            enhancement={
+                [1]={item_enhancement_quickened=46.3,item_enhancement_brawny=42.7,item_enhancement_alert=8.1},
+                [2]={item_enhancement_greedy=52.8,item_enhancement_quickened=20.5,item_enhancement_brawny=13.5},
+                [3]={item_enhancement_greedy=52.7,item_enhancement_quickened=18.3,item_enhancement_brawny=12.7},
+                [4]={item_enhancement_timeless=57.1,item_enhancement_quickened=21.4,item_enhancement_alert=11.5},
+                [5]={item_enhancement_timeless=63.5,item_enhancement_evolved=15.4,item_enhancement_fleetfooted=14.4},
+            },
+        },
+        pos_5={tier5Profile='support',
+            neutral={
+                [1]={item_ash_legion_shield=16.3,item_dormant_curio=14.4,item_polliwog_charm=13.8,item_kobold_cup=12.3,item_stonefeather_satchel=10.3,item_foragers_kit=9.9,item_duelist_gloves=6.3},
+                [2]={item_searing_signet=25.8,item_mana_draught=22.8,item_pogo_stick=15.8,item_essence_ring=13.4,item_crippling_crossbow=6.5,item_medallion_of_courage=4.8},
+                [3]={item_partisans_brand=14.4,item_gunpowder_gauntlets=14.3,item_psychic_headband=11.1,item_serrated_shiv=8.6,item_spellslinger=7.7},
+                [4]={item_conjurers_catalyst=34.3,item_dandelion_amulet=11.5,item_enchanters_bauble=11.4,item_prophets_pendulum=10.6,item_giant_maul=9.1,item_idol_of_screeauk=4.4},
+                [5]={item_demonicon=24.7,item_fallen_sky=16.9,item_desolator_2=13.0,item_minotaur_horn=10.4,item_dezun_bloodrite=9.1,item_spider_legs=5.2,item_divine_regalia=3.9},
+            },
+            enhancement={
+                [1]={item_enhancement_quickened=45.3,item_enhancement_brawny=43.4,item_enhancement_alert=7.3},
+                [2]={item_enhancement_greedy=53.7,item_enhancement_quickened=19.9,item_enhancement_brawny=13.1},
+                [3]={item_enhancement_greedy=53.3,item_enhancement_quickened=17.6,item_enhancement_brawny=13.0},
+                [4]={item_enhancement_timeless=52.5,item_enhancement_quickened=24.6,item_enhancement_alert=10.6},
+                [5]={item_enhancement_timeless=61.0,item_enhancement_fleetfooted=16.9,item_enhancement_evolved=13.0},
+            },
+        },
+    },
+}

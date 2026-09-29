@@ -7,120 +7,32 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {10, 0},
-						['t20'] = {10, 0},
-						['t15'] = {10, 0},
-						['t10'] = {0, 10},
-}
-
-local tAllAbilityBuildList = {
-    ["pos_2"]= {1,3,1,2,1,6,1,2,2,6,2,3,3,3,6},
-    ["pos_3"]= {1,3,1,2,1,6,1,2,2,6,2,3,3,3,6},
-    ["pos_4"]= {1,3,1,2,1,6,1,2,3,3,6,3,2,6,2},
-    ["pos_5"]= {1,3,1,2,1,6,1,2,3,3,6,3,2,6,2},
-}
-
-local nAbilityBuildList = tAllAbilityBuildList[sRole] or {1,3,2,2,2,6,2,3,3,3,1,6,1,1,6}
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sUtility = {"item_lotus_orb", "item_heavens_halberd"}
-local nUtility = sUtility[RandomInt(1, #sUtility)]
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_3'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_double_circlet",
-
-    "item_bracer",
-    "item_wraith_band",
-    "item_magic_wand",
-    "item_power_treads",
-    "item_blink",
-    "item_crimson_guard",
-    "item_echo_sabre",
-    "item_black_king_bar",--
-    "item_harpoon",--
-    nUtility,--
-    "item_sheepstick",--
-    "item_aghanims_shard",
-    "item_travel_boots",
-    "item_arcane_blink",--
-    "item_travel_boots_2",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_2'] = {
-    "item_quelling_blade",
-    "item_double_branches",
-    "item_tango",
-    "item_circlet",
-    "item_bottle",
-    "item_wraith_band",
-    "item_magic_wand",
-    "item_power_treads",
-    "item_blink",
-    "item_echo_sabre",
-    "item_black_king_bar",--
-    "item_harpoon",--
-    "item_greater_crit",--
-    "item_sheepstick",--
-    "item_aghanims_shard",
-    "item_travel_boots",
-    "item_moon_shard",
-    "item_arcane_blink",--
-    "item_travel_boots_2",--
-    "item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_4'] = {
-	'item_priest_outfit',
-	"item_hand_of_midas",
-	"item_mekansm",
-	"item_glimmer_cape",--
-	"item_guardian_greaves",--
-    "item_blink",
-    "item_echo_sabre",
-    "item_black_king_bar",--
-    "item_sheepstick",--
-    "item_aghanims_shard",
-    "item_travel_boots",
-    "item_arcane_blink",--
-    "item_travel_boots_2",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-	'item_priest_outfit',
-	"item_hand_of_midas",
-	"item_mekansm",
-	"item_glimmer_cape",--
-	"item_pipe",--
-    "item_blink",
-    "item_echo_sabre",
-    "item_black_king_bar",--
-    "item_sheepstick",--
-    "item_aghanims_shard",
-    "item_travel_boots",
-    "item_arcane_blink",--
-    "item_travel_boots_2",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
+-- Updated to 7.41f from D2PT: offlane and mid; forced other roles use offlane.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/magnataur')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Shockwave, [2] Empower, [3] Skewer, [6] Reverse Polarity.
+local nAbilityBuildList = {1,3,1,3,1,6,1,3,3,2,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- +1.25s Skewer slow duration
+    t15=sRole=='pos_2' and {0,10} or {10,0}, -- RP attributes / -5s Skewer cooldown
+    t20={0,10}, -- +125 Shockwave damage
+    t25={10,0}, -- +0.8s Reverse Polarity duration
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+local opening = sRole=='pos_2'
+    and {'item_double_branches','item_double_branches','item_tango','item_faerie_fire','item_bottle'}
+    or {'item_double_branches','item_branches','item_double_circlet','item_tango','item_double_bracer'}
+X.sBuyList = opening
+for _,item in ipairs({
+    'item_magic_wand','item_power_treads','item_blink','item_echo_sabre','item_harpoon',
+    'item_black_king_bar','item_ultimate_scepter','item_aghanims_shard',
+    -- Bot policy: consume Scepter, then add cooldown and initiation upgrades.
+    'item_ultimate_scepter_2','item_refresher','item_shivas_guard','item_overwhelming_blink','item_moon_shard',
+}) do table.insert(X.sBuyList,item) end
+X.sSellList = {
+    'item_blink','item_bracer','item_harpoon','item_bracer',
+    'item_black_king_bar','item_magic_wand','item_echo_sabre','item_bottle',
 }
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_mid' }, {} end
@@ -128,6 +40,10 @@ if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList']
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

@@ -95,14 +95,24 @@ atomically replacing the Lua file. An incomplete scrape leaves the previous file
 synergy/counter lists. Entries for Abaddon, Underlord, Alchemist, Ancient Apparition,
 Anti-Mage, Arc Warden, Axe, Bane and Batrider were refreshed from D2PT on 2026-09-28 (site patch 7.41f),
 Beastmaster, Bloodseeker, Bounty Hunter, Brewmaster, Bristleback, Broodmother, Centaur, Chaos Knight, Chen,
-Clinkz, Crystal Maiden, Dark Seer, Dark Willow, Dawnbreaker, Dazzle and Death Prophet on 2026-09-29.
+Clinkz, Crystal Maiden, Dark Seer, Dark Willow, Dawnbreaker, Dazzle, Death Prophet and Disruptor on 2026-09-29.
+Doom, Dragon Knight, Drow Ranger, Earth Spirit, Earthshaker, Elder Titan, Ember Spirit,
+Enchantress, Enigma, Faceless Void, Nature's Prophet, Grimstroke, Gyrocopter, Hoodwink,
+Huskar, Jakiro, Juggernaut, Keeper of the Light, Kunkka and Largo were refreshed on 2026-09-30.
+Legion Commander, Leshrac, Lich, Lifestealer, Lina, Lion, Luna, Lycan and Magnus were also refreshed on 2026-09-30.
 Unmarked heroes retain their older lists and can be refreshed as their builds are updated.
 Source pages are `https://dota2protracker.com/hero/<hero>?section=matchups`. Both the builds and matchups
 sections take `&role=carry|mid|offlane|support|hard-support` (hyphen); an unrecognised value such as
 `hard_support` silently shows the hero's most popular role, so check the selected role tab.
 
-D2PT requires a source role: hard support for Abaddon/AA/Bane/Chen/Crystal Maiden/Dazzle, offlane for Underlord/Axe/Beastmaster/Brewmaster/Bristleback/Centaur/Chaos Knight/Dark Seer/Dawnbreaker/Death Prophet, support for Bounty Hunter/Dark Willow,
-carry for Alchemist/Anti-Mage/Bloodseeker/Clinkz, and mid for Arc Warden/Batrider/Broodmother. Select **All** opponent/ally
+D2PT requires a source role: hard support for Abaddon/AA/Bane/Chen/Crystal Maiden/Dazzle/Disruptor, offlane for Underlord/Axe/Beastmaster/Brewmaster/Bristleback/Centaur/Chaos Knight/Dark Seer/Dawnbreaker/Death Prophet, support for Bounty Hunter/Dark Willow,
+carry for Alchemist/Anti-Mage/Bloodseeker/Clinkz, and mid for Arc Warden/Batrider/Broodmother.
+The September 30 batch uses offlane for Doom/Dragon Knight/Enigma, carry for Drow Ranger/Faceless Void,
+mid for Earth Spirit/Earthshaker/Ember Spirit, and hard support for Elder Titan/Enchantress.
+The next batch uses carry for Nature's Prophet/Juggernaut, support for Gyrocopter/Hoodwink,
+hard support for Grimstroke/Jakiro, mid for Keeper of the Light, and offlane for Kunkka/Largo.
+The following batch uses offlane for Legion Commander/Lycan/Magnus, mid for Huskar/Leshrac/Lina,
+hard support for Lich/Lion, and carry for Lifestealer/Luna. Select **All** opponent/ally
 roles and enable **Normalized** for both tables. Collapse the displayed role rows
 by hero using a match-count-weighted mean of their normalized values; this is an
 approximation from rounded UI values, not an independently calculated all-role
@@ -140,6 +150,8 @@ discovers every `bots/BotLib/Builds/<hero>.lua` and checks, for each role:
   leveled 4 times, the ultimate 3, each talent once, talents go tier 1-4; and the
   level-up queue is simulated so that no talent or premature ability blocks a learnable
   ability. A user-supplied ability build must keep the standard layout.
+  Observed early attribute points use `special_bonus_attributes`; the validator includes
+  them in the queue and the level-up handler permits this learnable hidden ability.
 - **Neutrals:** items exist in the tier they are listed under, pick rates are valid, the
   hero is registered in `hero_build_preferences.lua`, and `Select()` returns the most-picked
   (or, at T5, most-picked reviewed) item regardless of offer order.

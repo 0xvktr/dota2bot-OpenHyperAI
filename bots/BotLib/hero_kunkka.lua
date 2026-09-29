@@ -16,134 +16,30 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						{--pos2
-							['t25'] = {0, 10},
-							['t20'] = {0, 10},
-							['t15'] = {0, 10},
-							['t10'] = {0, 10},
-						},
-						{--pos3
-							['t25'] = {0, 10},
-							['t20'] = {0, 10},
-							['t15'] = {0, 10},
-							['t10'] = {0, 10},
-						},
+-- Updated to 7.41f from D2PT: offlane and mid; forced other roles use offlane.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/kunkka')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Torrent, [2] Tidebringer, [3] X Marks the Spot, [6] Ghostship.
+local nAbilityBuildList = {2,1,2,3,2,6,2,3,3,3,6,1,1,1,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- Tidebringer applies 60% slow for 1s
+    t15={0,10}, -- +25% Torrent damage/knockup duration
+    t20={0,10}, -- -4s Torrent cooldown
+    t25={0,10}, -- +100 spell area of effect
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    'item_quelling_blade', 'item_gauntlets', 'item_double_branches', 'item_circlet', 'item_tango',
+    'item_bracer', 'item_magic_wand', 'item_phase_boots', 'item_blade_mail',
+    'item_ultimate_scepter', 'item_aghanims_shard', 'item_black_king_bar', 'item_shivas_guard',
+    -- Bot policy: consume Scepter and add cooldown/ultimate utility within six slots.
+    'item_ultimate_scepter_2', 'item_octarine_core', 'item_refresher',
 }
-
-local tAllAbilityBuildList = {
-						{2,1,2,3,2,6,2,3,3,3,1,6,1,1,6},--pos2
-						{2,1,2,3,2,6,2,3,3,3,6,1,1,1,6},--pos3
-}
-
-local nAbilityBuildList
-local nTalentBuildList
-
-if sRole == "pos_2"
-then
-    nAbilityBuildList   = tAllAbilityBuildList[1]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[1])
-else
-    nAbilityBuildList   = tAllAbilityBuildList[2]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[2])
-end
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_2'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_quelling_blade",
-	"item_gauntlets",
-	"item_circlet",
-
-	"item_bottle",
-	"item_magic_wand",
-	"item_bracer",
-	"item_phase_boots",
-	"item_blade_mail",
-	"item_ultimate_scepter",
-	"item_aghanims_shard",
-	"item_black_king_bar",--
-	"item_shivas_guard",--
-	"item_octarine_core",--
-	"item_travel_boots",
-	"item_heart",--
-	"item_refresher",--
-	"item_ultimate_scepter_2",
-	"item_travel_boots_2",--
-	"item_moon_shard"
-}
-
-sRoleItemsBuyList['pos_3'] = {
-
-	"item_tango",
-	"item_double_branches",
-	"item_quelling_blade",
-	"item_double_gauntlets",
-
-	"item_magic_wand",
-	"item_double_bracer",
-	"item_phase_boots",
-	"item_blade_mail",
-	"item_ultimate_scepter",
-	"item_aghanims_shard",
-	"item_black_king_bar",--
-	"item_shivas_guard",--
-	"item_refresher",--
-	"item_sheepstick",--
-	"item_travel_boots",
-	"item_heart",--
-	"item_travel_boots_2",--
-
-	"item_ultimate_scepter_2",
-	"item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_4'] = {
-	'item_priest_outfit',
-	"item_hand_of_midas",
-	"item_mekansm",
-	"item_glimmer_cape",--
-	"item_guardian_greaves",--
-    "item_basher",
-    "item_monkey_king_bar",--
-	"item_assault",--
-	"item_heavens_halberd",--
-	"item_aghanims_shard",
-    "item_abyssal_blade",--
-	"item_ultimate_scepter",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-	'item_priest_outfit',
-	"item_hand_of_midas",
-	"item_mekansm",
-	"item_glimmer_cape",--
-	"item_pipe",--
-    "item_basher",
-    "item_monkey_king_bar",--
-	"item_assault",--
-	"item_heavens_halberd",--
-	"item_aghanims_shard",
-    "item_abyssal_blade",--
-	"item_ultimate_scepter",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
+X.sSellList = {
+    'item_blade_mail','item_quelling_blade',
+    'item_ultimate_scepter','item_bracer',
+    'item_black_king_bar','item_magic_wand',
 }
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_tank' }, {"item_power_treads", 'item_quelling_blade'} end
@@ -151,6 +47,10 @@ if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList']
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- X Marks at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
