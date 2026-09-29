@@ -2,7 +2,8 @@
 
 This document is the single source of truth for understanding, maintaining, and updating the dota2bot-OpenHyperAI codebase. It is designed so that a developer (or AI assistant) can quickly make targeted updates without re-scanning the entire repository.
 
-Last verified against: **Patch 7.41a** (March 2026)
+Last verified against: **Patch 7.41f** (September 2026). Heroes are being rebuilt one by one from
+Dota2ProTracker data; see [D2PT_BUILD_UPDATES.md](D2PT_BUILD_UPDATES.md) and Section 3.
 
 ---
 
@@ -38,7 +39,9 @@ vscripts/
 │   ├── BotLib/                        # all hero-specific files (one per hero)
 │   │   ├── hero_abaddon.lua
 │   │   ├── hero_axe.lua
-│   │   └── ... (hero_[internal_name].lua)
+│   │   ├── ... (hero_[internal_name].lua)
+│   │   └── Builds/                    # Data-only D2PT build data for updated heroes
+│   │       └── abaddon.lua            # roles (matches/rating/weight), neutral preferences
 │   │
 │   ├── FunLib/                        # Core utility libraries
 │   │   ├── jmz_func.lua              # Main aggregator (loads all sub-libraries as J.*)
@@ -54,6 +57,11 @@ vscripts/
 │   │   ├── aba_minion.lua            # Minion/summon control
 │   │   ├── aba_special_units.lua     # Special unit interactions
 │   │   ├── morphling_utility.lua     # Morphling replicate helper
+│   │   ├── aba_hero_pos_weights.lua  # Position weights used by drafting (TS-generated)
+│   │   ├── aba_matchups.lua          # Synergy/counter lists used by drafting (TS-generated)
+│   │   ├── hero_build_preferences.lua # Registry of BotLib/Builds data for the neutral distributors
+│   │   ├── inventory_upkeep.lua      # Backpack consumables, selling orphaned starting components
+│   │   ├── alchemist_scepter.lua     # Alchemist late-game Scepter gifting
 │   │   └── rubick_hero/              # Rubick spell-steal hero-specific logic
 │   │       ├── beastmaster.lua
 │   │       └── ...
@@ -144,6 +152,31 @@ function X.ConsiderQ()
     return desire, target
 end
 ```
+
+### D2PT-updated hero files
+
+Heroes rebuilt from Dota2ProTracker (`docs/D2PT_BUILD_UPDATES.md`) keep the same engine hooks but a
+leaner layout:
+
+```lua
+-- Updated to 7.41f from D2PT, positions 4 and 5; other forced roles use pos 5.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/bane')  -- data-only file
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+local nAbilityBuildList = {2,3,2,3,2,6,2,3,3,1,6,1,1,1,6}             -- one D2PT progression
+local nTalentBuildList = J.Skill.GetTalentBuild({ t10={10,0}, ... })   -- inline, commented per talent
+X.sBuyList = { ... }                                                   -- role branches via sRole
+X.sSellList = { ... }
+-- then the usual PvN override, J.SetUserHeroInit(...) and J.Skill.GetSkillList(...)
+```
+
+- `BotLib/Builds/<hero>.lua` records D2PT role samples, ratings and position weights, plus per-role
+  neutral/enchantment preferences. It must stay data-only: the neutral distributors load it on the
+  server through `FunLib/hero_build_preferences.lua`, where hero casting code must never run.
+- Many updated heroes swap `sSkillList[10]` and `[11]` (ability at level 10, first talent at 11),
+  guarded so user-supplied builds are left alone.
+- These builds are evidence-backed: patch updates only make mechanical fixes to them
+  (`PATCH_UPDATE_GUIDE.md`, "Heroes Updated from D2PT"). `tests/build_validator.lua` checks them.
 
 ### Key Rules
 
@@ -252,6 +285,14 @@ Neutral items are handled by **two separate systems** depending on the game mode
 - Each item has: `name`, `tier`, `ranged` weight, `melee` weight, `roles` array `{pos1,pos2,pos3,pos4,pos5}`
 - `GetBotDesireForItem()` scores items based on attack type + role + tier
 - Timing system with difficulty scaling and variance
+
+### Hero-specific preferences (D2PT-updated heroes)
+
+Both systems first ask `FunLib/hero_build_preferences.lua` for the hero's per-role preferences from
+`BotLib/Builds/<hero>.lua`: the most-picked suitable candidate wins (Buff picks from its tier pool,
+FretBots from its offered items), with the generic behavior above as the fallback. Buff has no
+position allocator, so it uses the hero's `defaultRole`. When the neutral pool changes, also check
+the `neutrals` tables in the Builds files for removed items.
 
 ### Updating Neutral Items
 
@@ -373,7 +414,9 @@ Loaded by `J.SetUserHeroInit()` in each hero file. Permanent customization goes 
 
 ## 11. Patch Update Checklist
 
-When a new Dota 2 patch drops, follow these steps in order:
+When a new Dota 2 patch drops, follow these steps in order. `PATCH_UPDATE_GUIDE.md` is the detailed
+runbook; in particular, heroes with a `BotLib/Builds/<hero>.lua` file only get mechanical fixes, and
+talent preferences are positional (a swapped talent changes what `{x, y}` picks).
 
 ### Step 1: Gather Data (parallel)
 
@@ -393,9 +436,9 @@ When a new Dota 2 patch drops, follow these steps in order:
 
 ### Step 3: Update Hero Item Builds (`BotLib/hero_*.lua`)
 
-- [ ] `grep` for removed item names across all BotLib files
+- [ ] `grep` for removed item names across all BotLib files, including `BotLib/Builds/*.lua` neutrals
 - [ ] Replace with appropriate alternatives based on hero role
-- [ ] Add new items to suitable hero builds
+- [ ] Add new items to suitable hero builds (legacy heroes only; D2PT-updated heroes get a D2PT refresh)
 
 ### Step 4: Handle Ability Changes
 
@@ -475,8 +518,12 @@ Some Lua files in `bots/FunLib/` are **generated from TypeScript** via TSTL. Whe
 | `FunLib/aba_hero_roles_map.lua` | `typescript/bots/FunLib/aba_hero_roles_map.ts` |
 | `FunLib/spell_prob_list.lua` | `typescript/bots/FunLib/spell_prob_list.ts` |
 | `FunLib/aba_buff.lua` | `typescript/bots/FunLib/aba_buff.ts` |
-| `Customize/general.lua` | `typescript/bots/Customize/general.ts` |
+| `FunLib/aba_hero_pos_weights.lua` | `typescript/bots/FunLib/aba_hero_pos_weights.ts` |
+| `FunLib/aba_matchups.lua` | `typescript/bots/FunLib/aba_matchups.ts` |
 | `ts_libs/dota/heroes.lua` | `typescript/bots/ts_libs/dota/heroes.ts` |
+
+`Customize/general.lua` is **not** generated: `typescript/bots/Customize/general.ts` only re-exports
+the Lua module for type access, so edit `general.lua` directly.
 
 ### Pure Lua Files (edit directly)
 
@@ -488,7 +535,8 @@ These files have NO TypeScript source -- edit the Lua directly:
 - `FunLib/aba_chat.lua` (chatbot)
 - `ability_item_usage_generic.lua` (item active-use logic)
 - `item_purchase_generic.lua` (purchase logic)
-- All `BotLib/hero_*.lua` files
+- `Customize/general.lua` (see note above)
+- All `BotLib/hero_*.lua` and `BotLib/Builds/*.lua` files
 - All `Buff/*.lua` files
 - All `FretBots/*.lua` files (except those with `.ts` counterparts)
 

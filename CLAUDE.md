@@ -2,12 +2,13 @@
 
 ## Project Overview
 
-This is the **dota2bot-OpenHyperAI** project -- Lua bot scripts for Dota 2 that run in custom lobbies. Currently supports Patch 7.41/7.41a with 127 heroes.
+This is the **dota2bot-OpenHyperAI** project -- Lua bot scripts for Dota 2 that run in custom lobbies. Currently supports Patch 7.41f with 127 heroes.
 
 ## Key Documentation
 
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** -- Complete codebase architecture, file map, naming conventions, all systems explained
 - **[docs/PATCH_UPDATE_GUIDE.md](docs/PATCH_UPDATE_GUIDE.md)** -- Step-by-step runbook for updating when a new Dota 2 patch drops
+- **[docs/D2PT_BUILD_UPDATES.md](docs/D2PT_BUILD_UPDATES.md)** -- Hero-by-hero rebuilds from Dota2ProTracker data (`BotLib/Builds/`), position weight formula, validation
 
 **Read these docs FIRST before making any changes.** They contain everything needed to make targeted updates without scanning the entire repo.
 
@@ -28,7 +29,7 @@ When user says "update for patch X.XX" or provides patch notes:
 2. Fetch patch data: `https://www.dota2.com/datafeed/patchnotes?version=X.XX&language=english`
 3. Fetch d2vpkr data (shops.txt, neutral_items.txt) for authoritative item/ability names
 4. **Categorize changes**: STRUCTURAL (need code) vs NUMBER-ONLY (game API handles) vs TALENT SWAPS
-5. **Always verify ability names on Liquipedia** -- patch note summaries can be wrong
+5. **Always verify ability names on Liquipedia** -- patch note summaries can be wrong; diffing d2vpkr against the previous patch shows what really changed (guide section 1C-2)
 6. Follow the checklist in order: items -> hero builds -> abilities -> neutrals -> actives -> map changes
 7. **Always update TS sources** for any TS-generated Lua files changed (see ARCHITECTURE.md Section 13)
 
@@ -41,8 +42,9 @@ When user says "update for patch X.XX" or provides patch notes:
 ### Fix a Hero's Item Build
 
 1. Read `bots/BotLib/hero_[name].lua`
-2. Edit the `sRoleItemsBuyList['pos_N']` arrays
+2. Legacy heroes: edit the `sRoleItemsBuyList['pos_N']` arrays. Heroes with a `bots/BotLib/Builds/[name].lua` file were rebuilt from D2PT: edit `X.sBuyList` following `docs/D2PT_BUILD_UPDATES.md`, and don't re-pick their items/talents by hand during patch updates
 3. Items use `item_[internal_name]` format -- check `FunLib/aba_item.lua` for valid names
+4. Run `node tests/run-builds.cjs` (build validator + specs)
 
 ### Fix a Hero's Ability Logic
 

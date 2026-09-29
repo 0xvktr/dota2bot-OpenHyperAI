@@ -2,7 +2,7 @@
 
 This is a step-by-step runbook for quickly updating the bot scripts when Valve releases a new Dota 2 patch. Designed to be followed by a developer or AI assistant without needing to re-read the entire codebase.
 
-**Last updated for:** Patch 7.41a (March 2026)
+**Last updated for:** Patch 7.41f (September 2026; the 7.41b-7.41f pass was done on 2026-09-29)
 
 ---
 
@@ -50,10 +50,33 @@ For TALENT SWAPS, check BotLib/hero_*.lua talent preferences and swap if needed.
 
 - **Major patches (7.41, 7.42)**: Full update needed -- items, abilities, neutrals, map changes. Follow all phases.
 - **Minor patches (7.41a, 7.41b)**: Mostly number changes. Focus on:
-  - Talent swaps between levels (check `tTalentTreeList`)
+  - Talent swaps between levels (see 3J: talent preferences are positional)
   - Ability behavior changes (rare but possible)
   - Item active behavior changes (rare but possible)
   - Number changes are handled automatically by the game API
+
+---
+
+## Heroes Updated from D2PT (`bots/BotLib/Builds/`)
+
+Many heroes have been rebuilt hero by hero from Dota2ProTracker data (see
+`docs/D2PT_BUILD_UPDATES.md`). You can recognize them by a data file
+`bots/BotLib/Builds/<hero>.lua` and a `-- Updated to 7.41f from D2PT` note in `hero_<hero>.lua`.
+Their items, skill order, talents, neutral preferences, position weights and matchup lists are
+**evidence-backed choices, not defaults** -- a patch pass must not overwrite them with guesses.
+
+For these heroes, a patch pass only makes **mechanical** fixes:
+- A removed/renamed item in `X.sBuyList` / `X.sSellList` or in the `neutrals` tables of the Builds
+  file: replace it with the closest equivalent and flag the hero for a D2PT refresh. Do **not** apply
+  Phase 2B's "add new items where they fit" or the generic role-replacement table to them.
+- A renamed ability or changed targeting: fix the casting code as for any hero.
+- A talent swap/replacement: check whether the D2PT data already reflects the patch (the Builds file
+  records the D2PT patch and retrieval date). If the data predates the patch, refresh the hero's
+  talents from D2PT rather than reasoning about which talent the author "meant".
+
+After a **major** patch (7.42, ...), all D2PT builds are stale: keep them working mechanically, then
+refresh each hero from D2PT for the new patch (the build validator reports the recorded patch).
+Legacy heroes (no Builds file) follow the rest of this guide unchanged.
 
 ---
 
@@ -98,6 +121,30 @@ Compare against: bots/Buff/NeutralItems.lua + bots/FretBots/SettingsNeutralItemT
 Output: list of new/removed/moved neutrals per tier
 ```
 
+### 1C-2. Diff Against the Previous Patch (recommended)
+
+Patch notes describe intent; the game data shows what actually changed. Diff d2vpkr between the
+commit for the patch we last updated for and `master`:
+
+- **Shop and neutral pools:** check the git history of `dota/scripts/shops.txt` and
+  `dota/scripts/npc/neutral_items.txt` (GitHub API: `commits?path=...&since=<date>`). No commits
+  since the last pass means no pool changes -- nothing to do in Phases 2 and 4 beyond item actives.
+- **Items:** compare the set of `item_*` blocks and their `AbilityBehavior`, `ItemPurchasable` and
+  `ItemRequirements` in `dota/scripts/npc/items.txt`. Recipe cost changes need no code
+  (`GetItemComponents` and `GetItemCost` read the game).
+- **Heroes:** compare `dota/scripts/npc/heroes/npc_dota_hero_<hero>.txt`: the top-level
+  `Ability1..N` slots (learnable abilities and talents, in slot order) and each ability's
+  `AbilityBehavior`, `MaxLevel`, `Innate`, target team/type and Scepter/Shard flags.
+  - Format change (2026): the per-hero files now contain the hero header too. Only read the header
+    keys at the top indentation level -- the nested `AbilityDraftAbilities` block reuses
+    `Ability1..4` for Ability Draft and must be ignored. Older commits keep the header in
+    `dota/scripts/npc/npc_heroes.txt`, and abilities one indentation level shallower.
+  - `*_ad` abilities (e.g. `invoker_cold_snap_ad`) are Ability Draft variants bots never use.
+  - Scepter/Shard flag changes without a patch note are data cleanups; check the notes first.
+
+The 7.41b-f pass scripts followed exactly this approach; the result was a short list of talent slot
+changes and a handful of behavior flags (see "Lessons Learned (7.41b-f)").
+
 ### 1D. Verify Ability Names via Liquipedia
 For each hero with major ability changes:
 ```
@@ -139,6 +186,9 @@ Item["item_new_upgrade"] = GetItemComponents('item_new_upgrade')[1]
 ```
 
 ### 2B. Hero Item Builds (`bots/BotLib/hero_*.lua`)
+
+> Heroes with a `bots/BotLib/Builds/<hero>.lua` file: only replace removed items (see "Heroes Updated
+> from D2PT" above). The replacement table and "add new items" below apply to legacy heroes only.
 
 ```bash
 # Find all heroes referencing a removed item
@@ -274,6 +324,11 @@ Some heroes have non-standard skill progression (Meepo, Invoker). Check if ult l
 
 Example: Meepo Divided We Stand levels changed from 3 to 4 max levels.
 
+Example (7.41b): Invoke grants a bonus orb point at levels 6, 12 and 18 (orbs max at 8). Skill points
+are spent from `sSkillList` in order whenever the bot has points, so the Invoker branch of
+`aba_skill.lua` `GetSkillList()` places 10 / 5 / 5 orb points before the level 10 / 15 / 20 talents,
+and `hero_invoker.lua` builds list 24 orb points. `tests/invoker_skill_spec.lua` checks the timing.
+
 ### 3H. Handle Targeting Changes (generic)
 
 If ability changed from unit-target to point-target (or vice versa):
@@ -309,6 +364,30 @@ Bloodstone's Blood Pact active was CHANGED (not removed) in 7.41 -- it went from
 1. Read the patch notes carefully: "removed" vs "reworked" vs "now does X instead of Y"
 2. Check Liquipedia for the item -- if it still lists an active ability, it was CHANGED not removed
 3. Check d2vpkr `items.txt` for the item's `AbilityBehavior` field
+
+### 3J. Talent Swaps and Replacements
+
+Talent preferences are **positional**, not by name. `J.Skill.GetTalentList()` returns the hero's
+talents in slot order (Ability10/11 = level 10 pair, 12/13 = 15, 14/15 = 20, 16/17 = 25 for most
+heroes), and `GetTalentBuild()` reads `tN = {x, y}` as: `x == 0` takes the first talent of the pair,
+anything else takes the second. So when Valve swaps or replaces a talent, the same `{x, y}` silently
+picks a different talent.
+
+For each hero whose talent slots changed (the d2vpkr diff in 1C-2 lists them):
+1. Heroes with a Builds file: the D2PT data decides (see "Heroes Updated from D2PT"). If it was
+   collected after the patch, it already matches -- just check the comments name the right talents.
+2. Legacy heroes: if a talent the hero **picked** moved to another level, follow it there and
+   re-decide the level it left; if only unpicked slots changed, leave the preference alone. Add a
+   short comment naming the patch on any line you change.
+
+### 3K. Behavior Flags Worth Acting On
+
+- `DOTA_ABILITY_BEHAVIOR_ROOT_DISABLES` added: add a `bot:IsRooted()` guard to the Consider function
+  so the bot stops issuing orders that fail (7.41c: Tusk Drinking Buddies).
+- `ROOT_DISABLES` removed: drop any root guard (7.41e: Sniper Concussive Grenade -- none existed).
+- `ALT_CASTABLE` removed: remove alt-cast usage (7.41b: Drinking Buddies -- the bot never used it).
+- `IGNORE_SILENCE` added to toggles (7.41e: Zeus, Medusa, Muerta, Troll): optional improvement;
+  `J.CanNotUseAbility()` still skips all casting while silenced.
 
 ---
 
@@ -429,8 +508,10 @@ Key TS-generated files that commonly need patch updates:
 - `spell_prob_list.ts` → `spell_prob_list.lua` (ability cast probabilities)
 - `utils.ts` → `utils.lua` (Roshan/fountain coordinates)
 - `aba_hero_roles_map.ts` → `aba_hero_roles_map.lua` (hero role scores for new heroes)
+- `aba_hero_pos_weights.ts` → `aba_hero_pos_weights.lua` (position weights; D2PT formula, see `D2PT_BUILD_UPDATES.md`)
+- `aba_matchups.ts` → `aba_matchups.lua` (synergy/counter lists)
 
-**Pure Lua files** (no TS source, edit directly): `jmz_func.lua`, `aba_item.lua`, `aba_skill.lua`, `spell_list.lua`, `ability_item_usage_generic.lua`, all `BotLib/hero_*.lua`, all `Buff/*.lua`, all `FretBots/*.lua`.
+**Pure Lua files** (no TS source, edit directly): `jmz_func.lua`, `aba_item.lua`, `aba_skill.lua`, `spell_list.lua`, `ability_item_usage_generic.lua`, `Customize/general.lua` (its `.ts` only re-exports the Lua), all `BotLib/hero_*.lua` and `BotLib/Builds/*.lua`, all `Buff/*.lua`, all `FretBots/*.lua`.
 
 See `docs/ARCHITECTURE.md` Section 13 for the complete mapping table.
 
@@ -448,8 +529,14 @@ Before committing:
 - [ ] New active items have `ConsiderItemDesire` functions
 - [ ] **EXISTING ConsiderItemDesire functions audited** for items whose active was removed/changed
 
+**D2PT-updated heroes (`BotLib/Builds/`):**
+- [ ] Only mechanical fixes applied; no items/talents re-picked by hand
+- [ ] Heroes whose data predates a structural change are listed for a D2PT refresh
+- [ ] `node tests/run-builds.cjs` passes (build validator, weights formula, specs)
+
 **Abilities:**
 - [ ] `grep` for old ability names that were renamed
+- [ ] **Talent slot changes** resolved per 3J (positional preferences)
 - [ ] Ability builds only reference indices that exist in the filtered `sAbilityList`
 - [ ] **Targeting type changes** checked (unit→self, unit→no-target, etc.)
 - [ ] **Target restriction changes** checked (can't self-target, can use during X)
@@ -487,3 +574,19 @@ Things we missed on the first pass and had to fix later:
 3. **New abilities replacing old slots** (OD's Objurgation) -- we checked some heroes but not all
 4. **Special skill progression** (Meepo ult levels) -- we didn't check non-standard heroes
 5. **Patch note inaccuracy** -- issue #129's AI-generated list had wrong info (Lina/Sven innates, "Snakebite", "Reprimand" name). Always verify on Liquipedia.
+
+## Lessons Learned (7.41b-f)
+
+Five minor patches were applied in one pass on 2026-09-29, using the d2vpkr diff (1C-2):
+1. **No pool changes:** `shops.txt` and `neutral_items.txt` had no commits since 7.41; `items.txt`
+   only changed costs. Checking git history first saved the whole item/neutral phase.
+2. **Talent preferences are positional** (3J). Slots changed for a dozen heroes, but most swaps touched
+   talents the bots never pick. Only Meepo needed a change (Poof Damage moved from 10 to 15).
+   D2PT-updated heroes (Alchemist, Arc Warden, Bounty Hunter) were already correct because their
+   data was collected on 7.41f.
+3. **Non-standard progressions need a real check:** Invoker's bonus orb points silently left 3
+   points unspent until level 25 and shifted every talent early (3G).
+4. **Behavior flags beat keyword searches:** `ROOT_DISABLES` / `ALT_CASTABLE` changes came straight
+   out of the ability diff (3K).
+5. **Per-hero d2vpkr files changed format** in 2026; the nested `AbilityDraftAbilities` block and
+   `*_ad` abilities produce false positives if parsed naively (1C-2).
