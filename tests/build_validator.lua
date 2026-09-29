@@ -362,6 +362,24 @@ end
 ------------------------------------------------------------------------------------------
 -- Per hero
 ------------------------------------------------------------------------------------------
+-- Regression: caster suitability must not discard observed enchantments in favor of an
+-- unobserved fallback. Timeless still wins when the most-picked option is offered.
+do
+    local bot = { assignedRole = 'pos_3', GetUnitName = function() return 'npc_dota_hero_dark_seer' end }
+    local function select(candidates) return Pref.Select(bot, 'enhancement', 5, candidates) end
+    assert(select({'item_enhancement_fleetfooted', 'item_enhancement_vampiric', 'item_enhancement_feverish'})
+        == 'item_enhancement_feverish', 'Dark Seer must prefer observed Feverish over the fallback')
+    assert(select({'item_enhancement_vampiric', 'item_enhancement_fleetfooted'})
+        == 'item_enhancement_vampiric', 'Dark Seer must retain Vampiric as an observed alternative')
+    assert(select({'item_enhancement_feverish', 'item_enhancement_timeless'})
+        == 'item_enhancement_timeless', 'Dark Seer must still prefer his most-picked enchantment')
+    bot.assignedRole = 'pos_2'
+    bot.GetUnitName = function() return 'npc_dota_hero_crystal_maiden' end
+    assert(select({'item_enhancement_fleetfooted', 'item_enhancement_vampiric'})
+        == 'item_enhancement_vampiric', 'Maiden mid must retain her observed Vampiric alternative')
+    assert(select({'item_enhancement_unknown'}) == nil, 'unreviewed offers must retain the consumer fallback')
+end
+
 local roleCount, heroCount = 0, 0
 local summary = {}
 

@@ -58,7 +58,8 @@ local tier5Profiles = {
             'item_minotaur_horn','item_spider_legs','item_harmonizer','item_heavy_blade',
             'item_desolator_2'},
         enhancement = {'item_enhancement_timeless','item_enhancement_evolved',
-            'item_enhancement_fleetfooted'},
+            -- Observed caster options participate in pick-rate ranking; preserve the existing no-data fallback.
+            'item_enhancement_fleetfooted','item_enhancement_feverish','item_enhancement_vampiric'},
     },
 }
 
