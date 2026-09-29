@@ -6,7 +6,6 @@ return {
     roles={
         pos_1={matches=13,winRate=30.8,skipped=true},
         pos_2={matches=69,winRate=37.7,skipped=true},
-        -- Reviewed baseline 30 + D2PT offlane rating 70.
         pos_3={matches=6195,winRate=48.4,rating=70,weight=100,buildMatches=9993},
         pos_4={matches=112,winRate=38.4,skipped=true},
         pos_5={matches=116,winRate=37.1,skipped=true},

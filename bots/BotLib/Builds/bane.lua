@@ -1,13 +1,13 @@
 -- D2PT 7.41f: https://dota2protracker.com/hero/Bane?section=builds
 -- Retrieved 2026-09-28. Overview: last 8 days; builds: Sep 15-28, updated Sep 28.
--- Role counts sum to 3287; overview reports 3293. Weights: 30 + D2PT role rating.
+-- Role counts sum to 3287; overview reports 3293. Weights: sample-scaled D2PT role rating, see aba_hero_pos_weights.ts.
 return {
     patch='7.41f', updated='2026-09-28', defaultRole='pos_5',
     roles={
         pos_1={matches=1,winRate=0,skipped=true},
         pos_2={matches=30,winRate=46.7,skipped=true},
         pos_3={matches=4,winRate=50,skipped=true},
-        pos_4={matches=600,winRate=48.8,rating=32,weight=62,buildMatches=1011},
+        pos_4={matches=600,winRate=48.8,rating=32,weight=48,buildMatches=1011},
         pos_5={matches=2652,winRate=49.5,rating=41,weight=71,buildMatches=4471},
     },
     -- Current-tier choices only: retained Tumbler/Essence/Mana/Signet/Bauble excluded.

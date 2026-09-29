@@ -1,5 +1,6 @@
 -- D2PT 7.41f, retrieved 2026-09-27: https://dota2protracker.com/hero/Abaddon
--- Role overview: last 8 days. Build samples: Sep 15-27 (12 days).
+-- Role overview (matches, win rate, rating): last 8 days, re-read 2026-09-29 to record role ratings.
+-- Build samples: Sep 15-27 (12 days).
 -- Data only: safe to load from bot scripts AND server-side neutral distributors.
 local X = {
     patch = '7.41f',
@@ -7,11 +8,11 @@ local X = {
     defaultRole = 'pos_5', -- Most-played role for modes without position assignments.
     roles = {
         -- weight: see the formula in typescript/bots/FunLib/aba_hero_pos_weights.ts.
-        pos_1 = { matches = 67, winRate = 37.3, weight = 44, buildMatches = 92 },
-        pos_2 = { matches = 1, winRate = 100, skipped = true },
-        pos_3 = { matches = 155, winRate = 42.6, weight = 51, buildMatches = 230 },
-        pos_4 = { matches = 105, winRate = 47.6, weight = 49, buildMatches = 143 },
-        pos_5 = { matches = 629, winRate = 49.4, weight = 78, buildMatches = 848 },
+        pos_1 = { matches = 64, winRate = 46.9, rating = 32, weight = 36, buildMatches = 92 },
+        pos_2 = { matches = 1, winRate = 0, skipped = true },
+        pos_3 = { matches = 152, winRate = 39.5, rating = 27, weight = 37, buildMatches = 230 },
+        pos_4 = { matches = 110, winRate = 47.3, rating = 32, weight = 38, buildMatches = 143 },
+        pos_5 = { matches = 599, winRate = 51.8, rating = 46, weight = 55, buildMatches = 848 },
     },
 }
 

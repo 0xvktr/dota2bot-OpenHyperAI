@@ -8,7 +8,6 @@ return {
     roles = {
         pos_1 = { matches=4, winRate=50.0, skipped=true },
         pos_2 = { matches=29, winRate=34.5, skipped=true },
-        -- Reviewed weight: 30 freshness baseline + D2PT role rating 24 = 54.
         -- Role concentration alone must not outweigh a 45.3% win rate.
         pos_3 = { matches=2696, winRate=45.3, rating=24, weight=54, buildMatches=4202 },
         pos_4 = { matches=18, winRate=33.3, skipped=true },

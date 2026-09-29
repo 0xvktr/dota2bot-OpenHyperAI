@@ -5,8 +5,7 @@
 return {
     patch='7.41f', updated='2026-09-28', defaultRole='pos_1',
     roles={
-        -- Same reviewed baseline as Underlord: 30 + D2PT rating 31.
-        pos_1={matches=381,winRate=45.9,rating=31,weight=61,buildMatches=466},
+        pos_1={matches=381,winRate=45.9,rating=31,weight=44,buildMatches=466},
         pos_2={matches=95,winRate=36.8,skipped=true},
         pos_3={matches=83,winRate=32.5,skipped=true},
         pos_4={matches=85,winRate=41.2,skipped=true},

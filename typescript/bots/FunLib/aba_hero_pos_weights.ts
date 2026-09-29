@@ -4,20 +4,22 @@ type HeroPositionMap = {
 };
 
 // Hero names: https://github.com/forest0xia/dota2bot-OpenHyperAI/discussions/71
+// Entries marked "D2PT 7.41f" are migrated: each updated role's weight is
+//   round(30 + rating * min(1, sqrt(matches / 2000))), capped at 100,
+// from the D2PT role rating and role matches recorded in bots/BotLib/Builds/<hero>.lua; skipped roles are 0.
+// 30 is the freshness baseline for an updated build. Roles with 2000+ matches get the full rating; smaller
+// samples count for less, because D2PT's rating rewards a high win rate on a handful of games.
+// Unmarked entries are the original hand-tuned weights.
 const HeroPositions: HeroPositionMap = {
-    // D2PT 7.41f, 2026-09-27. Updated roles; mid excluded (1 match).
-    // round(30 + 60 * sqrt(roleMatches / 957) * shrunkWinRate / 0.5).
-    // shrunkWinRate uses 50 prior matches at 50%; see docs/D2PT_BUILD_UPDATES.md.
-    [HeroName.Abaddon]: [44, 0, 51, 49, 78],
-    // D2PT 7.41f: offlane only, 45.3% WR; 30 freshness baseline + 24 role rating.
-    [HeroName.Underlord]: [0, 0, 54, 0, 0],
-    [HeroName.Alchemist]: [61, 0, 0, 0, 0], // D2PT 7.41f: carry only, 30 + rating 31.
-    [HeroName.AncientApparition]: [0, 0, 0, 0, 74], // D2PT 7.41f: pos 5, 30 + rating 44; separate bot-quality cap remains.
-    [HeroName.Antimage]: [94, 0, 0, 0, 0], // D2PT 7.41f: carry only, 30 + rating 64.
-    [HeroName.ArcWarden]: [0, 75, 0, 0, 0],
-    [HeroName.Axe]: [0, 0, 100, 0, 0],
-    [HeroName.Bane]: [0, 0, 0, 62, 71],
-    [HeroName.Batrider] : [0, 63, 63, 0, 0],
+    [HeroName.Abaddon]: [36, 0, 37, 38, 55], // D2PT 7.41f
+    [HeroName.Underlord]: [0, 0, 54, 0, 0], // D2PT 7.41f
+    [HeroName.Alchemist]: [44, 0, 0, 0, 0], // D2PT 7.41f
+    [HeroName.AncientApparition]: [0, 0, 0, 0, 67], // D2PT 7.41f
+    [HeroName.Antimage]: [94, 0, 0, 0, 0], // D2PT 7.41f
+    [HeroName.ArcWarden]: [0, 74, 0, 0, 0], // D2PT 7.41f
+    [HeroName.Axe]: [0, 0, 100, 0, 0], // D2PT 7.41f
+    [HeroName.Bane]: [0, 0, 0, 48, 71], // D2PT 7.41f
+    [HeroName.Batrider] : [0, 42, 42, 0, 0], // D2PT 7.41f
     [HeroName.Beastmaster]: [5, 35, 65, 35, 0],
     [HeroName.Bloodseeker]: [45, 40, 35, 0, 0],
     [HeroName.BountyHunter]: [0, 45, 30, 50, 35],

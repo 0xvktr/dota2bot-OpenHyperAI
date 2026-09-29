@@ -12,6 +12,14 @@ local ROLES = { 'pos_1', 'pos_2', 'pos_3', 'pos_4', 'pos_5' }
 -- below 20 matches there is too little evidence to migrate at all.
 local MIN_ELIGIBLE_MATCHES, MIN_ELIGIBLE_SHARE, MIN_HARD_MATCHES = 50, 0.05, 20
 
+-- Migrated role weight: 30 freshness baseline + D2PT role rating, scaled down for samples under
+-- WEIGHT_FULL_SAMPLE matches (see typescript/bots/FunLib/aba_hero_pos_weights.ts).
+local WEIGHT_BASELINE, WEIGHT_FULL_SAMPLE = 30, 2000
+local function ExpectedWeight(matches, rating)
+    local confidence = math.min(1, math.sqrt(matches / WEIGHT_FULL_SAMPLE))
+    return math.min(100, math.floor(WEIGHT_BASELINE + rating * confidence + 0.5))
+end
+
 local failures, notes = {}, {}
 local function fail(hero, role, message)
     failures[#failures + 1] = hero..(role and (' '..role) or '')..': '..message
@@ -405,6 +413,12 @@ for _, hero in ipairs(CTX.heroes) do
                     heroFail(pos, 'migrated role must record its weight')
                 elseif r.weight ~= weight then
                     heroFail(pos, 'weight '..tostring(r.weight)..' in Builds differs from aba_hero_pos_weights ('..tostring(weight)..')')
+                end
+                if type(r.rating) ~= 'number' then
+                    heroFail(pos, 'migrated role must record its D2PT role rating')
+                elseif type(r.weight) == 'number' and r.weight ~= ExpectedWeight(r.matches, r.rating) then
+                    heroFail(pos, string.format('weight %s does not follow the formula: %d matches, rating %s -> %d',
+                        tostring(r.weight), r.matches, tostring(r.rating), ExpectedWeight(r.matches, r.rating)))
                 end
                 if type(weight) ~= 'number' or weight < 1 or weight > 100 then
                     heroFail(pos, 'migrated role needs a weight of 1-100, found '..tostring(weight))

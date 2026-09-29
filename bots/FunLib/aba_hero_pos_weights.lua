@@ -3,17 +3,16 @@ local ____exports = {}
 local ____heroes = require(GetScriptDirectory().."/ts_libs/dota/heroes")
 local HeroName = ____heroes.HeroName
 local HeroPositions = {
-    -- D2PT 7.41f, 2026-09-27; same calculation as the TypeScript source.
-    [HeroName.Abaddon] = {44, 0, 51, 49, 78},
-    -- D2PT 7.41f: offlane only; 45.3% WR, role rating 24.
+    -- Migrated (D2PT 7.41f) weights: round(30 + rating * min(1, sqrt(matches / 2000))); see the TypeScript source.
+    [HeroName.Abaddon] = {36, 0, 37, 38, 55},
     [HeroName.Underlord] = {0, 0, 54, 0, 0},
-    [HeroName.Alchemist] = {61, 0, 0, 0, 0},
-    [HeroName.AncientApparition] = {0, 0, 0, 0, 74},
+    [HeroName.Alchemist] = {44, 0, 0, 0, 0},
+    [HeroName.AncientApparition] = {0, 0, 0, 0, 67},
     [HeroName.Antimage] = {94, 0, 0, 0, 0},
-    [HeroName.ArcWarden] = {0, 75, 0, 0, 0},
+    [HeroName.ArcWarden] = {0, 74, 0, 0, 0},
     [HeroName.Axe] = {0, 0, 100, 0, 0},
-    [HeroName.Bane] = {0, 0, 0, 62, 71},
-    [HeroName.Batrider] = {0, 63, 63, 0, 0},
+    [HeroName.Bane] = {0, 0, 0, 48, 71},
+    [HeroName.Batrider] = {0, 42, 42, 0, 0},
     [HeroName.Beastmaster] = {
         5,
         35,

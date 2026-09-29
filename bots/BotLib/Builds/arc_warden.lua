@@ -4,8 +4,7 @@ return {
     patch='7.41f', updated='2026-09-28', defaultRole='pos_2',
     roles={
         pos_1={matches=101,winRate=46.5,skipped=true},
-        -- Reviewed baseline 30 + D2PT mid rating 45.
-        pos_2={matches=1941,winRate=51.7,rating=45,weight=75,buildMatches=2913},
+        pos_2={matches=1941,winRate=51.7,rating=45,weight=74,buildMatches=2913},
         pos_3={matches=6,winRate=100.0,skipped=true},
         pos_4={matches=42,winRate=26.2,skipped=true},
         pos_5={matches=41,winRate=41.5,skipped=true},

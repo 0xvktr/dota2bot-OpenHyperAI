@@ -4,7 +4,6 @@
 return {
     patch='7.41f', updated='2026-09-28', defaultRole='pos_1',
     roles={
-        -- Same reviewed baseline: 30 + D2PT carry rating 64.
         pos_1={matches=3915,winRate=51.4,rating=64,weight=94,buildMatches=5923},
         pos_2={matches=141,winRate=48.2,skipped=true},
         pos_3={matches=91,winRate=54.9,skipped=true},

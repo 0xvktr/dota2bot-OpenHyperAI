@@ -1,12 +1,12 @@
 -- D2PT 7.41f: https://dota2protracker.com/hero/Batrider?section=builds
 -- Retrieved 2026-09-28. Overview: last 8 days; builds: Sep 15-28, updated Sep 28.
--- Role counts sum to 728; overview reports 729. Weights: 30 + D2PT role rating.
+-- Role counts sum to 728; overview reports 729. Weights: sample-scaled D2PT role rating, see aba_hero_pos_weights.ts.
 return {
     patch='7.41f', updated='2026-09-28', defaultRole='pos_2',
     roles={
         pos_1={matches=1,winRate=0,skipped=true},
-        pos_2={matches=261,winRate=47.9,rating=33,weight=63,buildMatches=458},
-        pos_3={matches=258,winRate=48.4,rating=33,weight=63,buildMatches=476},
+        pos_2={matches=261,winRate=47.9,rating=33,weight=42,buildMatches=458},
+        pos_3={matches=258,winRate=48.4,rating=33,weight=42,buildMatches=476},
         pos_4={matches=130,winRate=43.8,skipped=true},
         pos_5={matches=79,winRate=39.2,skipped=true},
     },

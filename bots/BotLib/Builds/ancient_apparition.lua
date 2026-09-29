@@ -9,8 +9,7 @@ return {
         pos_2={matches=24,winRate=54.2,skipped=true},
         pos_3={matches=1,winRate=100,skipped=true},
         pos_4={matches=348,winRate=48.6,skipped=true},
-        -- Reviewed priority: 30 freshness baseline + D2PT rating 44.
-        pos_5={matches=1439,winRate=49.9,rating=44,weight=74,buildMatches=1944},
+        pos_5={matches=1439,winRate=49.9,rating=44,weight=67,buildMatches=1944},
     },
     neutrals={pos_5={tier5Profile='support',
         neutral={

@@ -12,13 +12,25 @@ borderline roles rather than trusting a tiny sample's win rate. For a migrated h
 skipped positions zero weight; explicit player picks can use a documented fallback build.
 Leave unmigrated heroes available while the roster is updated incrementally.
 
-Weights are reviewed selection priorities, not win predictions. Consider role frequency,
-sample size, win rate, and D2PT's role rating. Being the hero's only common position should
-not give a poorly performing hero a near-maximum weight. Migrated roles get a freshness
-preference, but that must not override weak performance. Keep the chosen weight and its
-rationale near the source data and synchronize the TypeScript and generated Lua tables.
-Do not confuse within-hero role share with global pick rate; only use global pick rate
-when a consistent patch/window denominator is available.
+Weights are selection priorities, not win predictions. Every migrated role uses one formula:
+
+    weight = round(30 + rating * min(1, sqrt(matches / 2000))), capped at 100
+
+`rating` is D2PT's role rating (0-100) from the hero page's role tabs, and `matches` is that role's
+count in the same overview window; record both in the hero's `Builds/` data file. D2PT's rating
+combines performance and draft priority, but a high win rate on a few hundred games can still rate
+as well as a hero played ten times as often, and D2PT itself gives no tier to small role samples.
+The square-root confidence factor keeps full weight for 2000+ matches and discounts smaller samples
+(for example Chen pos 5, 379 matches, rating 43 -> 49; Crystal Maiden pos 5, 3983 matches, rating
+48 -> 78). The 30 is a freshness baseline for having an updated build. Skipped roles are 0. Put the
+same numbers in the TypeScript and generated Lua tables; `tests/build_validator.lua` checks both
+the formula and the sync.
+
+How much the weights matter in drafting: a weight of 50+ always enters the position's candidate
+pool (lower weights enter with probability (weight - 5) / 46), and scoring adds
+`weight / 20` to the matchup score, so weights differentiate most through pool entry and large gaps.
+Unmigrated heroes keep their original hand-tuned weights on a different scale until migrated.
+Do not confuse within-hero role share with global pick rate.
 
 Draft scoring adds a positive role bonus so higher weights help even with negative or
 zero matchup scores, and uses the assigned position after player-slot shuffling.
@@ -109,8 +121,8 @@ fengari-node-cli). Migrating a hero adds **no test code**: `tests/build_validato
 discovers every `bots/BotLib/Builds/<hero>.lua` and checks, for each role:
 
 - **Roles and weights:** every role has `matches`/`winRate`; skipped roles have weight 0;
-  migrated roles record a weight equal to `aba_hero_pos_weights` (TS and generated Lua are
-  compared for all heroes); fewer than 20 matches fails, and a migrated role below 50 matches
+  migrated roles record their D2PT `rating` and a weight that follows the formula above and
+  equals `aba_hero_pos_weights` (TS and generated Lua are compared for all heroes); fewer than 20 matches fails, and a migrated role below 50 matches
   or 5% of the hero is flagged for review. Skipped roles that would be eligible are listed as
   notes, not failures. `defaultRole` is migrated, and the hero source mentions the patch.
 - **Items:** every buy/sell item is a known item name; no duplicate purchases apart from
