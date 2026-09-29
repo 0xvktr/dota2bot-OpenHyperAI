@@ -8,130 +8,31 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						{--pos1,2
-							['t25'] = {0, 10},
-							['t20'] = {0, 10},
-							['t15'] = {0, 10},
-							['t10'] = {0, 10},
-						},
-						{--pos3
-							['t25'] = {0, 10},
-							['t20'] = {0, 10},
-							['t15'] = {0, 10},
-							['t10'] = {0, 10},
-						}
+-- Updated to 7.41f from D2PT: position 1 only; forced other roles use the same build.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/bloodseeker')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- Learnable abilities: [1] Bloodrage, [2] Blood Rite, [3] Thirst, [6] Rupture. D2PT shows only the first ten
+-- levels (Blood Rite and Bloodrage maxed, one Thirst point); later levels are a legal continuation.
+local nAbilityBuildList = {2,3,2,1,2,6,2,1,1,1,6,3,3,3,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- +30 Bloodrage attack speed
+    t15={0,10}, -- -0.7% Bloodrage max health DPS
+    t20={0,10}, -- +400 Rupture cast range
+    t25={10,0}, -- +15% max Thirst move speed
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    'item_tango', 'item_quelling_blade', 'item_branches', 'item_circlet', 'item_magic_stick', 'item_magic_wand',
+    'item_phase_boots', 'item_maelstrom', 'item_mjollnir', 'item_black_king_bar', 'item_aghanims_shard',
+    'item_basher', 'item_abyssal_blade',
+    -- Reviewed late continuation: D2PT's 35-55 minute inventories carry Butterfly and Blink.
+    'item_butterfly', 'item_blink', 'item_ultimate_scepter_2', 'item_moon_shard',
 }
-
-local tAllAbilityBuildList = {
-						{3,2,3,1,3,6,1,1,1,3,6,2,2,2,6},--pos1,2
-						{2,3,3,1,3,6,3,1,1,1,6,2,2,2,6},--pos3
-}
-
-local nAbilityBuildList = tAllAbilityBuildList[2]
-if sRole == 'pos_1' then nAbilityBuildList = tAllAbilityBuildList[1] end
-if sRole == 'pos_2' then nAbilityBuildList = tAllAbilityBuildList[1] end
-if sRole == 'pos_3' then nAbilityBuildList = tAllAbilityBuildList[2] end
-
-local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[2])
-if sRole == 'pos_1' then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[1]) end
-if sRole == 'pos_2' then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[1]) end
-if sRole == 'pos_3' then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[2]) end
-
-local sUtility = {"item_crimson_guard", "item_pipe"}
-local nUtility = sUtility[RandomInt(1, #sUtility)]
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_quelling_blade",
-	"item_slippers",
-	"item_circlet",
-	"item_magic_wand",
-
-	"item_wraith_band",
-	"item_phase_boots",
-	"item_maelstrom",
-    "item_yasha",
-    "item_black_king_bar",--
-    "item_sange_and_yasha",--
-	"item_mjollnir",--
-	"item_basher",
-	"item_aghanims_shard",
-	-- "item_butterfly",--
-	"item_abyssal_blade",--
-	"item_skadi",--
-	"item_monkey_king_bar",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_2'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_quelling_blade",
-	"item_slippers",
-	"item_circlet",
-	"item_magic_wand",
-
-	"item_wraith_band",
-	"item_bottle",
-	"item_phase_boots",
-	"item_maelstrom",
-    "item_yasha",
-    "item_black_king_bar",--
-    "item_sange_and_yasha",--
-	"item_mjollnir",--
-	"item_basher",
-	"item_aghanims_shard",
-	-- "item_butterfly",--
-	"item_sheepstick",--
-	"item_travel_boots",
-	"item_abyssal_blade",--
-	"item_travel_boots_2",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_3'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_quelling_blade",
-	"item_magic_wand",
-
-	"item_double_wraith_band",
-	"item_boots",
-	"item_phase_boots",
-	"item_maelstrom",
-	"item_black_king_bar",--
-	"item_mjollnir",--
-	"item_heavens_halberd",--
-	nUtility,--
-	"item_basher",
-	"item_travel_boots",
-	"item_abyssal_blade",--
-	"item_travel_boots_2",--
-	"item_aghanims_shard",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_3']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_power_treads",
-	"item_quelling_blade",
-
-	"item_abyssal_blade",
-	"item_magic_wand",
-
+-- Purchase/sale pairs free early inventory slots as the main build arrives.
+X.sSellList = {
+    'item_phase_boots', 'item_quelling_blade',
+    'item_butterfly', 'item_magic_wand',
 }
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_melee_carry' }, {"item_power_treads", 'item_quelling_blade'} end
@@ -139,6 +40,10 @@ if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList']
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Bloodrage is maxed at 10 and the first talent comes at 11. Respect custom builds.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

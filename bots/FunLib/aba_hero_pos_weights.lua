@@ -13,48 +13,12 @@ local HeroPositions = {
     [HeroName.Axe] = {0, 0, 100, 0, 0},
     [HeroName.Bane] = {0, 0, 0, 48, 71},
     [HeroName.Batrider] = {0, 42, 42, 0, 0},
-    [HeroName.Beastmaster] = {
-        5,
-        35,
-        65,
-        35,
-        0
-    },
-    [HeroName.Bloodseeker] = {
-        45,
-        40,
-        35,
-        0,
-        0
-    },
-    [HeroName.BountyHunter] = {
-        0,
-        45,
-        30,
-        50,
-        35
-    },
-    [HeroName.Brewmaster] = {
-        5,
-        15,
-        85,
-        5,
-        0
-    },
-    [HeroName.Bristleback] = {
-        30,
-        40,
-        60,
-        0,
-        0
-    },
-    [HeroName.Broodmother] = {
-        15,
-        60,
-        30,
-        5,
-        0
-    },
+    [HeroName.Beastmaster] = {0, 43, 65, 0, 0},
+    [HeroName.Bloodseeker] = {46, 0, 0, 0, 0},
+    [HeroName.BountyHunter] = {0, 0, 0, 100, 67},
+    [HeroName.Brewmaster] = {0, 37, 84, 0, 0},
+    [HeroName.Bristleback] = {36, 0, 43, 0, 0},
+    [HeroName.Broodmother] = {43, 51, 40, 0, 0},
     [HeroName.Centaur] = {
         5,
         5,

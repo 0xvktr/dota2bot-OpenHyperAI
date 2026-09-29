@@ -7,132 +7,64 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {10, 0},
-						['t20'] = {0, 10},
-						['t15'] = {10, 0},
-						['t10'] = {0, 10},
-}
-
-local tAllAbilityBuildList = {
-						{1,2,3,3,3,6,3,2,2,2,6,1,1,1,6},--pos3
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-local sUtility = {"item_crimson_guard", "item_pipe"} --, "item_lotus_orb"}
-local sCrimsonPipeLotus = sUtility[RandomInt(1, #sUtility)]
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_bristleback_outfit",
-    "item_hand_of_midas",
-    "item_radiance",--
-	"item_heavens_halberd",--
-	"item_black_king_bar",--
-	"item_travel_boots",
-	"item_abyssal_blade",--
-	"item_aghanims_shard",
-    "item_ultimate_scepter_2",
-    "item_heart",--
-	"item_moon_shard",
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_2'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_quelling_blade",
-
-    "item_magic_wand",
-    "item_double_bracer",
-    "item_boots",
-    "item_radiance",--
-    "item_assault",--
-    "item_ultimate_scepter",
-    "item_aghanims_shard",
-    "item_travel_boots",
-    "item_black_king_bar",--
-    "item_shivas_guard",--
-    "item_moon_shard",
-    "item_travel_boots_2",--
-    "item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_3'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_quelling_blade",
-
-    "item_magic_wand",
-    "item_double_bracer",
-    "item_boots",
-    "item_radiance",--
-    "item_pipe",--
-    "item_black_king_bar",--
-    sCrimsonPipeLotus,--
-    "item_aghanims_shard",
-    "item_travel_boots",
-    "item_shivas_guard",--
-    "item_moon_shard",
-    "item_travel_boots_2",--
-    "item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_4'] = {
-	'item_priest_outfit',
-	"item_hand_of_midas",
-	"item_mekansm",
-	"item_glimmer_cape",--
-	"item_guardian_greaves",--
-    "item_aghanims_shard",
-	"item_assault",--
-	"item_heavens_halberd",--
-    "item_shivas_guard",--
-    "item_refresher",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-	'item_priest_outfit',
-	"item_hand_of_midas",
-	"item_mekansm",
-	"item_glimmer_cape",--
-	"item_pipe",--
-    "item_aghanims_shard",
-	"item_assault",--
-	"item_heavens_halberd",--
-    "item_shivas_guard",--
-    "item_refresher",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-	"item_heavens_halberd",
-	"item_quelling_blade",
-
-	"item_assault",
-	"item_quelling_blade",
-
-	"item_abyssal_blade",
-	"item_magic_wand",
-
-	"item_assault",
-	"item_ancient_janggo",
-}
+-- Updated to 7.41f from D2PT: positions 3 (offlane) and 2 (mid); forced other roles use pos 3.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/brewmaster')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- Learnable abilities: [1] Thunder Clap, [2] Cinder Brew, [3] Drunken Brawler, [6] Primal Split.
+-- D2PT shows only the first ten levels; later levels are a legal continuation.
+local nAbilityBuildList
+if sRole == 'pos_2' then
+    nAbilityBuildList = {1,3,1,2,2,6,2,2,1,1,6,3,3,3,6}
+else
+    nAbilityBuildList = {2,1,2,3,2,6,2,3,3,3,6,1,1,1,6}
+end
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- +13 Brewlings base damage
+    t15={10,0}, -- +600 Brewlings health
+    t20={0,10}, -- -12s Primal Split cooldown
+    t25={0,10}, -- 1.5x Drunken Brawler stance bonuses
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+if sRole == 'pos_2' then
+    X.sBuyList = {
+        'item_tango', 'item_double_branches', 'item_double_circlet', 'item_bracer', 'item_urn_of_shadows',
+        'item_phase_boots', 'item_blink', 'item_vladmir', 'item_ultimate_scepter', 'item_assault',
+        -- Reviewed late continuation, not D2PT core.
+        'item_aghanims_shard', 'item_ultimate_scepter_2', 'item_overwhelming_blink', 'item_moon_shard',
+    }
+    X.sSellList = {
+        'item_blink', 'item_bracer',
+        'item_blink', 'item_circlet',
+        'item_assault', 'item_urn_of_shadows',
+    }
+else
+    X.sBuyList = {
+        'item_tango', 'item_quelling_blade', 'item_branches', 'item_circlet', 'item_magic_stick', 'item_bracer',
+        'item_urn_of_shadows', 'item_magic_wand', 'item_phase_boots', 'item_spirit_vessel', 'item_ultimate_scepter',
+        'item_blink', 'item_assault', 'item_refresher',
+        -- Reviewed late continuation, not D2PT core.
+        'item_aghanims_shard', 'item_ultimate_scepter_2', 'item_overwhelming_blink', 'item_travel_boots',
+        'item_moon_shard',
+    }
+    X.sSellList = {
+        'item_phase_boots', 'item_quelling_blade',
+        'item_blink', 'item_bracer',
+        'item_assault', 'item_magic_wand',
+        'item_refresher', 'item_spirit_vessel',
+        'item_travel_boots', 'item_phase_boots',
+    }
+end
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Level 10 still spends an ability point in both roles, so the first talent comes at 11. Respect custom builds.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

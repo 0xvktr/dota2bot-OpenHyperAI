@@ -51,13 +51,16 @@ const neutralTiers = {}, enhancementTiers = {};
 function addTier(map, name, tier) { (map[name] ||= {})[tier] = true; }
 const fretTable = read('bots/FretBots/SettingsNeutralItemTable.lua');
 const buffPools = read('bots/Buff/NeutralItems.lua');
-// Commented-out entries still describe real items; builds may list items a pool skips (e.g. active-use).
-for (const source of [fretTable, buffPools]) {
+// Only active entries count: the pools comment out items that moved tier (or were removed) in 7.41, and
+// a commented old-tier entry would let a retained lower-tier item through. Block-comment labels such as
+// `--[[Occult Bracelet]]` in front of an active entry are stripped first.
+const activeOnly = source => source.replace(/--\[\[[^\]]*\]\]/g, '').replace(/--[^\n]*/g, '');
+for (const source of [activeOnly(fretTable), activeOnly(buffPools)]) {
     for (const [, name, tier] of source.matchAll(/name\s*=\s*"(item_[a-z0-9_]+)"\s*,\s*tier\s*=\s*(\d)/g)) {
         addTier(name.startsWith('item_enhancement_') ? enhancementTiers : neutralTiers, name, Number(tier));
     }
 }
-for (const [, tier, body] of buffPools.matchAll(/local Tier(\d)NeutralItems\s*=\s*\{([\s\S]*?)\n\}/g)) {
+for (const [, tier, body] of activeOnly(buffPools).matchAll(/local Tier(\d)NeutralItems\s*=\s*\{([\s\S]*?)\n\}/g)) {
     for (const [, name] of body.matchAll(/"(item_[a-z0-9_]+)"/g)) addTier(neutralTiers, name, Number(tier));
 }
 const items = {};

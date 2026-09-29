@@ -1,5 +1,11 @@
 -- Shared data-only preferences: never execute a hero BotLib in the server VM.
 local builds = {
+    npc_dota_hero_bloodseeker = require('bots.BotLib.Builds.bloodseeker'),
+    npc_dota_hero_bounty_hunter = require('bots.BotLib.Builds.bounty_hunter'),
+    npc_dota_hero_brewmaster = require('bots.BotLib.Builds.brewmaster'),
+    npc_dota_hero_bristleback = require('bots.BotLib.Builds.bristleback'),
+    npc_dota_hero_broodmother = require('bots.BotLib.Builds.broodmother'),
+    npc_dota_hero_beastmaster = require('bots.BotLib.Builds.beastmaster'),
     npc_dota_hero_batrider = require('bots.BotLib.Builds.batrider'),
     npc_dota_hero_bane = require('bots.BotLib.Builds.bane'),
     npc_dota_hero_axe = require('bots.BotLib.Builds.axe'),
@@ -28,7 +34,9 @@ local tier5Profiles = {
         neutral = {'item_desolator_2','item_heavy_blade','item_divine_regalia',
             'item_riftshadow_prism','item_fallen_sky','item_minotaur_horn',
             'item_spider_legs','item_dezun_bloodrite','item_demonicon'},
-        enhancement = {'item_enhancement_fleetfooted','item_enhancement_evolved','item_enhancement_audacious'},
+        -- Vampiric is ranked last: it only wins when D2PT's pick data prefers it over every other supported choice.
+        enhancement = {'item_enhancement_fleetfooted','item_enhancement_evolved','item_enhancement_audacious',
+            'item_enhancement_vampiric'},
     },
     support = {
         neutral = {'item_demonicon','item_dezun_bloodrite','item_fallen_sky',

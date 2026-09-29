@@ -183,6 +183,10 @@ local UPGRADES = {
     item_rod_of_atos = { 'item_gungir' },
     item_travel_boots = { 'item_travel_boots_2' },
     item_diffusal_blade = { 'item_disperser' },
+    item_urn_of_shadows = { 'item_spirit_vessel' },
+    item_yasha = { 'item_manta', 'item_sange_and_yasha' },
+    item_sange = { 'item_sange_and_yasha' },
+    item_boots = { 'item_tranquil_boots', 'item_phase_boots', 'item_power_treads', 'item_arcane_boots' },
     item_ultimate_scepter = { 'item_ultimate_scepter_2' },
 }
 

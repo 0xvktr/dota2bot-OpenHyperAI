@@ -7,95 +7,61 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						{--pos2
-                            ['t25'] = {0, 10},
-                            ['t20'] = {10, 0},
-                            ['t15'] = {0, 10},
-                            ['t10'] = {0, 10},
-                        },
-                        {--pos3
-                            ['t25'] = {0, 10},
-                            ['t20'] = {10, 0},
-                            ['t15'] = {0, 10},
-                            ['t10'] = {10, 0},
-                        }
-}
-
-local tAllAbilityBuildList = {
-						{2,3,2,3,2,6,2,3,3,1,6,1,1,1,6},--pos2
-                        {2,3,2,1,2,6,2,3,3,3,6,1,1,1,6},--pos3
-}
-
-local nAbilityBuildList = tAllAbilityBuildList[2]
-local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[2])
-
-if sRole == "pos_2"
-then
-    nAbilityBuildList   = tAllAbilityBuildList[1]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[1])
-elseif sRole == "pos_3"
-then
-    nAbilityBuildList   = tAllAbilityBuildList[2]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[2])
+-- Updated to 7.41f from D2PT: positions 2, 1 and 3; forced other roles use pos 2.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/broodmother')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- Learnable abilities: [1] Insatiable Hunger, [2] Spin Web, [3] Incapacitating Bite, [6] Spawn Spiderlings.
+-- D2PT shows only the first ten levels; later levels are a legal continuation.
+local nAbilityBuildList, nTalentBuildList
+if sRole == 'pos_1' or sRole == 'pos_3' then
+    nAbilityBuildList = {2,1,3,2,2,6,2,3,3,3,6,1,1,1,6}
+    nTalentBuildList = J.Skill.GetTalentBuild({
+        t10={10,0}, -- +20% Insatiable Hunger lifesteal
+        t15={0,10}, -- +5 Incapacitating Bite attack bonus
+        t20={0,10}, -- -6s Spin Web charge restore time
+        t25={0,10}, -- -0.15s BAT during Insatiable Hunger
+    })
+else
+    nAbilityBuildList = {2,1,2,3,2,6,2,3,3,3,6,1,1,1,6}
+    nTalentBuildList = J.Skill.GetTalentBuild({
+        t10={0,10}, -- +80 Spawn Spiderlings damage
+        t15={0,10}, -- +5 Incapacitating Bite attack bonus
+        t20={0,10}, -- -6s Spin Web charge restore time
+        t25={0,10}, -- -0.15s BAT during Insatiable Hunger
+    })
 end
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_2'] = {
-    "item_tango",
-    "item_double_branches",
-
-    "item_double_wraith_band",
-    "item_power_treads",
-    "item_soul_ring",
-    "item_magic_wand",
-	"item_orchid",
-    "item_bloodthorn",--
-    "item_black_king_bar",--
-    "item_sheepstick",--
-    "item_aghanims_shard",
-    "item_nullifier",--
-    "item_skadi",--
-    "item_travel_boots_2",--
-    "item_moon_shard",
-    "item_ultimate_scepter",
-    "item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_3'] = {
-    "item_tango",
-    "item_double_branches",
-
-    "item_double_wraith_band",
-    "item_power_treads",
-    "item_soul_ring",
-    "item_magic_wand",
-	"item_orchid",
-    "item_bloodthorn",--
-    "item_black_king_bar",--
-    "item_assault",--
-    "item_aghanims_shard",
-    "item_sheepstick",--
-    "item_skadi",--
-    "item_travel_boots_2",--
-    "item_moon_shard",
-    "item_ultimate_scepter",
-    "item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_3']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-	"item_power_treads",
-	"item_quelling_blade",
-
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+if sRole == 'pos_1' then
+    X.sBuyList = {
+        'item_tango', 'item_quelling_blade', 'item_slippers', 'item_double_branches', 'item_circlet',
+        'item_wraith_band', 'item_magic_wand', 'item_power_treads', 'item_soul_ring', 'item_yasha', 'item_orchid',
+        'item_manta', 'item_black_king_bar', 'item_butterfly', 'item_aghanims_shard',
+        -- Natural Orchid upgrade, then a reviewed late continuation.
+        'item_bloodthorn', 'item_ultimate_scepter_2', 'item_moon_shard',
+    }
+elseif sRole == 'pos_3' then
+    X.sBuyList = {
+        'item_tango', 'item_quelling_blade', 'item_slippers', 'item_double_branches', 'item_circlet',
+        'item_wraith_band', 'item_magic_wand', 'item_power_treads', 'item_soul_ring', 'item_orchid', 'item_yasha',
+        'item_manta', 'item_black_king_bar', 'item_bloodthorn', 'item_aghanims_shard',
+        -- Reviewed late continuation, not D2PT core.
+        'item_ultimate_scepter_2', 'item_moon_shard',
+    }
+else
+    X.sBuyList = {
+        'item_tango', 'item_quelling_blade', 'item_slippers', 'item_double_branches', 'item_circlet',
+        'item_wraith_band', 'item_magic_wand', 'item_soul_ring', 'item_power_treads', 'item_orchid', 'item_yasha',
+        'item_manta', 'item_black_king_bar', 'item_bloodthorn', 'item_aghanims_shard',
+        -- Reviewed late continuation, not D2PT core.
+        'item_ultimate_scepter_2', 'item_moon_shard',
+    }
+end
+-- Purchase/sale pairs free early inventory slots as the main build arrives.
+X.sSellList = {
+    'item_power_treads', 'item_quelling_blade',
+    'item_orchid', 'item_wraith_band',
+    'item_manta', 'item_magic_wand',
 }
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
@@ -103,6 +69,10 @@ if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList']
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Both builds max Incapacitating Bite at 10 and take the first talent at 11. Respect custom builds.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

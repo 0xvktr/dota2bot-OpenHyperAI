@@ -20,12 +20,12 @@ const HeroPositions: HeroPositionMap = {
     [HeroName.Axe]: [0, 0, 100, 0, 0], // D2PT 7.41f
     [HeroName.Bane]: [0, 0, 0, 48, 71], // D2PT 7.41f
     [HeroName.Batrider] : [0, 42, 42, 0, 0], // D2PT 7.41f
-    [HeroName.Beastmaster]: [5, 35, 65, 35, 0],
-    [HeroName.Bloodseeker]: [45, 40, 35, 0, 0],
-    [HeroName.BountyHunter]: [0, 45, 30, 50, 35],
-    [HeroName.Brewmaster]: [5, 15, 85, 5, 0],
-    [HeroName.Bristleback]: [30, 40, 60, 0, 0],
-    [HeroName.Broodmother]: [15, 60, 30, 5, 0],
+    [HeroName.Beastmaster]: [0, 43, 65, 0, 0], // D2PT 7.41f
+    [HeroName.Bloodseeker]: [46, 0, 0, 0, 0], // D2PT 7.41f
+    [HeroName.BountyHunter]: [0, 0, 0, 100, 67], // D2PT 7.41f
+    [HeroName.Brewmaster]: [0, 37, 84, 0, 0], // D2PT 7.41f
+    [HeroName.Bristleback]: [36, 0, 43, 0, 0], // D2PT 7.41f
+    [HeroName.Broodmother]: [43, 51, 40, 0, 0], // D2PT 7.41f
     [HeroName.Centaur]: [5, 5, 85, 5, 0],
     [HeroName.ChaosKnight]: [55, 40, 25, 0, 0],
     [HeroName.Chen]: [0, 5, 10, 15, 20],

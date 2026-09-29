@@ -93,12 +93,13 @@ atomically replacing the Lua file. An incomplete scrape leaves the previous file
 
 `typescript/bots/FunLib/aba_matchups.ts` and its generated Lua retain simple binary
 synergy/counter lists. Entries for Abaddon, Underlord, Alchemist, Ancient Apparition,
-Anti-Mage, Arc Warden, Axe, Bane and Batrider were refreshed from D2PT on 2026-09-28 (site patch 7.41f).
+Anti-Mage, Arc Warden, Axe, Bane and Batrider were refreshed from D2PT on 2026-09-28 (site patch 7.41f),
+Beastmaster, Bloodseeker, Bounty Hunter, Brewmaster, Bristleback and Broodmother on 2026-09-29.
 Unmarked heroes retain their older lists and can be refreshed as their builds are updated.
 Source pages are `https://dota2protracker.com/hero/<hero>?section=matchups`.
 
-D2PT requires a source role: hard support for Abaddon/AA/Bane, offlane for Underlord/Axe,
-carry for Alchemist/Anti-Mage, and mid for Arc Warden/Batrider. Select **All** opponent/ally
+D2PT requires a source role: hard support for Abaddon/AA/Bane, offlane for Underlord/Axe/Beastmaster/Brewmaster/Bristleback, support for Bounty Hunter,
+carry for Alchemist/Anti-Mage/Bloodseeker, and mid for Arc Warden/Batrider/Broodmother. Select **All** opponent/ally
 roles and enable **Normalized** for both tables. Collapse the displayed role rows
 by hero using a match-count-weighted mean of their normalized values; this is an
 approximation from rounded UI values, not an independently calculated all-role

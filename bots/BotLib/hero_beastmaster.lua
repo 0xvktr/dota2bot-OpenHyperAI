@@ -7,144 +7,66 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {10, 0},
-						['t20'] = {10, 0},
-						['t15'] = {0, 10},
-						['t10'] = {10, 0},
-}
-
-local tAllAbilityBuildList = {
-						{1,2,2,1,1,6,1,2,2,4,6,4,4,4,6},--pos3 (Axes + Boar for lane pressure)
-						{2,4,2,4,2,6,2,4,4,1,6,1,1,1,6},--pos1/2 (Boar + Inner Beast for fighting)
-}
-
+-- Updated to 7.41f from D2PT: positions 2 (mid) and 3 (offlane); forced other roles use pos 3.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/beastmaster')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- Learnable abilities: [1] Wild Axes, [2] Summon Razorback, [3] Summon Raptors, [6] Primal Roar
+-- (Inner Beast is an innate). D2PT shows only the first ten levels: both roles max Razorback and
+-- Axes first (mid Axes before Razorback) and take Raptors at 10; later levels are a legal continuation.
 local nAbilityBuildList
-if sRole == 'pos_1' or sRole == 'pos_2' then
-	nAbilityBuildList = tAllAbilityBuildList[2]
+if sRole == 'pos_2' then
+    nAbilityBuildList = {2,1,2,1,1,6,1,2,2,3,6,3,3,3,6}
 else
-	nAbilityBuildList = tAllAbilityBuildList[1]
+    nAbilityBuildList = {2,1,2,1,2,6,2,1,1,3,6,3,3,3,6}
 end
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_bristleback_outfit",
-    "item_ultimate_scepter",
-    "item_echo_sabre",
-	"item_harpoon",--
-	"item_assault",--
-	"item_black_king_bar",--
-    "item_blink",
-	"item_abyssal_blade",--
-	"item_aghanims_shard",
-	"item_travel_boots",
-	"item_overwhelming_blink",--
-	"item_moon_shard",
-    "item_ultimate_scepter_2",
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_2'] = {
-    "item_double_branches",
-    "item_tango",
-    "item_faerie_fire",
-
-    "item_bottle",
-    "item_magic_wand",
-    "item_power_treads",
-    "item_ultimate_scepter",
-    "item_echo_sabre",
-	"item_harpoon",--
-	"item_black_king_bar",--
-    "item_blink",
-	"item_travel_boots",
-	"item_assault",--
-	"item_abyssal_blade",--
-	"item_aghanims_shard",
-	"item_overwhelming_blink",--
-	"item_moon_shard",
-    "item_ultimate_scepter_2",
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_3'] = {
-	"item_tank_outfit",
-    "item_helm_of_the_dominator",
-    "item_helm_of_the_overlord",--
-    "item_ultimate_scepter",
-	"item_blink",
-	"item_heavens_halberd",
-	"item_aghanims_shard",
-	"item_travel_boots",
-	"item_assault",--
-	"item_heart",--
-	"item_overwhelming_blink",--
-	"item_moon_shard",
-    "item_refresher",--
-    "item_ultimate_scepter_2",
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_4'] = {
-	'item_priest_outfit',
-	"item_hand_of_midas",
-	"item_ultimate_scepter",
-	"item_mekansm",
-    "item_blink",
-	"item_guardian_greaves",
-	"item_aghanims_shard",
-	"item_lotus_orb",
-	"item_gungir",--
-	"item_sheepstick",
-	"item_mystic_staff",
-	"item_ultimate_scepter_2",
-	"item_shivas_guard",
-    "item_moon_shard",
-	"item_overwhelming_blink",--
-}
-
-sRoleItemsBuyList['pos_5'] = {
-	'item_mage_outfit',
-	"item_hand_of_midas",
-	"item_glimmer_cape",
-
-    "item_pavise",
-	"item_ultimate_scepter",
-	"item_pipe",--
-    "item_blink",
-    "item_solar_crest",--
-	"item_lotus_orb",--
-	"item_aghanims_shard",
-	"item_shivas_guard",--
-	"item_mystic_staff",
-	"item_ultimate_scepter_2",
-    "item_moon_shard",
-	"item_sheepstick",--
-	"item_overwhelming_blink",--
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_assault",
-	"item_quelling_blade",
-
-	"item_abyssal_blade",
-	"item_magic_wand",
-
-    "item_black_king_bar",
-	"item_magic_wand",
-}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- +1.5% Wild Axes damage amp per stack
+    t15={10,0}, -- +200 Primal Roar cast range
+    t20={0,10}, -- +25 damage to Beastmaster and his summons
+    t25={10,0}, -- -20s Primal Roar cooldown
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+if sRole == 'pos_2' then
+    X.sBuyList = {
+        'item_tango', 'item_double_branches', 'item_double_branches', 'item_faerie_fire',
+        'item_bottle', 'item_magic_wand', 'item_power_treads', 'item_ultimate_scepter',
+        'item_blink', 'item_black_king_bar', 'item_yasha', 'item_aghanims_shard',
+        'item_manta', 'item_orchid',
+        -- Natural Orchid upgrade, then a reviewed late continuation; Blessing needs no seventh slot.
+        'item_bloodthorn', 'item_ultimate_scepter_2', 'item_swift_blink', 'item_moon_shard',
+    }
+    -- Purchase/sale pairs free early inventory slots as the main build arrives.
+    X.sSellList = {
+        'item_black_king_bar', 'item_bottle',
+        'item_yasha', 'item_magic_wand',
+    }
+else
+    X.sBuyList = {
+        -- Helm progression first (D2PT: Iron Will ~4m, Dominator ~8m, Overlord ~15m); components
+        -- are bought in list order. Arcane Boots (41%, ~8m) is the most common boot and follows.
+        'item_double_branches', 'item_magic_wand', 'item_helm_of_the_dominator', 'item_arcane_boots',
+        'item_helm_of_the_overlord', 'item_blink',
+        'item_ultimate_scepter', 'item_black_king_bar', 'item_assault',
+        -- Reviewed late continuation, not D2PT core.
+        'item_aghanims_shard', 'item_ultimate_scepter_2', 'item_overwhelming_blink',
+        'item_travel_boots', 'item_moon_shard',
+    }
+    X.sSellList = {
+        'item_black_king_bar', 'item_magic_wand',
+        'item_travel_boots', 'item_arcane_boots',
+    }
+end
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Both roles take Raptors at 10 and the first talent at 11. Respect custom builds.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

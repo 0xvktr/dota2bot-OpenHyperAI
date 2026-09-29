@@ -16,175 +16,58 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						{--pos2
-							['t25'] = {10, 0},
-							['t20'] = {10, 0},
-							['t15'] = {0, 10},
-							['t10'] = {10, 0},
-						},
-						{--po3
-							['t25'] = {10, 0},
-							['t20'] = {10, 0},
-							['t15'] = {10, 0},
-							['t10'] = {10, 0},
-						}
-}
-
-local tAllAbilityBuildList = {
-						{2,3,2,1,2,6,2,1,1,1,6,3,3,3,6},--pos2
-						{2,3,2,1,2,6,2,3,3,3,6,1,1,1,6},--pos3
-}
-
-local nAbilityBuildList
-local nTalentBuildList
-
-if sRole == "pos_2"
-then
-    nAbilityBuildList   = tAllAbilityBuildList[1]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[1])
+-- Updated to 7.41f from D2PT: positions 4 and 5; forced other roles use the pos 4 build.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/bounty_hunter')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- Learnable abilities: [1] Shuriken Toss, [2] Jinada, [3] Shadow Walk, [6] Track. Both roles max Toss and
+-- Shadow Walk first; D2PT shows only the first ten levels, later levels are a legal continuation.
+local nAbilityBuildList = {3,2,1,1,1,6,1,3,3,3,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- +0.35s Shuriken Toss slow
+    t15={0,10}, -- -30% damage taken in Shadow Walk
+    t20={0,10}, -- +190 Shuriken Toss damage
+    t25={0,10}, -- Track grants shared vision
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+if sRole == 'pos_5' then
+    X.sBuyList = {
+        -- D2PT's Ward Dispenser is an Observer + Sentry combination and cannot be bought directly.
+        'item_boots', 'item_ward_observer', 'item_ward_sentry', 'item_blood_grenade',
+        'item_tranquil_boots', 'item_magic_wand',
+        'item_ancient_janggo', 'item_cyclone',
+        -- Natural Eul's -> Wind Waker upgrade (D2PT, ~38m), then a reviewed continuation.
+        'item_aghanims_shard', 'item_boots_of_bearing', 'item_force_staff', 'item_wind_waker',
+        'item_ultimate_scepter_2', 'item_moon_shard',
+    }
+    X.sSellList = {
+        'item_force_staff', 'item_magic_wand',
+    }
 else
-    nAbilityBuildList   = tAllAbilityBuildList[2]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[2])
+    X.sBuyList = {
+        -- D2PT's Ward Dispenser is an Observer + Sentry combination and cannot be bought directly.
+        'item_boots', 'item_ward_observer', 'item_ward_sentry', 'item_blood_grenade',
+        'item_tranquil_boots', 'item_magic_wand',
+        'item_urn_of_shadows', 'item_ancient_janggo', 'item_cyclone',
+        -- Natural Eul's -> Wind Waker upgrade (D2PT, ~38m), then a reviewed continuation.
+        'item_aghanims_shard', 'item_boots_of_bearing', 'item_force_staff', 'item_wind_waker',
+        'item_ultimate_scepter_2', 'item_moon_shard',
+    }
+    X.sSellList = {
+        'item_cyclone', 'item_urn_of_shadows',
+        'item_force_staff', 'item_magic_wand',
+    }
 end
-
-local sUtilityItem = RandomInt( 1, 2 ) == 1 and "item_crimson_guard" or "item_heavens_halberd"
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_double_branches",
-	"item_quelling_blade",
-	"item_tango",
-	"item_faerie_fire",
-	"item_magic_wand",
-
-	"item_phase_boots",
-	"item_phylactery",
-	"item_ultimate_scepter",
-	"item_octarine_core",--
-	"item_black_king_bar",--
-	"item_angels_demise",--
-	"item_assault",--
-	"item_travel_boots",
-	"item_monkey_king_bar",--
-	"item_ultimate_scepter_2",
-	"item_travel_boots_2",--
-	"item_moon_shard",
-	"item_aghanims_shard",
-}
-
-sRoleItemsBuyList['pos_2'] = {
-	"item_double_branches",
-	"item_quelling_blade",
-	"item_tango",
-	"item_faerie_fire",
-
-	"item_bottle",
-	"item_phase_boots",
-	"item_magic_wand",
-	"item_phylactery",
-	"item_ultimate_scepter",
-	"item_octarine_core",--
-	"item_black_king_bar",--
-	"item_angels_demise",--
-	"item_assault",--
-	"item_travel_boots",
-	"item_moon_shard",
-	"item_monkey_king_bar",--
-	"item_ultimate_scepter_2",
-	"item_travel_boots_2",--
-	"item_aghanims_shard",
-}
-
-sRoleItemsBuyList['pos_3'] = {
-	"item_double_branches",
-	"item_quelling_blade",
-	"item_tango",
-	"item_faerie_fire",
-	"item_magic_wand",
-
-	"item_boots",
-	"item_phase_boots",
-	"item_phylactery",
-	"item_pipe",
-	"item_black_king_bar",--
-	sUtilityItem,--
-	"item_angels_demise",--
-	"item_assault",--
-	"item_travel_boots",
-	"item_monkey_king_bar",--
-	"item_ultimate_scepter_2",
-	"item_travel_boots_2",--
-	"item_moon_shard",
-	"item_aghanims_shard",
-}
-
-sRoleItemsBuyList['pos_4'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_blood_grenade",
-	"item_orb_of_frost",
-	"item_magic_wand",
-
-	"item_boots",
-	"item_tranquil_boots",
-	"item_ancient_janggo",
-	"item_guardian_greaves",--
-	"item_solar_crest",--
-	"item_heavens_halberd",--
-	"item_sheepstick",--
-	"item_lotus_orb",--
-	"item_moon_shard",
-	"item_assault",--
-	"item_aghanims_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_blood_grenade",
-	"item_orb_of_frost",
-	"item_magic_wand",
-
-	"item_boots",
-	"item_arcane_boots",
-	"item_ancient_janggo",
-	"item_pipe",--
-	"item_solar_crest",--
-	"item_boots_of_bearing",--
-	-- "item_force_staff",--
-	"item_heavens_halberd",--
-	"item_sheepstick",--
-	"item_moon_shard",
-	"item_lotus_orb",--
-	"item_aghanims_shard",
-	"item_ultimate_scepter_2",
-}
-
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-	"item_power_treads",
-	"item_quelling_blade",
-
-	"item_heavens_halberd",
-	"item_quelling_blade",
-
-	"item_abyssal_blade",
-	"item_magic_wand",
-
-	"item_assault",
-	"item_ancient_janggo",
-}
 
 if J.Role.IsPvNMode() then X['sBuyList'], X['sSellList'] = { 'PvN_BH' }, {"item_power_treads", 'item_quelling_blade'} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Both roles max Shadow Walk at 10 and take the first talent at 11. Respect custom builds.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
