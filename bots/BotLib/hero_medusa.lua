@@ -164,6 +164,8 @@ function X.SkillsComplement()
 	J.ConsiderForMkbDisassembleMask( bot )
 	J.ConsiderTarget()
 
+	-- TODO(7.41e): Split Shot's toggle now works while silenced and no longer breaks invisibility,
+	-- but this gate skips it when silenced or invisible. Consider handling the toggle before the gate.
 	if J.CanNotUseAbility( bot ) or bot:IsInvisible() then return end
 
 	nKeepMana = 400

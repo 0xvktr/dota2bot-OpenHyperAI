@@ -91,6 +91,9 @@ local BattleTranceDesire
 local botTarget
 
 function X.SkillsComplement()
+    -- TODO(7.41e): switching stance (BerserkersRage/BattleStance below) now works while silenced and
+    -- no longer breaks invisibility, but this gate skips it when silenced. Consider handling the
+    -- toggle before the gate.
     if J.CanNotUseAbility(bot) then return end
 
     botTarget = J.GetProperTarget(bot)

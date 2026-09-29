@@ -179,7 +179,8 @@ local abilityASBonus = 0
 
 function X.SkillsComplement()
 
-
+	-- TODO(7.41e): the Lightning Hands toggle now works while silenced and no longer breaks
+	-- invisibility. The bot never toggles it yet; if it starts to, handle it before this gate.
 	if J.CanNotUseAbility( bot ) or bot:IsInvisible() then return end
 
 	nKeepMana = 400
