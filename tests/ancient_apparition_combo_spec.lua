@@ -1,6 +1,7 @@
 -- Ancient Apparition ability logic: Cold Feet -> Ice Vortex combo order, the level-25 AoE Cold Feet
 -- talent (unit-targeted, special_bonus_unique_ancient_apparition_1), Ice Blast radius growth
--- (radius_min + radius_grow * seconds travelled) and the low-HP shatter snipe.
+-- (radius_min + radius_grow * seconds travelled), the low-HP shatter snipe, and Ice Blast Release
+-- timing under throttled ability thinks.
 local H = dofile('tests/hero_harness.lua')
 local bot, J = H.bot, H.J
 
@@ -174,5 +175,37 @@ assert(desire > 0 and loc == fleeing.loc, 'Ice Blast snipes an enemy it will sha
 fleeing.hp = 1200
 desire = AA.ConsiderIceBlast()
 assert(desire == 0, 'no snipe on a healthy enemy')
+
+-- 9. Release timing. Ability thinks are throttled, so the tracer moves up to ~300 units per check.
+local function Tracer(x) projectiles = { { location = V(x, 0), caster = bot, ability = { GetName = function() return 'ancient_apparition_ice_blast' end } } } end
+reset()
+castable.ancient_apparition_ice_blast = true
+Enemy(3000, 0); Enemy(3100, 0); teamFightLoc = V(3000, 0)
+AA.SkillsComplement()
+assert(actions[1][2] == 'ancient_apparition_ice_blast', 'Ice Blast launched at the fight')
+castable.ancient_apparition_ice_blast = false
+castable.ancient_apparition_ice_blast_release = true; hidden.ancient_apparition_ice_blast_release = false
+Tracer(2500)
+assert(AA.ConsiderIceBlastRelease() == 0, 'no release while the tracer is 500 short')
+Tracer(2880)
+assert(AA.ConsiderIceBlastRelease() > 0, 'release within half a think step of the target')
+Tracer(3250)
+assert(AA.ConsiderIceBlastRelease() > 0, 'a tracer that stepped past the target is still released')
+-- Enemy tracers with the same ability name are ignored.
+projectiles = { { location = V(3000, 0), caster = {}, ability = { GetName = function() return 'ancient_apparition_ice_blast' end } } }
+now = 100.5
+assert(AA.ConsiderIceBlastRelease() == 0, 'an enemy Ice Blast tracer does not trigger our release')
+-- No visible tracer: flight time estimates progress (3000 units at 1500/s = 2s).
+projectiles = {}; now = 102
+assert(AA.ConsiderIceBlastRelease() > 0, 'release by flight time without a visible tracer')
+-- Silence does not block Release (it ignores silence); the generic can-cast gate is bypassed.
+actions = {}; J.CanNotUseAbility = function() return true end
+AA.SkillsComplement()
+assert(actions[1] and actions[1][2] == 'ancient_apparition_ice_blast_release', 'Release fires while silenced')
+botStunned = true; actions = {}
+AA.SkillsComplement()
+assert(actions[1] == nil, 'no Release order while stunned')
+botStunned = false; J.CanNotUseAbility = nil; now = 100
+castable.ancient_apparition_ice_blast_release = nil; hidden.ancient_apparition_ice_blast_release = nil; projectiles = {}
 
 print('Ancient Apparition combo scenarios passed')

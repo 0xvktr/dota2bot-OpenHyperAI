@@ -72,26 +72,34 @@ local ChillingTouchDesire, ChillingTouchTarget
 local IceBlastDesire, IceBlastLocation
 local IceBlastReleaseDesire
 
-local IceBlastReleaseLocation
+-- The last Ice Blast cast: where the tracer started, where it is aimed, and when.
+local IceBlastCast
 
 -- Where the last Cold Feet target stood when cursed; the stun breaks once it walks break_distance away.
 local ColdFeetOrigin = { unit = nil, location = nil, time = -math.huge }
 
 function X.SkillsComplement()
-	if J.CanNotUseAbility(bot) then return end
-
+    -- Release ignores silence, so it is checked before the generic can-cast gate; a missed release
+    -- sends the tracer off the map.
     IceBlastReleaseDesire = X.ConsiderIceBlastRelease()
     if IceBlastReleaseDesire > 0
+    and bot:IsAlive()
+    and not bot:IsStunned()
+    and not bot:IsHexed()
+    and not bot:IsNightmared()
+    and not bot:IsChanneling()
     then
         bot:Action_UseAbility(IceBlastRelease)
         return
     end
 
+	if J.CanNotUseAbility(bot) then return end
+
     IceBlastDesire, IceBlastLocation = X.ConsiderIceBlast()
     if IceBlastDesire > 0
     then
         bot:Action_UseAbilityOnLocation(IceBlast, IceBlastLocation)
-        IceBlastReleaseLocation = IceBlastLocation
+        IceBlastCast = { origin = bot:GetLocation(), target = IceBlastLocation, time = DotaTime() }
         return
     end
 
@@ -657,26 +665,38 @@ function X.GetBestIceBlastLocation(tEnemies)
     return vBest, nBestCount
 end
 
+-- Ability thinks are throttled (~0.12-0.2s), so the tracer moves 180-300 units between checks; waiting
+-- for it to be within a few units of the target can step right over that window. Release once the
+-- tracer is within half a think step of the target, or as soon as possible after it has passed it.
+local ICE_BLAST_RELEASE_LEAD = 150
+
 function X.ConsiderIceBlastRelease()
-    if IceBlastRelease:IsHidden()
+    if IceBlastRelease == nil
+    or IceBlastRelease:IsHidden()
     or not IceBlastRelease:IsFullyCastable()
+    or IceBlastCast == nil
     then
         return BOT_ACTION_DESIRE_NONE
     end
 
-    local nProjectiles = GetLinearProjectiles()
-
-    for _, p in pairs(nProjectiles)
-	do
-		if p ~= nil and p.ability:GetName() == "ancient_apparition_ice_blast"
+    local nTargetDistance = J.GetLocationToLocationDistance(IceBlastCast.origin, IceBlastCast.target)
+    -- Without a visible tracer, estimate its progress from the flight time.
+    local nTravelled = (DotaTime() - IceBlastCast.time) * X.GetIceBlastSpeed()
+    for _, p in pairs(GetLinearProjectiles())
+    do
+        if p ~= nil and p.ability ~= nil and p.location ~= nil
+        and (p.caster == nil or p.caster == bot)
+        and p.ability:GetName() == 'ancient_apparition_ice_blast'
         then
-			if IceBlastReleaseLocation ~= nil
-            and J.GetLocationToLocationDistance(IceBlastReleaseLocation, p.location) < 100
-            then
-				return BOT_ACTION_DESIRE_HIGH
-			end
-		end
-	end
+            nTravelled = J.GetLocationToLocationDistance(IceBlastCast.origin, p.location)
+            break
+        end
+    end
+
+    if nTravelled >= nTargetDistance - ICE_BLAST_RELEASE_LEAD
+    then
+        return BOT_ACTION_DESIRE_HIGH
+    end
 
     return BOT_ACTION_DESIRE_NONE
 end
