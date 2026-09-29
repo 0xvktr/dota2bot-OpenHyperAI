@@ -95,13 +95,13 @@ atomically replacing the Lua file. An incomplete scrape leaves the previous file
 synergy/counter lists. Entries for Abaddon, Underlord, Alchemist, Ancient Apparition,
 Anti-Mage, Arc Warden, Axe, Bane and Batrider were refreshed from D2PT on 2026-09-28 (site patch 7.41f),
 Beastmaster, Bloodseeker, Bounty Hunter, Brewmaster, Bristleback, Broodmother, Centaur, Chaos Knight, Chen,
-Clinkz, Crystal Maiden, Dark Seer, Dark Willow, Dawnbreaker and Dazzle on 2026-09-29.
+Clinkz, Crystal Maiden, Dark Seer, Dark Willow, Dawnbreaker, Dazzle and Death Prophet on 2026-09-29.
 Unmarked heroes retain their older lists and can be refreshed as their builds are updated.
 Source pages are `https://dota2protracker.com/hero/<hero>?section=matchups`. Both the builds and matchups
 sections take `&role=carry|mid|offlane|support|hard-support` (hyphen); an unrecognised value such as
 `hard_support` silently shows the hero's most popular role, so check the selected role tab.
 
-D2PT requires a source role: hard support for Abaddon/AA/Bane/Chen/Crystal Maiden/Dazzle, offlane for Underlord/Axe/Beastmaster/Brewmaster/Bristleback/Centaur/Chaos Knight/Dark Seer/Dawnbreaker, support for Bounty Hunter/Dark Willow,
+D2PT requires a source role: hard support for Abaddon/AA/Bane/Chen/Crystal Maiden/Dazzle, offlane for Underlord/Axe/Beastmaster/Brewmaster/Bristleback/Centaur/Chaos Knight/Dark Seer/Dawnbreaker/Death Prophet, support for Bounty Hunter/Dark Willow,
 carry for Alchemist/Anti-Mage/Bloodseeker/Clinkz, and mid for Arc Warden/Batrider/Broodmother. Select **All** opponent/ally
 roles and enable **Normalized** for both tables. Collapse the displayed role rows
 by hero using a match-count-weighted mean of their normalized values; this is an

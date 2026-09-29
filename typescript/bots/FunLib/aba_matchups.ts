@@ -570,26 +570,27 @@ const heroes: HeroMatchups = {
         ],
     },
 
+    // D2PT 7.41f, 2026-09-29: offlane, All roles, Normalized; weighted displayed rows, >=100 matches.
     npc_dota_hero_death_prophet: {
         synergy: [
-            "npc_dota_hero_meepo",
-            "npc_dota_hero_lycan",
-            "npc_dota_hero_treant",
-            "npc_dota_hero_enchantress",
-            "npc_dota_hero_chaos_knight",
-            "npc_dota_hero_slark",
-            "npc_dota_hero_storm_spirit",
-            "npc_dota_hero_phantom_assassin",
+            "npc_dota_hero_puck", // 100 matches, +9.50 pp
+            "npc_dota_hero_keeper_of_the_light", // 113 matches, +8.89 pp
+            "npc_dota_hero_bounty_hunter", // 445 matches, +8.47 pp
+            "npc_dota_hero_invoker", // 324 matches, +7.97 pp
+            "npc_dota_hero_oracle", // 110 matches, +7.77 pp
+            "npc_dota_hero_crystal_maiden", // 136 matches, +7.11 pp
+            "npc_dota_hero_pangolier", // 102 matches, +5.40 pp
+            "npc_dota_hero_life_stealer", // 350 matches, +5.40 pp
         ],
         counter: [
-            "npc_dota_hero_necrolyte",
-            "npc_dota_hero_oracle",
-            "npc_dota_hero_alchemist",
-            "npc_dota_hero_naga_siren",
-            "npc_dota_hero_meepo",
-            "npc_dota_hero_huskar",
-            "npc_dota_hero_omniknight",
-            "npc_dota_hero_life_stealer",
+            "npc_dota_hero_shredder", // 147 matches, +11.08 pp
+            "npc_dota_hero_pangolier", // 106 matches, +10.85 pp
+            "npc_dota_hero_bane", // 116 matches, +8.27 pp
+            "npc_dota_hero_queenofpain", // 118 matches, +8.10 pp
+            "npc_dota_hero_zuus", // 141 matches, +7.96 pp
+            "npc_dota_hero_necrolyte", // 235 matches, +7.53 pp
+            "npc_dota_hero_juggernaut", // 200 matches, +7.50 pp
+            "npc_dota_hero_earthshaker", // 198 matches, +7.08 pp
         ],
     },
 

@@ -28,13 +28,7 @@ local HeroPositions = {
     [HeroName.DarkWillow] = {0, 0, 0, 75, 80},
     [HeroName.Dawnbreaker] = {0, 42, 98, 0, 0},
     [HeroName.Dazzle] = {0, 0, 0, 39, 100},
-    [HeroName.DeathProphet] = {
-        5,
-        60,
-        40,
-        5,
-        0
-    },
+    [HeroName.DeathProphet] = {0, 51, 56, 0, 0}, -- D2PT 7.41f; mid/offlane only.
     [HeroName.Disruptor] = {
         0,
         5,

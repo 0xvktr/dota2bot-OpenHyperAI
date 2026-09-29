@@ -1,5 +1,6 @@
 -- Shared data-only preferences: never execute a hero BotLib in the server VM.
 local builds = {
+    npc_dota_hero_death_prophet = require('bots.BotLib.Builds.death_prophet'),
     npc_dota_hero_dark_willow = require('bots.BotLib.Builds.dark_willow'),
     npc_dota_hero_dawnbreaker = require('bots.BotLib.Builds.dawnbreaker'),
     npc_dota_hero_dazzle = require('bots.BotLib.Builds.dazzle'),

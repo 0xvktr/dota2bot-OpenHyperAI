@@ -16,145 +16,54 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						{--pos2
-							['t25'] = {10, 0},
-							['t20'] = {10, 0},
-							['t15'] = {0, 10},
-							['t10'] = {10, 0},
-						},
-						{--pos3
-							['t25'] = {10, 0},
-							['t20'] = {10, 0},
-							['t15'] = {0, 10},
-							['t10'] = {10, 0},
-						}
-}
-
-local tAllAbilityBuildList = {
-						{1,3,1,3,1,6,1,3,3,2,6,2,2,2,6},--pos2
-						{1,3,3,1,3,6,3,2,1,1,6,2,2,2,6},--pos3
-}
-
-local nAbilityBuildList
-local nTalentBuildList
-
-if sRole == "pos_2"
-then
-    nAbilityBuildList   = tAllAbilityBuildList[1]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[1])
+-- Updated to 7.41f from D2PT: mid and offlane; forced other roles use offlane.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/death_prophet')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- Learnable abilities: [1] Crypt Swarm, [2] Silence, [3] Spirit Siphon, [6] Exorcism.
+-- D2PT supplies the first ten levels; later levels are a legal continuation.
+local nAbilityBuildList = sRole == 'pos_2'
+    and {1,3,3,1,3,6,3,1,1,2,6,2,2,2,6}
+    or {1,3,1,3,1,6,1,3,3,2,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- +200 Health
+    t15={10,0}, -- -2.5s Crypt Swarm cooldown
+    t20={0,10}, -- +6 Exorcism spirits
+    t25={10,0}, -- Deaths during Exorcism extend its duration by 8s
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+if sRole == 'pos_2' then
+    X.sBuyList = {
+        -- Omit the observed ward: core bots do not run the ward-placement mode.
+        'item_tango', 'item_double_branches', 'item_double_branches', 'item_faerie_fire',
+        'item_bottle', 'item_magic_wand', 'item_phase_boots', 'item_cyclone',
+        'item_blink', 'item_ultimate_scepter', 'item_black_king_bar',
+        'item_aghanims_shard', 'item_shivas_guard',
+        -- Reviewed late upgrades/utility, not additional mandatory D2PT core.
+        'item_ultimate_scepter_2', 'item_wind_waker', 'item_overwhelming_blink', 'item_sheepstick',
+    }
+    X.sSellList = {'item_black_king_bar','item_magic_wand','item_shivas_guard','item_bottle'}
 else
-    nAbilityBuildList   = tAllAbilityBuildList[2]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[2])
+    X.sBuyList = {
+        'item_tango', 'item_double_branches', 'item_circlet', 'item_circlet', 'item_faerie_fire',
+        'item_null_talisman', 'item_magic_wand', 'item_phase_boots', 'item_cyclone',
+        'item_kaya_and_sange', 'item_blink', 'item_black_king_bar',
+        'item_shivas_guard', 'item_aghanims_shard',
+        -- Reviewed late upgrades; Blessing leaves the six persistent core slots intact.
+        'item_wind_waker', 'item_ultimate_scepter_2', 'item_overwhelming_blink',
+    }
+    X.sSellList = {'item_black_king_bar','item_magic_wand','item_shivas_guard','item_null_talisman'}
 end
-
-local sRoleItemsBuyList = {}
-
-
-sRoleItemsBuyList['pos_2'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_faerie_fire",
-	"item_circlet",
-
-	"item_bottle",
-	"item_magic_wand",
-	"item_boots",
-	"item_ring_of_basilius",
-	"item_arcane_boots",
-	"item_shivas_guard",--
-	"item_cyclone",
-	"item_crellas_crozier",--
-	"item_bloodstone",--
-	"item_black_king_bar",--
-	"item_aghanims_shard",
-	"item_kaya_and_sange",--
-	"item_octarine_core",--
-	"item_refresher",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_3'] = {
-	"item_tank_outfit",
-	"item_lotus_orb",
-	"item_shivas_guard",--
-	"item_cyclone",
-	"item_aghanims_shard",
-	"item_gungir",--
-	"item_travel_boots",
-	"item_assault",--
-	"item_heart",--
-	"item_moon_shard",
-    "item_wind_waker",--
-    "item_ultimate_scepter_2",
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_4'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_faerie_fire",
-	"item_circlet",
-
-	"item_magic_wand",
-	"item_boots",
-	"item_ring_of_basilius",
-	"item_arcane_boots",
-	"item_guardian_greaves",--
-	"item_shivas_guard",--
-	"item_cyclone",
-	"item_bloodstone",--
-	"item_black_king_bar",--
-	"item_aghanims_shard",
-	"item_heavens_halberd", --
-    "item_wind_waker",
-	"item_refresher",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_faerie_fire",
-	"item_circlet",
-
-	"item_boots",
-	"item_ring_of_basilius",
-	"item_magic_wand",
-	"item_arcane_boots",
-	"item_pipe",--
-	"item_shivas_guard",--
-	"item_cyclone",
-	"item_bloodstone",--
-	"item_black_king_bar",--
-	"item_aghanims_shard",
-    "item_wind_waker",
-	"item_refresher",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_ultimate_scepter",
-	"item_magic_wand",
-
-	"item_black_king_bar",
-	"item_magic_wand",
-
-}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_priest' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Silence at level 10, then the first talent at 11. Preserve custom builds.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = true
 X['bDeafaultItem'] = true
