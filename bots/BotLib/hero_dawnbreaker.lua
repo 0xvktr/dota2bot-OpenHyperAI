@@ -7,97 +7,59 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-                        ['t25'] = {0, 10},
-                        ['t20'] = {10, 0},
-                        ['t15'] = {0, 10},
-                        ['t10'] = {0, 10},
-}
-
-local tAllAbilityBuildList = {
-                        {2,1,2,3,2,6,2,1,1,1,6,3,3,3,6},--pos3
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild(tAllAbilityBuildList)
-
-local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList)
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_3'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_quelling_blade",
-
-    "item_magic_wand",
-    "item_bracer",
-    "item_phase_boots",
-    "item_soul_ring",
-    "item_echo_sabre",
-    "item_desolator",--
-    "item_aghanims_shard",
-    "item_black_king_bar",--
-    "item_heavens_halberd",--
-    "item_assault",--
-    "item_harpoon",--
-    "item_abyssal_blade",--
-    "item_ultimate_scepter",
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_4'] = {
-	'item_priest_outfit',
-	"item_hand_of_midas",
-	"item_mekansm",
-	"item_glimmer_cape",--
-	"item_guardian_greaves",--
-    "item_aghanims_shard",
-	"item_assault",--
-	"item_heavens_halberd",--
-    "item_shivas_guard",--
-    "item_refresher",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-	'item_priest_outfit',
-	"item_hand_of_midas",
-	"item_mekansm",
-	"item_glimmer_cape",--
-	"item_pipe",--
-    "item_aghanims_shard",
-	"item_assault",--
-	"item_heavens_halberd",--
-    "item_shivas_guard",--
-    "item_refresher",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-	"item_heavens_halberd",
-	"item_quelling_blade",
-
-	"item_abyssal_blade",
-	"item_magic_wand",
-
-	"item_assault",
-	"item_ancient_janggo",
-}
+-- Updated to 7.41f from D2PT: positions 3 (offlane) and 2 (mid, a reviewed exception); forced other roles use pos 3.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/dawnbreaker')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- Learnable abilities: [1] Starbreaker, [2] Celestial Hammer, [3] Luminosity, [6] Solar Guardian.
+-- Both roles share D2PT's most popular first ten levels; later levels are a legal continuation.
+local nAbilityBuildList = {2,1,2,3,2,6,2,1,1,1,6,3,3,3,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- +25% Luminosity critical damage
+    t15={10,0}, -- -20s Solar Guardian cooldown
+    t20={10,0}, -- -1 Luminosity attacks required
+    -- Offlane: +80% Celestial Hammer cast range/speed; mid: -4s Starbreaker cooldown.
+    t25=(sRole == 'pos_2') and {0,10} or {10,0},
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+if sRole == 'pos_2' then
+    X.sBuyList = {
+        'item_tango', 'item_double_branches', 'item_faerie_fire',
+        'item_bottle', 'item_magic_wand', 'item_soul_ring', 'item_phase_boots', 'item_desolator',
+        'item_echo_sabre', 'item_aghanims_shard', 'item_harpoon', 'item_blink', 'item_black_king_bar',
+        -- Late upgrades/slot policy beyond the displayed core progression.
+        'item_abyssal_blade', 'item_overwhelming_blink', 'item_moon_shard',
+    }
+    X.sSellList = {
+        'item_blink', 'item_bottle',
+        'item_black_king_bar', 'item_magic_wand',
+        'item_abyssal_blade', 'item_soul_ring',
+    }
+else
+    X.sBuyList = {
+        'item_tango', 'item_quelling_blade', 'item_double_gauntlets', 'item_double_branches',
+        'item_double_bracer', 'item_soul_ring', 'item_magic_wand', 'item_phase_boots', 'item_echo_sabre',
+        'item_aghanims_shard', 'item_harpoon', 'item_black_king_bar', 'item_assault',
+        -- Late upgrades/slot policy beyond the displayed core progression.
+        'item_abyssal_blade', 'item_overwhelming_blink', 'item_moon_shard',
+    }
+    X.sSellList = {
+        'item_harpoon', 'item_quelling_blade',
+        'item_black_king_bar', 'item_bracer', -- Repeated purchase ticks sell both Bracers.
+        'item_assault', 'item_magic_wand',
+        'item_overwhelming_blink', 'item_soul_ring',
+    }
+end
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Starbreaker takes level 10, so the first talent comes at 11. Respect custom builds.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

@@ -11,121 +11,39 @@ local sRole = J.Item.GetRoleItemsBuyList( bot )
 if not J.Utils.GameStates.dazzleNothl then J.Utils.GameStates.dazzleNothl = {[bot:GetPlayerID()] = {body = bot}} end
 if not J.Utils.GameStates.dazzleNothl[bot:GetPlayerID()] then J.Utils.GameStates.dazzleNothl[bot:GetPlayerID()] = {body = bot} end
 
-local tTalentTreeList = {
-						{--pos1,2
-							['t25'] = {0, 10},
-							['t20'] = {10, 0},
-							['t15'] = {10, 0},
-							['t10'] = {0, 10},
-						},
-						{--pos3
-							['t25'] = {10, 0},
-							['t20'] = {0, 10},
-							['t15'] = {0, 10},
-							['t10'] = {0, 10},
-						}
+-- Updated to 7.41f from D2PT: positions 5 and 4; forced other roles use pos 5.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/dazzle')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- Learnable abilities: [1] Poison Touch, [2] Shallow Grave, [3] Shadow Wave, [6] Nothl Projection.
+-- Both roles share D2PT's most popular first ten levels and talents; later levels are a legal continuation.
+local nAbilityBuildList = {1,3,1,2,1,6,1,3,3,3,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- +200 Poison Touch attack range
+    t15={0,10}, -- +45 Shadow Wave heal/damage
+    t20={0,10}, -- -3s Shallow Grave cooldown
+    t25={10,0}, -- +1 Weave armor reduction/increase
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+-- Both roles follow the same D2PT core; Holy Locket consumes the Magic Wand.
+X.sBuyList = {
+    'item_tango', 'item_double_branches', 'item_magic_stick', 'item_ward_sentry', 'item_faerie_fire', 'item_blood_grenade',
+    'item_magic_wand', 'item_arcane_boots', 'item_holy_locket', 'item_mekansm', 'item_guardian_greaves',
+    'item_glimmer_cape', 'item_aghanims_shard', 'item_blink',
+    -- Reviewed utility/upgrade continuation, not additional mandatory D2PT core items.
+    'item_aether_lens', 'item_aeon_disk',
 }
-
-local tAllAbilityBuildList = {
-						{1,3,1,2,1,6,1,3,3,3,6,2,2,2,6},
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[2])
-if sRole == 'pos_1' then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[1]) end
-if sRole == 'pos_2' then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[1]) end
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_crystal_maiden_outfit",
-	"item_force_staff",
-	"item_hand_of_midas",
-	"item_ultimate_scepter",
-	"item_aghanims_shard",
-	"item_orchid",
-	"item_black_king_bar",
-	"item_hurricane_pike",
-	"item_bloodthorn",
-	"item_mystic_staff",
-	"item_ultimate_scepter_2",
-	"item_sheepstick",
-    "item_moon_shard",
-    "item_wind_waker",
-}
-
-sRoleItemsBuyList['pos_2'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_double_circlet",
-
-	"item_bottle",
-	"item_magic_wand",
-	"item_arcane_boots",
-	"item_orchid",
-	"item_ultimate_scepter",
-	"item_aghanims_shard",
-	"item_black_king_bar",--
-	"item_octarine_core",--
-	"item_force_staff",
-	"item_bloodthorn",--
-	"item_ultimate_scepter_2",
-	"item_travel_boots",
-	"item_hurricane_pike",--
-	"item_wind_waker",--
-	"item_travel_boots_2",--
-	"item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_4'] = {
-	'item_priest_outfit',
-	"item_mekansm",
-	"item_essence_distiller",--
-	"item_glimmer_cape",
-	"item_aghanims_shard",
-	"item_guardian_greaves",
-	"item_spirit_vessel",
-	--"item_holy_locket",
-	"item_ultimate_scepter",
-	"item_sheepstick",
-	"item_mystic_staff",
-	"item_ultimate_scepter_2",
-	"item_shivas_guard",
-    "item_moon_shard",
-    "item_wind_waker",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-	'item_mage_outfit',
-	"item_glimmer_cape",
-	"item_aghanims_shard",
-	"item_pipe",
-	"item_spirit_vessel",
-	--"item_holy_locket",
-	"item_ultimate_scepter",
-	"item_sheepstick",
-	"item_mystic_staff",
-	"item_ultimate_scepter_2",
-	"item_shivas_guard",
-    "item_moon_shard",
-    "item_wind_waker",
-}
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-	"item_ultimate_scepter",
-	"item_magic_wand",
-}
+X.sSellList = {}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_priest' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Shadow Wave takes level 10, so the first talent comes at 11. Respect custom builds.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = true
@@ -148,17 +66,18 @@ npc_dota_hero_dazzle
 "Ability1"		"dazzle_poison_touch"
 "Ability2"		"dazzle_shallow_grave"
 "Ability3"		"dazzle_shadow_wave"
-"Ability4"		"generic_hidden"
-"Ability5"		"dazzle_good_juju"
-"Ability6"		"dazzle_bad_juju"
-"Ability10"		"special_bonus_attack_damage_50"
+"Ability4"		"dazzle_innate_weave"
+"Ability5"		"generic_hidden"
+"Ability6"		"dazzle_nothl_projection"
+"Ability7"		"dazzle_nothl_projection_end"
+"Ability10"		"special_bonus_unique_dazzle_poison_touch_attack_range_bonus"	-- +200
 "Ability11"		"special_bonus_mp_regen_175"
-"Ability12"		"special_bonus_unique_dazzle_2"
-"Ability13"		"special_bonus_attack_speed_60"
-"Ability14"		"special_bonus_unique_dazzle_5"
-"Ability15"		"special_bonus_unique_dazzle_3"
-"Ability16"		"special_bonus_unique_dazzle_1"
-"Ability17"		"special_bonus_unique_dazzle_4"
+"Ability12"		"special_bonus_unique_dazzle_2"	-- +45 Shadow Wave (talent3)
+"Ability13"		"special_bonus_unique_dazzle_nothl_projection_duration"	-- +5s (talent4)
+"Ability14"		"special_bonus_unique_dazzle_shallow_grave_cooldown"	-- -3s
+"Ability15"		"special_bonus_unique_dazzle_3"	-- +75 Poison Touch DPS (talent6)
+"Ability16"		"special_bonus_unique_dazzle_1"	-- +40% Poison Touch slow
+"Ability17"		"special_bonus_unique_dazzle_4"	-- +1 Weave
 
 modifier_dazzle_poison_touch
 modifier_dazzle_shallow_grave

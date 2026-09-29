@@ -94,12 +94,15 @@ atomically replacing the Lua file. An incomplete scrape leaves the previous file
 `typescript/bots/FunLib/aba_matchups.ts` and its generated Lua retain simple binary
 synergy/counter lists. Entries for Abaddon, Underlord, Alchemist, Ancient Apparition,
 Anti-Mage, Arc Warden, Axe, Bane and Batrider were refreshed from D2PT on 2026-09-28 (site patch 7.41f),
-Beastmaster, Bloodseeker, Bounty Hunter, Brewmaster, Bristleback and Broodmother on 2026-09-29.
+Beastmaster, Bloodseeker, Bounty Hunter, Brewmaster, Bristleback, Broodmother, Centaur, Chaos Knight, Chen,
+Clinkz, Crystal Maiden, Dark Seer, Dark Willow, Dawnbreaker and Dazzle on 2026-09-29.
 Unmarked heroes retain their older lists and can be refreshed as their builds are updated.
-Source pages are `https://dota2protracker.com/hero/<hero>?section=matchups`.
+Source pages are `https://dota2protracker.com/hero/<hero>?section=matchups`. Both the builds and matchups
+sections take `&role=carry|mid|offlane|support|hard-support` (hyphen); an unrecognised value such as
+`hard_support` silently shows the hero's most popular role, so check the selected role tab.
 
-D2PT requires a source role: hard support for Abaddon/AA/Bane, offlane for Underlord/Axe/Beastmaster/Brewmaster/Bristleback, support for Bounty Hunter,
-carry for Alchemist/Anti-Mage/Bloodseeker, and mid for Arc Warden/Batrider/Broodmother. Select **All** opponent/ally
+D2PT requires a source role: hard support for Abaddon/AA/Bane/Chen/Crystal Maiden/Dazzle, offlane for Underlord/Axe/Beastmaster/Brewmaster/Bristleback/Centaur/Chaos Knight/Dark Seer/Dawnbreaker, support for Bounty Hunter/Dark Willow,
+carry for Alchemist/Anti-Mage/Bloodseeker/Clinkz, and mid for Arc Warden/Batrider/Broodmother. Select **All** opponent/ally
 roles and enable **Normalized** for both tables. Collapse the displayed role rows
 by hero using a match-count-weighted mean of their normalized values; this is an
 approximation from rounded UI values, not an independently calculated all-role
@@ -142,7 +145,9 @@ discovers every `bots/BotLib/Builds/<hero>.lua` and checks, for each role:
   (or, at T5, most-picked reviewed) item regardless of offer order.
 
 `tests/hero_harness.lua` loads hero files offline; a new hero that needs extra engine
-stubs at load time should get them there. The other suites cover behavior rather than
+stubs at load time should get them there. A hero whose real `GetAbilityList` order puts the
+leveled ultimate outside index 6 (Dark Willow's Bedlam is index 4) gets an `ABILITY_LAYOUTS`
+entry there instead of a build bent to fit the default layout. The other suites cover behavior rather than
 data: `neutral_consumers_spec.lua` (both distributors delegate to the preferences),
 `alchemist_scepter_spec.lua`, `axe_culling_blade_spec.lua`, plus draft scoring and gift
 purchase checks inline in the runner. The suite cannot verify that a build matches D2PT

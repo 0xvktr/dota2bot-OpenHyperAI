@@ -7,134 +7,39 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-                        {--pos4
-                            ['t25'] = {0, 10},
-                            ['t20'] = {0, 10},
-                            ['t15'] = {10, 0},
-                            ['t10'] = {0, 10},
-                        },
-                        {--pos5
-                            ['t25'] = {0, 10},
-                            ['t20'] = {0, 10},
-                            ['t15'] = {10, 0},
-                            ['t10'] = {0, 10},
-                        }
+-- Updated to 7.41f from D2PT, position 5 only; forced other roles use this fallback.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/chen')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- Learnable abilities: [1] Penitence, [2] Holy Persuasion, [3] Divine Favor, [6] Hand of God.
+-- D2PT shows only the first ten levels; later levels are a legal continuation.
+local nAbilityBuildList = {1,2,2,3,2,6,2,3,3,3,6,1,1,1,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- +75 Penitence damage
+    t15={10,0}, -- +15% Penitence slow
+    t20={10,0}, -- +1300 Holy Persuasion minimum health
+    t25={0,10}, -- Hand of God applies a strong dispel
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    'item_tango', 'item_double_branches', 'item_ward_sentry', 'item_blood_grenade', 'item_orb_of_frost',
+    'item_magic_wand', 'item_arcane_boots', 'item_mekansm', 'item_guardian_greaves',
+    'item_aghanims_shard', 'item_holy_locket', 'item_vladmir', 'item_pipe',
+    -- Reviewed utility/upgrade continuation, not additional mandatory D2PT core items.
+    'item_solar_crest', 'item_ultimate_scepter_2',
 }
-
-local tAllAbilityBuildList = {
-                        {2,1,2,1,2,6,2,3,3,3,6,3,1,1,6},--pos4
-                        {1,2,2,3,2,6,3,1,1,1,6,3,3,3,6},--pos5
-}
-
-local nAbilityBuildList
-local nTalentBuildList
-
-if sRole == "pos_4"
-then
-    nAbilityBuildList   = tAllAbilityBuildList[1]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[1])
-else
-    nAbilityBuildList   = tAllAbilityBuildList[2]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[2])
-end
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_faerie_fire",
-
-    "item_boots",
-    "item_magic_wand",
-    "item_dagon_2",
-    "item_travel_boots",
-    "item_aghanims_shard",
-    "item_cyclone",
-    "item_ultimate_scepter",
-    "item_octarine_core",--
-    "item_dagon_5",--
-    "item_ultimate_scepter_2",
-    "item_shivas_guard",
-    "item_travel_boots_2",--
-    "item_wind_waker",--
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_3'] = {
-	"item_mage_outfit",
-	"item_ancient_janggo",
-	"item_glimmer_cape",
-	"item_boots_of_bearing",
-	"item_rod_of_atos",
-	"item_gungir",--
-	"item_aghanims_shard",
-	"item_cyclone",
-	"item_shivas_guard",
-	"item_sheepstick",
-	"item_wind_waker",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_4'] = {
-    "item_blood_grenade",
-
-	"item_priest_outfit",
-	"item_mekansm",
-    "item_vladmir",--
-	"item_glimmer_cape",--
-	"item_aghanims_shard",
-	"item_guardian_greaves",--
-	"item_spirit_vessel",--
---	"item_wraith_pact",
-	"item_shivas_guard",--
-	"item_sheepstick",--
-    "item_ultimate_scepter_2",
-	"item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-	"item_mage_outfit",
-	"item_shadow_amulet",
-	"item_glimmer_cape",
-	"item_pipe",
---	"item_wraith_pact",
-	"item_shivas_guard",
-	"item_aghanims_shard",
-	"item_mystic_staff",
-	"item_sheepstick",
-	"item_octarine_core",--
-	"item_ultimate_scepter_2",
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-Pos4SellList = {
-	
-}
-
-Pos5SellList = {
-	
-}
-
-X['sSellList'] = {
-	"item_shivas_guard",
-	"item_magic_wand",
-
-	"item_sheepstick",
-	"item_magic_wand",
-}
-
+-- Holy Locket consumes the Magic Wand; Orb of Frost builds into nothing else in this plan.
+X.sSellList = {'item_guardian_greaves', 'item_orb_of_frost'}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Divine Favor takes level 10, so the first talent comes at 11. Respect custom builds.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
@@ -146,13 +51,12 @@ end
 local Penitence         = bot:GetAbilityByName('chen_penitence')
 local HolyPersuasion    = bot:GetAbilityByName('chen_holy_persuasion')
 local DivineFavor       = bot:GetAbilityByName('chen_divine_favor')
-local SummonConvert     = bot:GetAbilityByName('chen_summon_convert')
+-- Summon Convert no longer exists (7.41f slot 4 is the innate Zealot, which has no cast logic here).
 local HandOfGod         = bot:GetAbilityByName('chen_hand_of_god')
 
 local PenitenceDesire, PenitenceTarget
 local HolyPersuasionDesire, HolyPersuasionTarget
 local DivineFavorDesire, DivineFavorTarget
-local SummonConvertDesire
 local HandOfGodDesire
 
 local nChenCreeps = {}
@@ -175,13 +79,6 @@ function X.SkillsComplement()
     if PenitenceDesire > 0
     then
         bot:Action_UseAbilityOnEntity(Penitence, PenitenceTarget)
-        return
-    end
-
-    SummonConvertDesire = X.ConsiderSummonConvert()
-    if SummonConvertDesire > 0
-    then
-        bot:Action_UseAbility(SummonConvert)
         return
     end
 
@@ -488,50 +385,6 @@ function X.ConsiderDivineFavor()
     return BOT_ACTION_DESIRE_NONE, nil
 end
 
-function X.ConsiderSummonConvert()
-    if not SummonConvert:IsFullyCastable()
-    or X.IsThereChenCreepAlive()
-    then
-        return BOT_ACTION_DESIRE_NONE
-    end
-
-    if J.IsGoingOnSomeone(bot)
-	then
-		if J.IsValidTarget(botTarget)
-        and J.IsInRange(bot, botTarget, 900)
-        and not J.IsSuspiciousIllusion(botTarget)
-        and not botTarget:HasModifier('modifier_necrolyte_reapers_scythe')
-		then
-            local nInRangeAlly = J.GetNearbyHeroes(botTarget, 1200, true, BOT_MODE_NONE)
-            local nInRangeEnemy = J.GetNearbyHeroes(botTarget, 1200, false, BOT_MODE_NONE)
-
-            if nInRangeAlly ~= nil and nInRangeEnemy ~= nil
-            and #nInRangeAlly >= #nInRangeEnemy
-            then
-                return BOT_ACTION_DESIRE_HIGH
-            end
-		end
-	end
-
-    if (J.IsFarming(bot) or J.IsPushing(bot) or J.IsDefending(bot) or J.IsLaning(bot))
-    and J.IsAttacking(bot)
-    then
-        return BOT_ACTION_DESIRE_HIGH
-    end
-
-    if J.IsDoingRoshan(bot) or J.IsDoingTormentor(bot)
-	then
-		if (J.IsRoshan(botTarget) or J.IsTormentor(botTarget))
-        and J.IsInRange(bot, botTarget, bot:GetAttackRange())
-        and J.IsAttacking(bot)
-		then
-            return BOT_ACTION_DESIRE_HIGH
-        end
-	end
-
-    return BOT_ACTION_DESIRE_NONE
-end
-
 function X.ConsiderHandOfGod()
 	if not HandOfGod:IsFullyCastable()
     then
@@ -586,19 +439,6 @@ function X.ConsiderHandOfGod()
     end
 
 	return BOT_ACTION_DESIRE_NONE
-end
-
-function X.IsThereChenCreepAlive()
-    for _, unit in pairs(GetUnitList(UNIT_LIST_ALLIES))
-    do
-        if string.find(unit:GetUnitName(), 'neutral')
-        and unit:HasModifier('modifier_chen_holy_persuasion')
-        then
-            return true
-        end
-    end
-
-    return false
 end
 
 return X

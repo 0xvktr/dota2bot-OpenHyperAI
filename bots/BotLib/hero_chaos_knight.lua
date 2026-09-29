@@ -16,107 +16,66 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {0, 10},
-						['t20'] = {10, 0},
-						['t15'] = {10, 0},
-						['t10'] = {0, 10},
-}
-
-local tAllAbilityBuildList = {
-						{1,2,3,3,3,6,3,2,2,2,6,1,1,1,6},--pos1,3
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_bristleback_outfit",
-	"item_armlet",
-	"item_aghanims_shard",
---	"item_blade_mail",
-	"item_heavens_halberd",--
-	"item_manta",--
-	"item_orchid",
-	"item_bloodthorn",--
-	"item_travel_boots",
-	"item_heart",--
-	"item_satanic",--
-	"item_moon_shard",
-	"item_travel_boots_2",--
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_3'] = {
-	"item_tank_outfit",
-	"item_aghanims_shard",
-	"item_crimson_guard",--
-	"item_armlet",
-	"item_heavens_halberd",--
-	"item_assault",--
-	"item_travel_boots",
-	"item_manta",--
-	"item_heart",--
-	"item_moon_shard",
-	"item_travel_boots_2",--
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_4'] = {
-	'item_priest_outfit',
-	"item_hand_of_midas",
-	"item_mekansm",
-	"item_glimmer_cape",--
-	"item_guardian_greaves",--
-    "item_basher",
-    "item_monkey_king_bar",--
-	"item_assault",--
-	"item_heavens_halberd",--
-	"item_aghanims_shard",
-    "item_abyssal_blade",--
-	"item_ultimate_scepter",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-	'item_priest_outfit',
-	"item_hand_of_midas",
-	"item_mekansm",
-	"item_glimmer_cape",--
-	"item_pipe",--
-    "item_basher",
-    "item_monkey_king_bar",--
-	"item_assault",--
-	"item_heavens_halberd",--
-	"item_aghanims_shard",
-    "item_abyssal_blade",--
-	"item_ultimate_scepter",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-	"item_power_treads",
-	"item_quelling_blade",
-
-	'item_travel_boots',
-	'item_armlet',
-}
+-- Updated to 7.41f from D2PT: positions 3 (offlane) and 1 (carry); forced other roles use pos 3.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/chaos_knight')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- Learnable abilities: [1] Chaos Bolt, [2] Reality Rift, [3] Chaos Strike, [6] Phantasm.
+-- Both roles share D2PT's most popular first ten levels; later levels are a legal continuation.
+local nAbilityBuildList = {1,2,3,3,3,6,3,2,2,2,6,1,1,1,6}
+local nTalentBuildList
+if sRole == 'pos_1' then
+    nTalentBuildList = J.Skill.GetTalentBuild({
+        t10={0,10}, -- +30% Chaos Strike lifesteal
+        t15={10,0}, -- +10 Strength
+        t20={10,0}, -- Reality Rift pierces spell immunity
+        t25={0,10}, -- +10% Chaos Strike chance
+    })
+else
+    nTalentBuildList = J.Skill.GetTalentBuild({
+        t10={0,10}, -- +30% Chaos Strike lifesteal
+        t15={10,0}, -- +10 Strength
+        t20={10,0}, -- Reality Rift pierces spell immunity
+        t25={10,0}, -- -125% Phantasm illusion incoming damage
+    })
+end
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+if sRole == 'pos_1' then
+    X.sBuyList = {
+        'item_tango', 'item_quelling_blade', 'item_gauntlets', 'item_double_branches', 'item_circlet',
+        'item_magic_wand', 'item_power_treads', 'item_armlet', 'item_orchid', 'item_blink',
+        'item_aghanims_shard', 'item_manta', 'item_bloodthorn', 'item_black_king_bar',
+        -- Late upgrades/slot policy beyond the displayed core progression.
+        'item_overwhelming_blink', 'item_ultimate_scepter_2', 'item_moon_shard',
+    }
+    X.sSellList = {
+        'item_manta', 'item_quelling_blade',
+        'item_black_king_bar', 'item_magic_wand',
+    }
+else
+    X.sBuyList = {
+        'item_tango', 'item_quelling_blade', 'item_gauntlets', 'item_double_branches', 'item_circlet',
+        'item_magic_wand', 'item_power_treads', 'item_soul_ring', 'item_armlet', 'item_blink',
+        'item_aghanims_shard', 'item_orchid', 'item_bloodthorn', 'item_black_king_bar', 'item_manta',
+        -- Late upgrades/slot policy beyond the displayed core progression.
+        'item_overwhelming_blink', 'item_ultimate_scepter_2', 'item_moon_shard',
+    }
+    X.sSellList = {
+        'item_orchid', 'item_quelling_blade',
+        'item_black_king_bar', 'item_soul_ring',
+        'item_manta', 'item_magic_wand',
+    }
+end
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_tank' }, {"item_power_treads", 'item_quelling_blade'} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
+-- Reality Rift takes level 10, so the first talent comes at 11. Respect custom builds.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = true
 X['bDeafaultItem'] = false
@@ -138,16 +97,16 @@ npc_dota_hero_chaos_knight
 "Ability2"		"chaos_knight_reality_rift"
 "Ability3"		"chaos_knight_chaos_strike"
 "Ability4"		"generic_hidden"
-"Ability5"		"generic_hidden"
+"Ability5"		"chaos_knight_fundamental_forging"
 "Ability6"		"chaos_knight_phantasm"
-"Ability10"		"special_bonus_all_stats_5"
-"Ability11"		"special_bonus_movement_speed_20"
-"Ability12"		"special_bonus_strength_15"
-"Ability13"		"special_bonus_cooldown_reduction_12"
-"Ability14"		"special_bonus_gold_income_25"
-"Ability15"		"special_bonus_unique_chaos_knight"
-"Ability16"		"special_bonus_unique_chaos_knight_2"
-"Ability17"		"special_bonus_unique_chaos_knight_3"
+"Ability10"		"special_bonus_unique_chaos_knight_6"	-- +30% Chaos Strike lifesteal
+"Ability11"		"special_bonus_unique_chaos_knight_2"	-- +225 Reality Rift pull distance
+"Ability12"		"special_bonus_unique_chaos_knight_8"	-- -3s Chaos Bolt cooldown
+"Ability13"		"special_bonus_strength_10"
+"Ability14"		"special_bonus_unique_chaos_knight_3"	-- +0.6 Chaos Bolt min/max duration
+"Ability15"		"special_bonus_unique_chaos_knight"	-- Reality Rift pierces spell immunity (talent6)
+"Ability16"		"special_bonus_unique_chaos_knight_5"	-- +10% Chaos Strike chance
+"Ability17"		"special_bonus_unique_chaos_knight_7"	-- -125% Phantasm illusion incoming damage
 
 modifier_chaos_knight_reality_rift_debuff
 modifier_chaos_knight_reality_rift_buff

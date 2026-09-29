@@ -335,185 +335,213 @@ const heroes: HeroMatchups = {
         ],
     },
 
+    // D2PT 7.41f, 2026-09-29; source role: Offlane; applied without role restrictions.
     npc_dota_hero_centaur: {
         synergy: [
-            "npc_dota_hero_beastmaster",
-            "npc_dota_hero_bristleback",
-            "npc_dota_hero_huskar",
-            "npc_dota_hero_omniknight",
-            "npc_dota_hero_dark_seer",
-            "npc_dota_hero_alchemist",
-            "npc_dota_hero_lone_druid",
-            "npc_dota_hero_sven",
-            "npc_dota_hero_broodmother",
+            "npc_dota_hero_ancient_apparition", // n=168, normalized +12.05 pp
+            "npc_dota_hero_bounty_hunter", // n=959, normalized +8.35 pp
+            "npc_dota_hero_huskar", // n=166, normalized +7.90 pp
+            "npc_dota_hero_clinkz", // n=232, normalized +7.76 pp
+            "npc_dota_hero_dragon_knight", // n=297, normalized +6.20 pp
+            "npc_dota_hero_keeper_of_the_light", // n=464, normalized +4.55 pp
+            "npc_dota_hero_dark_willow", // n=664, normalized +4.36 pp
+            "npc_dota_hero_juggernaut", // n=701, normalized +4.20 pp
         ],
         counter: [
-            "npc_dota_hero_medusa",
-            "npc_dota_hero_spectre",
-            "npc_dota_hero_sniper",
-            "npc_dota_hero_phantom_lancer",
-            "npc_dota_hero_phantom_assassin",
-            "npc_dota_hero_riki",
-            "npc_dota_hero_muerta",
-            "npc_dota_hero_drow_ranger",
-            "npc_dota_hero_gyrocopter",
+            "npc_dota_hero_viper", // n=196, normalized +11.53 pp
+            "npc_dota_hero_sniper", // n=252, normalized +10.86 pp
+            "npc_dota_hero_jakiro", // n=191, normalized +8.86 pp
+            "npc_dota_hero_kunkka", // n=161, normalized +7.83 pp
+            "npc_dota_hero_drow_ranger", // n=238, normalized +7.60 pp
+            "npc_dota_hero_sand_king", // n=107, normalized +6.46 pp
+            "npc_dota_hero_spectre", // n=467, normalized +6.30 pp
+            "npc_dota_hero_pangolier", // n=391, normalized +5.77 pp
         ],
     },
 
+    // D2PT 7.41f, 2026-09-29; source role: Offlane; applied without role restrictions.
     npc_dota_hero_chaos_knight: {
         synergy: [
-            "npc_dota_hero_abyssal_underlord",
-            "npc_dota_hero_beastmaster",
-            "npc_dota_hero_dawnbreaker",
-            "npc_dota_hero_earthshaker",
-            "npc_dota_hero_death_prophet",
-            "npc_dota_hero_treant",
-            "npc_dota_hero_drow_ranger",
-            "npc_dota_hero_ancient_apparition",
-            "npc_dota_hero_batrider",
-            "npc_dota_hero_viper",
+            "npc_dota_hero_disruptor", // n=114, normalized +10.77 pp
+            "npc_dota_hero_bounty_hunter", // n=179, normalized +7.08 pp
+            "npc_dota_hero_phantom_lancer", // n=137, normalized +6.60 pp
+            "npc_dota_hero_spectre", // n=102, normalized +5.60 pp
+            "npc_dota_hero_lina", // n=240, normalized +3.01 pp
+            "npc_dota_hero_sven", // n=111, normalized +2.60 pp
+            "npc_dota_hero_winter_wyvern", // n=180, normalized +2.31 pp
+            "npc_dota_hero_mirana", // n=238, normalized +1.40 pp
         ],
         counter: [
-            "npc_dota_hero_huskar",
-            "npc_dota_hero_viper",
-            "npc_dota_hero_lycan",
-            "npc_dota_hero_ogre_magi",
-            "npc_dota_hero_razor",
-            "npc_dota_hero_broodmother",
-            "npc_dota_hero_vengefulspirit",
-            "npc_dota_hero_pugna",
+            "npc_dota_hero_nevermore", // n=207, normalized +5.74 pp
+            "npc_dota_hero_doom_bringer", // n=104, normalized +5.40 pp
+            "npc_dota_hero_night_stalker", // n=125, normalized +5.20 pp
+            "npc_dota_hero_undying", // n=193, normalized +4.84 pp
+            "npc_dota_hero_necrolyte", // n=175, normalized +2.22 pp
+            "npc_dota_hero_mirana", // n=212, normalized +1.52 pp
+            "npc_dota_hero_zuus", // n=121, normalized +1.31 pp
+            "npc_dota_hero_earth_spirit", // n=118, normalized +1.03 pp
         ],
     },
 
+    // D2PT 7.41f, 2026-09-29; source role: Hard Support; applied without role restrictions.
     npc_dota_hero_chen: {
         synergy: [
-            "npc_dota_hero_omniknight",
-            "npc_dota_hero_visage",
-            "npc_dota_hero_marci",
-            "npc_dota_hero_techies",
-            "npc_dota_hero_batrider",
-            "npc_dota_hero_arc_warden",
-            "npc_dota_hero_primal_beast",
-            "npc_dota_hero_mars",
+            "npc_dota_hero_spirit_breaker", // n=102, normalized +7.30 pp
+            "npc_dota_hero_lina", // n=120, normalized +3.50 pp
+            "npc_dota_hero_pudge", // n=129, normalized +2.78 pp
+            "npc_dota_hero_invoker", // n=127, normalized +2.09 pp
+            "npc_dota_hero_luna", // n=124, normalized +1.70 pp
+            "npc_dota_hero_windrunner", // n=100, normalized +0.51 pp
         ],
         counter: [
-            "npc_dota_hero_huskar",
-            "npc_dota_hero_medusa",
-            "npc_dota_hero_sven",
-            "npc_dota_hero_muerta",
-            "npc_dota_hero_beastmaster",
-            "npc_dota_hero_batrider",
-            "npc_dota_hero_anti-mage",
-            "npc_dota_hero_phoenix",
+            "npc_dota_hero_hoodwink", // n=107, normalized +7.42 pp
+            "npc_dota_hero_luna", // n=115, normalized +3.30 pp
+            "npc_dota_hero_rubick", // n=152, normalized +3.08 pp
+            "npc_dota_hero_winter_wyvern", // n=164, normalized +0.90 pp
         ],
     },
 
+    // D2PT 7.41f, 2026-09-29; source role: Carry; applied without role restrictions.
     npc_dota_hero_clinkz: {
         synergy: [
-            "npc_dota_hero_keeper_of_the_light",
-            "npc_dota_hero_arc_warden",
-            "npc_dota_hero_beastmaster",
-            "npc_dota_hero_spectre",
-            "npc_dota_hero_luna",
-            "npc_dota_hero_undying",
-            "npc_dota_hero_abyssal_underlord",
-            "npc_dota_hero_phantom_lancer",
-            "npc_dota_hero_techies",
+            "npc_dota_hero_tidehunter", // n=144, normalized +10.50 pp
+            "npc_dota_hero_primal_beast", // n=102, normalized +6.42 pp
+            "npc_dota_hero_oracle", // n=123, normalized +6.00 pp
+            "npc_dota_hero_enigma", // n=199, normalized +5.90 pp
+            "npc_dota_hero_tinker", // n=129, normalized +5.50 pp
+            "npc_dota_hero_keeper_of_the_light", // n=299, normalized +4.50 pp
+            "npc_dota_hero_earthshaker", // n=317, normalized +4.02 pp
+            "npc_dota_hero_spirit_breaker", // n=504, normalized +3.93 pp
         ],
         counter: [
-            "npc_dota_hero_broodmother",
-            "npc_dota_hero_beastmaster",
-            "npc_dota_hero_leshrac",
-            "npc_dota_hero_death_prophet",
-            "npc_dota_hero_huskar",
-            "npc_dota_hero_rubick",
-            "npc_dota_hero_doom_bringer",
-            "npc_dota_hero_sand_king",
+            "npc_dota_hero_abyssal_underlord", // n=276, normalized +9.70 pp
+            "npc_dota_hero_pangolier", // n=194, normalized +9.51 pp
+            "npc_dota_hero_beastmaster", // n=207, normalized +9.40 pp
+            "npc_dota_hero_lone_druid", // n=110, normalized +7.52 pp
+            "npc_dota_hero_queenofpain", // n=129, normalized +4.80 pp
+            "npc_dota_hero_undying", // n=528, normalized +3.85 pp
+            "npc_dota_hero_slardar", // n=161, normalized +3.75 pp
+            "npc_dota_hero_grimstroke", // n=252, normalized +3.75 pp
         ],
     },
 
+    // D2PT 7.41f, 2026-09-29; source role: Hard Support; applied without role restrictions.
     npc_dota_hero_crystal_maiden: {
         synergy: [
-            "npc_dota_hero_silencer",
-            "npc_dota_hero_lycan",
-            "npc_dota_hero_pudge",
-            "npc_dota_hero_drow_ranger",
-            "npc_dota_hero_alchemist",
-            "npc_dota_hero_bristleback",
-            "npc_dota_hero_meepo",
+            "npc_dota_hero_visage", // n=133, normalized +14.49 pp
+            "npc_dota_hero_antimage", // n=381, normalized +7.20 pp
+            "npc_dota_hero_enigma", // n=478, normalized +6.35 pp
+            "npc_dota_hero_spirit_breaker", // n=1003, normalized +6.25 pp
+            "npc_dota_hero_lycan", // n=203, normalized +6.03 pp
+            "npc_dota_hero_bounty_hunter", // n=1306, normalized +5.70 pp
+            "npc_dota_hero_grimstroke", // n=210, normalized +5.60 pp
+            "npc_dota_hero_rattletrap", // n=227, normalized +5.50 pp
         ],
         counter: [
-            "npc_dota_hero_phantom_lancer",
-            "npc_dota_hero_meepo",
-            "npc_dota_hero_enchantress",
-            "npc_dota_hero_lycan",
-            "npc_dota_hero_bounty_hunter",
-            "npc_dota_hero_furion",
-            "npc_dota_hero_mirana",
-            "npc_dota_hero_keeper_of_the_light",
+            "npc_dota_hero_gyrocopter", // n=153, normalized +10.81 pp
+            "npc_dota_hero_jakiro", // n=252, normalized +10.08 pp
+            "npc_dota_hero_warlock", // n=166, normalized +9.10 pp
+            "npc_dota_hero_centaur", // n=352, normalized +9.00 pp
+            "npc_dota_hero_ancient_apparition", // n=196, normalized +8.97 pp
+            "npc_dota_hero_muerta", // n=120, normalized +8.80 pp
+            "npc_dota_hero_omniknight", // n=112, normalized +8.50 pp
+            "npc_dota_hero_viper", // n=235, normalized +7.94 pp
         ],
-    },
-    npc_dota_hero_dark_seer: {
-        synergy: [
-            "npc_dota_hero_doom_bringer",
-            "npc_dota_hero_primal_beast",
-            "npc_dota_hero_naga_siren",
-            "npc_dota_hero_centaur",
-            "npc_dota_hero_bristleback",
-            "npc_dota_hero_dawnbreaker",
-            "npc_dota_hero_earth_spirit",
-            "npc_dota_hero_spirit_breaker",
-        ],
-        counter: [
-            "npc_dota_hero_medusa",
-            "npc_dota_hero_meepo",
-            "npc_dota_hero_terrorblade",
-            "npc_dota_hero_tidehunter",
-            "npc_dota_hero_enigma",
-            "npc_dota_hero_chaos_knight",
-            "npc_dota_hero_viper",
-            "npc_dota_hero_doom_bringer",
-            "npc_dota_hero_lone_druid",
-        ],
-    },
-    npc_dota_hero_dawnbreaker: {
-        synergy: [
-            "npc_dota_hero_death_prophet",
-            "npc_dota_hero_shredder",
-            "npc_dota_hero_tidehunter",
-            "npc_dota_hero_naga_siren",
-            "npc_dota_hero_dark_seer",
-            "npc_dota_hero_chaos_knight",
-            "npc_dota_hero_mars",
-            "npc_dota_hero_venomancer",
-            "npc_dota_hero_void_spirit",
-            "npc_dota_hero_crystal_maiden",
-        ],
-        counter: ["npc_dota_hero_naga_siren", "npc_dota_hero_shadow_demon", "npc_dota_hero_treant", "npc_dota_hero_troll_warlord", "npc_dota_hero_abaddon"],
     },
 
-    npc_dota_hero_dazzle: {
+    // D2PT 7.41f, 2026-09-29; source role: Offlane; applied without role restrictions.
+    npc_dota_hero_dark_seer: {
         synergy: [
-            "npc_dota_hero_broodmother",
-            "npc_dota_hero_marci",
-            "npc_dota_hero_tidehunter",
-            "npc_dota_hero_visage",
-            "npc_dota_hero_primal_beast",
-            "npc_dota_hero_crystal_maiden",
-            "npc_dota_hero_dawnbreaker",
-            "npc_dota_hero_razor",
-            "npc_dota_hero_shadow_demon",
+            "npc_dota_hero_riki", // n=110, normalized +9.40 pp
+            "npc_dota_hero_naga_siren", // n=143, normalized +8.70 pp
+            "npc_dota_hero_razor", // n=111, normalized +7.10 pp
+            "npc_dota_hero_bounty_hunter", // n=5552, normalized +7.07 pp
+            "npc_dota_hero_primal_beast", // n=210, normalized +6.60 pp
+            "npc_dota_hero_shadow_shaman", // n=704, normalized +6.37 pp
+            "npc_dota_hero_slark", // n=1353, normalized +6.28 pp
+            "npc_dota_hero_broodmother", // n=118, normalized +6.20 pp
         ],
         counter: [
-            "npc_dota_hero_naga_siren",
-            "npc_dota_hero_visage",
-            "npc_dota_hero_spectre",
-            "npc_dota_hero_arc_warden",
-            "npc_dota_hero_lycan",
-            "npc_dota_hero_beastmaster",
-            "npc_dota_hero_shadow_demon",
-            "npc_dota_hero_bloodseeker",
-            "npc_dota_hero_bane",
+            "npc_dota_hero_drow_ranger", // n=539, normalized +11.60 pp
+            "npc_dota_hero_templar_assassin", // n=569, normalized +10.40 pp
+            "npc_dota_hero_venomancer", // n=339, normalized +9.62 pp
+            "npc_dota_hero_viper", // n=476, normalized +9.23 pp
+            "npc_dota_hero_alchemist", // n=109, normalized +9.10 pp
+            "npc_dota_hero_slardar", // n=989, normalized +9.02 pp
+            "npc_dota_hero_terrorblade", // n=1096, normalized +8.80 pp
+            "npc_dota_hero_sniper", // n=423, normalized +8.60 pp
+        ],
+    },
+
+    // D2PT 7.41f, 2026-09-29; source role: Support; applied without role restrictions.
+    npc_dota_hero_dark_willow: {
+        synergy: [
+            "npc_dota_hero_monkey_king", // n=214, normalized +7.71 pp
+            "npc_dota_hero_pugna", // n=109, normalized +7.53 pp
+            "npc_dota_hero_enigma", // n=499, normalized +6.30 pp
+            "npc_dota_hero_phantom_assassin", // n=254, normalized +5.70 pp
+            "npc_dota_hero_rattletrap", // n=335, normalized +5.60 pp
+            "npc_dota_hero_spirit_breaker", // n=236, normalized +5.28 pp
+            "npc_dota_hero_dragon_knight", // n=931, normalized +5.09 pp
+            "npc_dota_hero_bane", // n=447, normalized +5.00 pp
+        ],
+        counter: [
+            "npc_dota_hero_drow_ranger", // n=371, normalized +10.90 pp
+            "npc_dota_hero_muerta", // n=159, normalized +10.80 pp
+            "npc_dota_hero_templar_assassin", // n=256, normalized +9.50 pp
+            "npc_dota_hero_sniper", // n=283, normalized +8.07 pp
+            "npc_dota_hero_sand_king", // n=134, normalized +7.97 pp
+            "npc_dota_hero_razor", // n=220, normalized +7.93 pp
+            "npc_dota_hero_chaos_knight", // n=129, normalized +7.90 pp
+            "npc_dota_hero_ancient_apparition", // n=214, normalized +7.67 pp
+        ],
+    },
+
+    // D2PT 7.41f, 2026-09-29; source role: Offlane; applied without role restrictions.
+    npc_dota_hero_dawnbreaker: {
+        synergy: [
+            "npc_dota_hero_largo", // n=171, normalized +7.63 pp
+            "npc_dota_hero_troll_warlord", // n=139, normalized +6.80 pp
+            "npc_dota_hero_oracle", // n=696, normalized +5.84 pp
+            "npc_dota_hero_riki", // n=156, normalized +5.58 pp
+            "npc_dota_hero_chaos_knight", // n=107, normalized +5.50 pp
+            "npc_dota_hero_nyx_assassin", // n=826, normalized +4.74 pp
+            "npc_dota_hero_leshrac", // n=281, normalized +4.40 pp
+            "npc_dota_hero_phoenix", // n=743, normalized +4.23 pp
+        ],
+        counter: [
+            "npc_dota_hero_weaver", // n=303, normalized +12.26 pp
+            "npc_dota_hero_bristleback", // n=208, normalized +11.00 pp
+            "npc_dota_hero_sand_king", // n=231, normalized +9.59 pp
+            "npc_dota_hero_sniper", // n=503, normalized +6.57 pp
+            "npc_dota_hero_furion", // n=1108, normalized +6.00 pp
+            "npc_dota_hero_tiny", // n=709, normalized +5.92 pp
+            "npc_dota_hero_lone_druid", // n=597, normalized +5.82 pp
+            "npc_dota_hero_gyrocopter", // n=291, normalized +5.57 pp
+        ],
+    },
+
+    // D2PT 7.41f, 2026-09-29; source role: Hard Support; applied without role restrictions.
+    npc_dota_hero_dazzle: {
+        synergy: [
+            "npc_dota_hero_primal_beast", // n=158, normalized +9.56 pp
+            "npc_dota_hero_grimstroke", // n=140, normalized +8.50 pp
+            "npc_dota_hero_faceless_void", // n=145, normalized +7.00 pp
+            "npc_dota_hero_brewmaster", // n=137, normalized +6.90 pp
+            "npc_dota_hero_spirit_breaker", // n=647, normalized +6.71 pp
+            "npc_dota_hero_tinker", // n=213, normalized +6.20 pp
+            "npc_dota_hero_slark", // n=423, normalized +5.18 pp
+            "npc_dota_hero_marci", // n=145, normalized +4.93 pp
+        ],
+        counter: [
+            "npc_dota_hero_templar_assassin", // n=166, normalized +11.30 pp
+            "npc_dota_hero_centaur", // n=153, normalized +7.70 pp
+            "npc_dota_hero_jakiro", // n=114, normalized +7.00 pp
+            "npc_dota_hero_ogre_magi", // n=224, normalized +6.80 pp
+            "npc_dota_hero_legion_commander", // n=134, normalized +6.80 pp
+            "npc_dota_hero_huskar", // n=162, normalized +6.70 pp
+            "npc_dota_hero_drow_ranger", // n=183, normalized +6.30 pp
+            "npc_dota_hero_phantom_assassin", // n=147, normalized +5.50 pp
         ],
     },
 

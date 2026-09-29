@@ -8,91 +8,71 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {0, 10},
-						['t20'] = {10, 0},
-						['t15'] = {0, 10},
-						['t10'] = {0, 10},
-}
-
-local tAllAbilityBuildList = {
-							 {1,2,3,2,2,6,2,1,1,1,6,3,3,3,6},
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_4'] = {
-	"item_priest_outfit",
-	"item_urn_of_shadows", -- Alternative: item_essence_distiller (if not going spirit_vessel)
-	"item_mekansm",
-	"item_glimmer_cape",
-	"item_guardian_greaves",
-	"item_spirit_vessel",
---	"item_wraith_pact",
-	"item_shivas_guard",
-	"item_aghanims_shard",
-	"item_sheepstick",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-	"item_blood_grenade",
-
-	'item_mage_outfit',
-	'item_ancient_janggo',
-	'item_glimmer_cape',
-	'item_boots_of_bearing',
-	'item_pipe',
-	"item_shivas_guard",
-	'item_cyclone',
-	'item_sheepstick',
-	"item_aghanims_shard",
-	"item_wind_waker",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_3'] = {
-	"item_mage_outfit",
-	"item_shadow_amulet",
-	"item_veil_of_discord",
-	"item_cyclone",
-	"item_shivas_guard",
-	"item_glimmer_cape",
-	"item_sheepstick",
-	"item_orchid",
-	"item_bloodthorn",
-	"item_aghanims_shard",
-	"item_wind_waker",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_3']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-	'item_cyclone',
-	'item_magic_wand',
-
-	"item_shivas_guard",
-	'item_magic_wand',
-}
-
+-- Updated to 7.41f from D2PT: positions 5, 4 and 2 (mid, a reviewed exception); forced other roles use pos 5.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/crystal_maiden')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- Learnable abilities: [1] Crystal Nova, [2] Frostbite, [3] Arcane Aura, [6] Freezing Field.
+-- D2PT shows only the first ten levels; later levels are a legal continuation.
+local nAbilityBuildList, nTalentBuildList
+if sRole == 'pos_2' then
+    nAbilityBuildList = {1,3,1,2,2,6,2,2,3,3,6,1,1,3,6}
+    nTalentBuildList = J.Skill.GetTalentBuild({
+        t10={0,10}, -- +200 health
+        t15={10,0}, -- -4.5s Crystal Nova cooldown
+        t20={10,0}, -- +50 Freezing Field damage
+        t25={10,0}, -- +300 Crystal Nova damage
+    })
+else
+    nAbilityBuildList = {2,3,2,1,2,6,2,3,3,3,6,1,1,1,6}
+    nTalentBuildList = J.Skill.GetTalentBuild({
+        t10={0,10}, -- +200 health
+        t15={0,10}, -- +100 Frostbite cast range
+        t20={10,0}, -- +50 Freezing Field damage
+        t25={0,10}, -- +1s Frostbite duration
+    })
+end
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+if sRole == 'pos_2' then
+    X.sBuyList = {
+        'item_tango', 'item_double_branches', 'item_branches', 'item_enchanted_mango', 'item_faerie_fire',
+        'item_bottle', 'item_null_talisman', 'item_magic_wand', 'item_power_treads', 'item_blink',
+        'item_aghanims_shard', 'item_black_king_bar', 'item_ultimate_scepter', 'item_shivas_guard',
+        -- Late upgrades/slot policy beyond the displayed core progression.
+        'item_overwhelming_blink', 'item_ultimate_scepter_2', 'item_sheepstick', 'item_moon_shard',
+    }
+    X.sSellList = {
+        'item_ultimate_scepter', 'item_magic_wand',
+        'item_shivas_guard', 'item_null_talisman',
+        'item_sheepstick', 'item_bottle',
+    }
+else
+    X.sBuyList = {
+        'item_tango', 'item_branches', 'item_magic_stick', 'item_ward_sentry',
+        'item_enchanted_mango', 'item_enchanted_mango', 'item_blood_grenade',
+        'item_magic_wand', 'item_tranquil_boots', 'item_aghanims_shard', 'item_blink',
+    }
+    if sRole == 'pos_4' then
+        -- D2PT pos 4 buys BKB (54%) and Scepter (44%) more often than Glimmer (20%).
+        for _, item in ipairs({'item_black_king_bar', 'item_ultimate_scepter', 'item_glimmer_cape'}) do table.insert(X.sBuyList, item) end
+    else
+        -- D2PT pos 5 buys Glimmer around 25m, before BKB and Scepter.
+        for _, item in ipairs({'item_glimmer_cape', 'item_black_king_bar', 'item_ultimate_scepter'}) do table.insert(X.sBuyList, item) end
+    end
+    -- Reviewed utility/upgrade continuation, not additional mandatory D2PT core items.
+    for _, item in ipairs({'item_aeon_disk', 'item_ultimate_scepter_2', 'item_overwhelming_blink'}) do table.insert(X.sBuyList, item) end
+    X.sSellList = {'item_aeon_disk', 'item_magic_wand'}
+end
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_mage' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Every role spends level 10 on an ability, so the first talent comes at 11. Respect custom builds.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = true
 X['bDeafaultItem'] = true

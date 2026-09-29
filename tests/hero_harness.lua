@@ -13,12 +13,20 @@ function GetScriptDirectory() return 'bots' end
 local bot = {}
 function bot.GetAbilityByName() return {} end
 function bot.GetUnitName() return state.unit end
+function bot.GetPlayerID() return 0 end
 function GetBot() return bot end
 H.bot = bot
 
 package.loaded['bots/FunLib/utils'] = {}
 local Skill = realDofile('bots/FunLib/aba_skill.lua')
-H.abilities = { 'A1', 'A2', 'A3', 'A4', 'A5', 'A6' }
+local DEFAULT_ABILITIES = { 'A1', 'A2', 'A3', 'A4', 'A5', 'A6' }
+-- Heroes whose real GetAbilityList order differs from the default: each entry maps a list index to
+-- the generic role at that index, so a build that levels the real ultimate still levels A6.
+local ABILITY_LAYOUTS = {
+    -- Bedlam (the ultimate, linked with Terrorize) sits at index 4, Pixie Dust (innate) at 5, Terrorize at 6.
+    npc_dota_hero_dark_willow = { 'A1', 'A2', 'A3', 'A6', 'A5', 'A4' },
+}
+H.abilities = DEFAULT_ABILITIES
 H.talents = { 'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8' }
 Skill.GetAbilityList = function() return H.abilities end
 Skill.GetTalentList = function() return H.talents end
@@ -27,6 +35,7 @@ local J = {
     Skill = Skill,
     Item = { GetRoleItemsBuyList = function() return state.role end },
     Role = { IsPvNMode = function() return false end, IsAllShadow = function() return false end },
+    Utils = { GameStates = {} }, -- Dazzle keeps per-player Nothl Projection state here at load time.
     -- `custom` mimics a user-supplied ability build: same order, but a different table
     -- object, which is how the hero files detect (and must preserve) user progressions.
     SetUserHeroInit = function(abilities, talents, items, sells)
@@ -50,6 +59,7 @@ end
 function H.load(unit, role, opts)
     state.unit, state.role = unit, role
     state.custom = opts ~= nil and opts.custom == true
+    H.abilities = ABILITY_LAYOUTS[unit] or DEFAULT_ABILITIES
     local file = 'bots/BotLib/hero_'..unit:gsub('^npc_dota_hero_', '')..'.lua'
     local ok, result = pcall(realDofile, file)
     state.custom = false

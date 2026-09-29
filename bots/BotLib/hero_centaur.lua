@@ -7,64 +7,31 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-                        ['t25'] = {10, 0},
-                        ['t20'] = {10, 0},
-                        ['t15'] = {10, 0},
-                        ['t10'] = {0, 10},
+-- Updated to 7.41f from D2PT, position 3 only; forced other roles use this fallback.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/centaur')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- Learnable abilities: [1] Hoof Stomp, [2] Double Edge, [3] Retaliate, [6] Stampede.
+-- D2PT shows only the first ten levels; later levels are a legal continuation.
+local nAbilityBuildList = {1,2,3,3,3,6,3,1,1,1,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- +15 movement speed
+    t15={0,10}, -- +10 Strength
+    t20={10,0}, -- -25s Stampede cooldown
+    t25={10,0}, -- +1s Hoof Stomp duration
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+-- D2PT buys no boots: Horsepower converts Strength into movement speed.
+X.sBuyList = {
+    'item_tango', 'item_ring_of_protection', 'item_double_gauntlets', 'item_branches',
+    'item_helm_of_the_dominator', 'item_magic_wand',
+    'item_heart', 'item_blink', 'item_aghanims_shard', 'item_lotus_orb',
+    'item_shivas_guard', 'item_black_king_bar',
+    -- Late upgrades/slot policy beyond the displayed core progression.
+    'item_ultimate_scepter_2', 'item_overwhelming_blink', 'item_moon_shard',
 }
-
-local tAllAbilityBuildList = {
-                        {1,2,2,1,2,6,2,1,1,3,3,6,3,3,6},--pos3
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild(tAllAbilityBuildList)
-
-local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList)
-
-local sUtility = {"item_crimson_guard", "item_pipe", "item_lotus_orb"}
-local sCrimsonPipeLotus = sUtility[RandomInt(1, #sUtility)]
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_3'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_quelling_blade",
-    "item_ring_of_protection",
-    "item_magic_wand",
-
-    "item_helm_of_iron_will",
-    "item_phase_boots",
-    "item_veil_of_discord",
-    "item_blink",
-    "item_pipe",--
-    "item_shivas_guard",--
-    sCrimsonPipeLotus,
-    "item_aghanims_shard",
-    "item_kaya_and_sange",--
-    "item_heart",--
-    "item_overwhelming_blink",--
-    "item_travel_boots_2",--
-    "item_moon_shard",
-    "item_ultimate_scepter",
-    "item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_3']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-	"item_power_treads",
-	"item_quelling_blade",
-
+X.sSellList = {
+    'item_lotus_orb', 'item_magic_wand',
 }
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
@@ -72,6 +39,10 @@ if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList']
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Hoof Stomp takes level 10, so the first talent comes at 11. Respect custom builds.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

@@ -1,5 +1,5 @@
--- Currently bugged internally. Just adding her here in case Valve fixes her and (others) in the future...
--- She won't be selected.
+-- Valve-side bot bugs: she uses the override attack/laning modes (Utils.BuggyHeroesDueToValveTooLazy)
+-- and stays in hero_selection's WeakHeroes list, so at most one flagged hero is drafted per team.
 
 local X             = {}
 local bot           = GetBot()
@@ -10,105 +10,55 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {0, 10},
-						['t20'] = {0, 10},
-						['t15'] = {0, 10},
-						['t10'] = {10, 0},
+-- Updated to 7.41f from D2PT: positions 4 and 5; forced other roles use pos 4.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/dark_willow')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- Learnable abilities: [1] Bramble Maze, [2] Shadow Realm, [3] Cursed Crown, [4] Bedlam (the ultimate; Terrorize levels with it).
+-- Both roles share D2PT's most popular first ten levels and talents; later levels are a legal continuation.
+local nAbilityBuildList = {1,2,1,3,1,4,1,2,2,2,4,3,3,3,4}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- +1s Bedlam duration
+    t15={0,10}, -- +30 Bedlam damage
+    t20={10,0}, -- -7s Bramble Maze cooldown
+    t25={0,10}, -- +2 Bedlam attack targets
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    'item_tango', 'item_branches', 'item_circlet', 'item_magic_stick', 'item_ward_sentry', 'item_blood_grenade',
+    'item_magic_wand',
 }
-
-local tAllAbilityBuildList = {
-						{1,2,1,3,1,4,1,2,2,2,4,3,3,3,4},--pos4,5
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_4'] = {
-    "item_double_tango",
-    "item_enchanted_mango",
-    "item_double_branches",
-    "item_blood_grenade",
-
-    "item_boots",
-    "item_magic_wand",
-    "item_arcane_boots",
-    "item_guardian_greaves",--
-    "item_cyclone",
-    "item_aghanims_shard",
-    "item_force_staff",--
-    "item_aether_lens",--
-    "item_ultimate_scepter",--
-    "item_hurricane_pike",--
-    "item_octarine_core",--
-    "item_wind_waker",
-    "item_moon_shard",
-    "item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-    "item_double_tango",
-    "item_enchanted_mango",
-    "item_double_branches",
-    "item_blood_grenade",
-
-    "item_boots",
-    "item_magic_wand",
-    "item_tranquil_boots",
-	"item_pipe",--
-    "item_cyclone",
-    "item_force_staff",--
-    "item_aether_lens",--
-    "item_aghanims_shard",
-    "item_boots_of_bearing",--
-    "item_ultimate_scepter",--
-    "item_hurricane_pike",--
-    "item_octarine_core",--
-    "item_wind_waker",
-    "item_moon_shard",
-    "item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_3'] = {
-    "item_double_tango",
-    "item_enchanted_mango",
-    "item_double_branches",
-
-    "item_boots",
-    "item_magic_wand",
-    "item_tranquil_boots",
-    "item_cyclone",
-    "item_aghanims_shard",
-    "item_force_staff",--
-    "item_aether_lens",--
-    "item_boots_of_bearing",--
-    "item_ultimate_scepter",--
-    "item_hurricane_pike",--
-    "item_octarine_core",--
-    "item_wind_waker",
-    "item_moon_shard",
-    "item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_3']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-	"item_ultimate_scepter",
-	"item_magic_wand",
-}
+if sRole == 'pos_5' then
+    -- D2PT pos 5: Tranquils before Urn (36%), then Eul's, Blink, Shard and Force Staff.
+    for _, item in ipairs({'item_tranquil_boots', 'item_urn_of_shadows', 'item_cyclone', 'item_blink',
+        'item_aghanims_shard', 'item_force_staff',
+        -- Reviewed utility/upgrade continuation, not additional mandatory D2PT core items.
+        'item_glimmer_cape', 'item_sheepstick', 'item_wind_waker'}) do table.insert(X.sBuyList, item) end
+    X.sSellList = {
+        'item_glimmer_cape', 'item_magic_wand',
+        'item_sheepstick', 'item_urn_of_shadows',
+    }
+else
+    -- D2PT pos 4: Urn, Tranquils and Essence Distiller (81%) before Eul's, Blink and Shard.
+    for _, item in ipairs({'item_urn_of_shadows', 'item_tranquil_boots', 'item_essence_distiller', 'item_cyclone',
+        'item_blink', 'item_aghanims_shard',
+        -- Reviewed utility/upgrade continuation, not additional mandatory D2PT core items.
+        'item_aeon_disk', 'item_sheepstick', 'item_wind_waker'}) do table.insert(X.sBuyList, item) end
+    X.sSellList = {
+        'item_aeon_disk', 'item_magic_wand',
+        'item_sheepstick', 'item_urn_of_shadows',
+    }
+end
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Shadow Realm takes level 10, so the first talent comes at 11. Respect custom builds.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

@@ -7,105 +7,33 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {10, 0},
-						['t20'] = {0, 10},
-						['t15'] = {0, 10},
-						['t10'] = {0, 10},
+-- Updated to 7.41f from D2PT, position 3 only; forced other roles use this fallback.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/dark_seer')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- Learnable abilities: [1] Vacuum, [2] Ion Shell, [3] Surge, [6] Wall of Replica.
+-- D2PT shows only the first ten levels; later levels are a legal continuation.
+local nAbilityBuildList = {2,3,2,1,2,6,2,3,3,3,6,1,1,1,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- +65 Ion Shell radius
+    t15={0,10}, -- +75 Vacuum AoE
+    t20={10,0}, -- +50 Ion Shell damage
+    t25={10,0}, -- 350 AoE Surge
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+-- D2PT buys no boots here.
+X.sBuyList = {
+    'item_tango', 'item_quelling_blade', 'item_mantle', 'item_double_branches', 'item_circlet',
+    'item_null_talisman', 'item_helm_of_the_dominator', 'item_magic_wand', 'item_soul_ring',
+    'item_shivas_guard', 'item_aghanims_shard', 'item_blink', 'item_black_king_bar', 'item_ultimate_scepter',
+    -- Late upgrades/slot policy beyond the displayed core progression.
+    'item_sheepstick', 'item_ultimate_scepter_2', 'item_overwhelming_blink',
 }
-
-local tAllAbilityBuildList = {
-						{2,3,2,1,2,6,2,3,3,3,1,6,1,1,6},--pos3
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-local sUtility = {"item_crimson_guard", "item_lotus_orb", "item_heavens_halberd"}
-local nUtility = sUtility[RandomInt(1, #sUtility)]
-
-sRoleItemsBuyList['pos_3'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_magic_stick",
-    "item_quelling_blade",
-    "item_enchanted_mango",
-
-    "item_magic_wand",
-    "item_arcane_boots",
-    "item_veil_of_discord",
-    "item_crimson_guard", --
-    "item_blink",
-    "item_ultimate_scepter",
-    "item_black_king_bar",--
-    "item_shivas_guard",--
-    "item_sheepstick",--
-    "item_arcane_blink",--
-    "item_travel_boots",
-    "item_moon_shard",
-    "item_travel_boots_2",
-    "item_ultimate_scepter_2",
-    "item_aghanims_shard",
-}
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_4'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_magic_stick",
-    "item_quelling_blade",
-    "item_enchanted_mango",
-
-    "item_magic_wand",
-    "item_arcane_boots",
-    "item_veil_of_discord",
-    "item_guardian_greaves",--
-    "item_blink",
-    nUtility,--
-    "item_ultimate_scepter",
-    "item_black_king_bar",--
-    "item_shivas_guard",--
-    "item_sheepstick",--
-    "item_arcane_blink",--
-    "item_ultimate_scepter_2",
-    "item_aghanims_shard",
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_magic_stick",
-    "item_quelling_blade",
-    "item_enchanted_mango",
-
-    "item_magic_wand",
-    "item_arcane_boots",
-    "item_veil_of_discord",
-    "item_pipe",--
-    "item_blink",
-    nUtility,--
-    "item_ultimate_scepter",
-    "item_black_king_bar",--
-    "item_shivas_guard",--
-    "item_sheepstick",--
-    "item_arcane_blink",--
-    "item_ultimate_scepter_2",
-    "item_aghanims_shard",
-    "item_moon_shard",
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-	"item_ultimate_scepter",
-	"item_magic_wand",
+X.sSellList = {
+    'item_blink', 'item_quelling_blade',
+    'item_black_king_bar', 'item_null_talisman',
+    'item_ultimate_scepter', 'item_magic_wand',
+    'item_sheepstick', 'item_soul_ring',
 }
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
@@ -113,6 +41,10 @@ if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList']
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Surge takes level 10, so the first talent comes at 11. Respect custom builds.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

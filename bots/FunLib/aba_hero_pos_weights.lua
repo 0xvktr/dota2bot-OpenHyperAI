@@ -19,69 +19,15 @@ local HeroPositions = {
     [HeroName.Brewmaster] = {0, 37, 84, 0, 0},
     [HeroName.Bristleback] = {36, 0, 43, 0, 0},
     [HeroName.Broodmother] = {43, 51, 40, 0, 0},
-    [HeroName.Centaur] = {
-        5,
-        5,
-        85,
-        5,
-        0
-    },
-    [HeroName.ChaosKnight] = {
-        55,
-        40,
-        25,
-        0,
-        0
-    },
-    [HeroName.Chen] = {
-        0,
-        5,
-        10,
-        15,
-        20
-    },
-    [HeroName.Clinkz] = {
-        40,
-        45,
-        5,
-        10,
-        0
-    },
-    [HeroName.CrystalMaiden] = {
-        0,
-        5,
-        10,
-        30,
-        55
-    },
-    [HeroName.DarkSeer] = {
-        5,
-        5,
-        80,
-        10,
-        0
-    },
-    [HeroName.DarkWillow] = {
-        0,
-        20,
-        10,
-        30,
-        25
-    },
-    [HeroName.Dawnbreaker] = {
-        5,
-        20,
-        75,
-        10,
-        0
-    },
-    [HeroName.Dazzle] = {
-        0,
-        45,
-        10,
-        30,
-        55
-    },
+    [HeroName.Centaur] = {0, 0, 69, 0, 0},
+    [HeroName.ChaosKnight] = {47, 0, 53, 0, 0},
+    [HeroName.Chen] = {0, 0, 0, 0, 49},
+    [HeroName.Clinkz] = {77, 46, 0, 0, 0},
+    [HeroName.CrystalMaiden] = {0, 36, 0, 51, 78},
+    [HeroName.DarkSeer] = {0, 0, 99, 0, 0},
+    [HeroName.DarkWillow] = {0, 0, 0, 75, 80},
+    [HeroName.Dawnbreaker] = {0, 42, 98, 0, 0},
+    [HeroName.Dazzle] = {0, 0, 0, 39, 100},
     [HeroName.DeathProphet] = {
         5,
         60,
