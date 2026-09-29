@@ -6,6 +6,7 @@ local BossCombat = require(GetScriptDirectory()..'/FunLib/boss_combat')
 local LotusUsage = require(GetScriptDirectory()..'/FunLib/lotus_usage')
 local FightResponse = require(GetScriptDirectory()..'/FunLib/fight_response')
 local DebugDumps = require(GetScriptDirectory()..'/FunLib/debug_dumps')
+local WardUtility = require(GetScriptDirectory()..'/FunLib/aba_ward_utility')
 local X = {}
 local bot = GetBot()
 local botName = bot:GetUnitName()
@@ -5906,6 +5907,8 @@ X.ConsiderItemDesire["item_ward_sentry"] = function( hItem )
 				and not J.Site.IsLocationHaveTrueSight( npcEnemy:GetLocation() )
 			then
 				hEffectTarget = J.GetUnitTowardDistanceLocation( bot, npcEnemy, nCastRange )
+				-- Out of our own spawn boxes when possible; the fight takes priority otherwise.
+				hEffectTarget = WardUtility.GetSpawnSafeLocation( hEffectTarget ) or hEffectTarget
 				sCastMotive = '插真眼针对:'..J.Chat.GetNormName( npcEnemy )
 				return BOT_ACTION_DESIRE_HIGH, hEffectTarget, sCastType, sCastMotive
 			end

@@ -18,7 +18,7 @@ for (const name of heroNames) {
 // 1. Lua syntax: every migrated hero, its build data, and the shared infrastructure.
 const lua = [
     ...heroNames.flatMap(n => [`bots/BotLib/hero_${n}.lua`, `${buildsDir}/${n}.lua`]),
-    'bots/FunLib/hero_build_preferences.lua', 'bots/FunLib/alchemist_scepter.lua', 'bots/FunLib/inventory_upkeep.lua', 'bots/FunLib/aba_item.lua',
+    'bots/FunLib/hero_build_preferences.lua', 'bots/FunLib/alchemist_scepter.lua', 'bots/FunLib/inventory_upkeep.lua', 'bots/FunLib/debug_dumps.lua', 'bots/FunLib/aba_ward_utility.lua', 'bots/mode_ward_generic.lua', 'bots/FunLib/aba_item.lua',
     'bots/FunLib/aba_hero_pos_weights.lua', 'bots/FretBots/BonusTimers.lua', 'bots/Buff/NeutralItems.lua',
     'bots/FretBots/NeutralItems.lua', 'bots/hero_selection.lua', 'bots/item_purchase_generic.lua',
     'bots/ability_item_usage_generic.lua',
@@ -112,6 +112,7 @@ for (const [, body] of read('bots/BotLib/hero_invoker.lua').matchAll(/^\s*\{([\d
     assert.deepStrictEqual(n, [8, 8, 8], 'hero_invoker build must level each orb to 8: ' + body);
 }
 run(['tests/inventory_upkeep_spec.lua'], 'Inventory upkeep scenarios passed');
+run(['tests/ward_spawn_box_spec.lua'], 'Ward spawn box scenarios passed');
 
 // 5. Shared logic the build migration changed, executed from the real source.
 // Draft scoring with controlled positive/negative matchups.

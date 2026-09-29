@@ -333,6 +333,59 @@ local WardLocationsEarlyGame__Dire = {
 	[5] = { location = DIRE_LANE_PHASE_5, plant_time_obs = 0, plant_time_sentry = 0, },
 	[6] = { location = DIRE_LANE_PHASE_6, plant_time_obs = 0, plant_time_sentry = 0, },
 }
+-- A ward inside a neutral camp's spawn box stops the camp from respawning. GetNeutralSpawners() exposes
+-- each camp's box (min/max) from pre-game on, so wards are kept out of our own camps using live map data.
+local SPAWN_BOX_MARGIN = 60
+local tOwnSpawnBoxes = nil
+function X.GetOwnSpawnBoxes()
+	if tOwnSpawnBoxes ~= nil then return tOwnSpawnBoxes end
+	local boxes = {}
+	for _, camp in pairs(GetNeutralSpawners() or {}) do
+		if camp.team == GetTeam() and camp.min ~= nil and camp.max ~= nil then
+			table.insert(boxes, { min = camp.min, max = camp.max })
+		end
+	end
+	-- The list is empty before pre-game; only cache it once the camps are exposed.
+	if #boxes > 0 then tOwnSpawnBoxes = boxes end
+	return boxes
+end
+
+-- The location itself when it is clear of our spawn boxes; otherwise the nearest point just outside the
+-- box, or nil when that point is not walkable.
+function X.GetSpawnSafeLocation(vLocation)
+	for _, box in pairs(X.GetOwnSpawnBoxes()) do
+		local minX, maxX = box.min.x - SPAWN_BOX_MARGIN, box.max.x + SPAWN_BOX_MARGIN
+		local minY, maxY = box.min.y - SPAWN_BOX_MARGIN, box.max.y + SPAWN_BOX_MARGIN
+		if vLocation.x > minX and vLocation.x < maxX and vLocation.y > minY and vLocation.y < maxY then
+			local exits = {
+				{ vLocation.x - minX, Vector(minX, vLocation.y, vLocation.z or 0) },
+				{ maxX - vLocation.x, Vector(maxX, vLocation.y, vLocation.z or 0) },
+				{ vLocation.y - minY, Vector(vLocation.x, minY, vLocation.z or 0) },
+				{ maxY - vLocation.y, Vector(vLocation.x, maxY, vLocation.z or 0) },
+			}
+			table.sort(exits, function(a, b) return a[1] < b[1] end)
+			for _, exit in ipairs(exits) do
+				if IsLocationPassable(exit[2]) then return exit[2] end
+			end
+			return nil
+		end
+	end
+	return vLocation
+end
+
+-- Moves spots out of our spawn boxes (permanently, the correction is stable) and drops those that cannot be.
+function X.KeepOutOfOwnCamps(spots)
+	local result = {}
+	for _, spot in pairs(spots) do
+		local vSafe = X.GetSpawnSafeLocation(spot.location)
+		if vSafe ~= nil then
+			spot.location = vSafe
+			table.insert(result, spot)
+		end
+	end
+	return result
+end
+
 function X.GetEarlyGameWardSpots()
 	return GetTeam() == TEAM_RADIANT and WardLocationsEarlyGame__Radiant or WardLocationsEarlyGame__Dire
 end
@@ -382,7 +435,7 @@ function X.GetAvailabeObserverWardSpots(bot)
 			end
 		end
 
-		return availableSpots
+		return X.KeepOutOfOwnCamps(availableSpots)
 	end
 
 	if J.IsEarlyGame() then
@@ -490,7 +543,7 @@ function X.GetAvailabeObserverWardSpots(bot)
 		end
 	end
 
-	return availableSpots
+	return X.KeepOutOfOwnCamps(availableSpots)
 end
 
 function X.GetClosestObserverWardSpot(bot, spots)
@@ -633,7 +686,7 @@ function X.GetPossibleSentryWardSpots(bot)
 		end
 	end
 
-	return possibleSpots
+	return X.KeepOutOfOwnCamps(possibleSpots)
 end
 
 function X.GetClosestSentryWardSpot(bot, spots)
