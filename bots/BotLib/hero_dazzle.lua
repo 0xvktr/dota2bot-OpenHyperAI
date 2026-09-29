@@ -31,7 +31,7 @@ X.sBuyList = {
     'item_magic_wand', 'item_arcane_boots', 'item_holy_locket', 'item_mekansm', 'item_guardian_greaves',
     'item_glimmer_cape', 'item_aghanims_shard', 'item_blink',
     -- Reviewed utility/upgrade continuation, not additional mandatory D2PT core items.
-    'item_aether_lens', 'item_aeon_disk',
+    'item_aether_lens', 'item_aeon_disk', 'item_overwhelming_blink',
 }
 X.sSellList = {}
 

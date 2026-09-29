@@ -33,7 +33,7 @@ if sRole == 'pos_5' then
     for _, item in ipairs({'item_tranquil_boots', 'item_urn_of_shadows', 'item_cyclone', 'item_blink',
         'item_aghanims_shard', 'item_force_staff',
         -- Reviewed utility/upgrade continuation, not additional mandatory D2PT core items.
-        'item_glimmer_cape', 'item_sheepstick', 'item_wind_waker'}) do table.insert(X.sBuyList, item) end
+        'item_glimmer_cape', 'item_sheepstick', 'item_wind_waker', 'item_overwhelming_blink'}) do table.insert(X.sBuyList, item) end
     X.sSellList = {
         'item_glimmer_cape', 'item_magic_wand',
         'item_sheepstick', 'item_urn_of_shadows',
@@ -43,7 +43,7 @@ else
     for _, item in ipairs({'item_urn_of_shadows', 'item_tranquil_boots', 'item_essence_distiller', 'item_cyclone',
         'item_blink', 'item_aghanims_shard',
         -- Reviewed utility/upgrade continuation, not additional mandatory D2PT core items.
-        'item_aeon_disk', 'item_sheepstick', 'item_wind_waker'}) do table.insert(X.sBuyList, item) end
+        'item_aeon_disk', 'item_sheepstick', 'item_wind_waker', 'item_overwhelming_blink'}) do table.insert(X.sBuyList, item) end
     X.sSellList = {
         'item_aeon_disk', 'item_magic_wand',
         'item_sheepstick', 'item_urn_of_shadows',
