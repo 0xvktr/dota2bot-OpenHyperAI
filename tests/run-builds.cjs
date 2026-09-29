@@ -103,6 +103,7 @@ run(['tests/build_validator.lua'], 'Build validation passed');
 run(['tests/neutral_consumers_spec.lua'], 'Neutral consumer wiring passed');
 run(['tests/alchemist_scepter_spec.lua'], 'Alchemist Scepter gift scenarios passed');
 run(['tests/axe_culling_blade_spec.lua'], 'Axe Culling Blade talent scenario passed');
+run(['tests/ancient_apparition_combo_spec.lua'], 'Ancient Apparition combo scenarios passed');
 run(['tests/inventory_upkeep_spec.lua'], 'Inventory upkeep scenarios passed');
 
 // 5. Shared logic the build migration changed, executed from the real source.

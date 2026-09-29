@@ -63,7 +63,8 @@ local ChillingTouch     = bot:GetAbilityByName('ancient_apparition_chilling_touc
 local IceBlast          = bot:GetAbilityByName('ancient_apparition_ice_blast')
 local IceBlastRelease   = bot:GetAbilityByName('ancient_apparition_ice_blast_release')
 
-local ColdFeetAoETalent = bot:GetAbilityByName('special_bonus_unique_ancient_apparition_7')
+-- Level-25 talent: Cold Feet also curses enemies around the target. Cold Feet stays unit-targeted.
+local ColdFeetAoETalent = bot:GetAbilityByName('special_bonus_unique_ancient_apparition_1')
 
 local ColdFeetDesire, ColdFeetTarget
 local IceVortexDesire, IceVortextLocation
@@ -72,6 +73,9 @@ local IceBlastDesire, IceBlastLocation
 local IceBlastReleaseDesire
 
 local IceBlastReleaseLocation
+
+-- Where the last Cold Feet target stood when cursed; the stun breaks once it walks break_distance away.
+local ColdFeetOrigin = { unit = nil, location = nil, time = -math.huge }
 
 function X.SkillsComplement()
 	if J.CanNotUseAbility(bot) then return end
@@ -91,32 +95,24 @@ function X.SkillsComplement()
         return
     end
 
+    -- Combo order: Cold Feet first, then Ice Vortex on the cursed target so it cannot walk out.
+    ColdFeetDesire, ColdFeetTarget = X.ConsiderColdFeet()
+    if ColdFeetDesire > 0
+    then
+        if X.HasColdFeetAoE()
+        then
+            ColdFeetTarget = X.GetBestColdFeetAoETarget(ColdFeetTarget)
+        end
+
+        bot:Action_UseAbilityOnEntity(ColdFeet, ColdFeetTarget)
+        ColdFeetOrigin = { unit = ColdFeetTarget, location = ColdFeetTarget:GetLocation(), time = DotaTime() }
+        return
+    end
+
     IceVortexDesire, IceVortextLocation = X.ConsiderIceVortex()
     if IceVortexDesire > 0
     then
         bot:Action_UseAbilityOnLocation(IceVortex, IceVortextLocation)
-        return
-    end
-
-    ColdFeetDesire, ColdFeetTarget = X.ConsiderColdFeet()
-    if ColdFeetDesire > 0
-    then
-        if ColdFeetAoETalent:IsTrained()
-        then
-            local nAoERadius = 450
-            local nCastRange = J.GetProperCastRange(false, bot, ColdFeet:GetCastRange())
-            local nLocationAoE = bot:FindAoELocation(true, true, bot:GetLocation(), nCastRange, nAoERadius, 0, 0)
-
-            if nLocationAoE.count >= 2
-            then
-                bot:Action_UseAbilityOnLocation(ColdFeet, nLocationAoE.targetloc)
-            else
-                bot:Action_UseAbilityOnEntity(ColdFeet, ColdFeetTarget)
-            end
-        else
-            bot:Action_UseAbilityOnEntity(ColdFeet, ColdFeetTarget)
-        end
-
         return
     end
 
@@ -128,6 +124,45 @@ function X.SkillsComplement()
     end
 end
 
+function X.HasColdFeetAoE()
+    return ColdFeetAoETalent ~= nil and ColdFeetAoETalent:IsTrained()
+end
+
+-- With the AoE talent, curse the valid enemy in range with the most enemy heroes around it.
+function X.GetBestColdFeetAoETarget(hDefault)
+    local nCastRange = J.GetProperCastRange(false, bot, ColdFeet:GetCastRange())
+    local nRadius = ColdFeet:GetSpecialValueInt('area_of_effect')
+    if nRadius <= 0 then return hDefault end
+
+    local hBest, nBestCount = hDefault, #J.GetEnemiesNearLoc(hDefault:GetLocation(), nRadius)
+    for _, enemyHero in pairs(J.GetNearbyHeroes(bot, nCastRange, true, BOT_MODE_NONE))
+    do
+        if J.IsValidHero(enemyHero)
+        and J.CanCastOnNonMagicImmune(enemyHero)
+        and J.CanCastOnTargetAdvanced(enemyHero)
+        and not J.IsSuspiciousIllusion(enemyHero)
+        then
+            local nCount = #J.GetEnemiesNearLoc(enemyHero:GetLocation(), nRadius)
+            if nCount > nBestCount
+            then
+                hBest, nBestCount = enemyHero, nCount
+            end
+        end
+    end
+
+    return hBest
+end
+
+function X.CanColdFeet(hTarget, nCastRange)
+    return J.IsValidHero(hTarget)
+        and J.CanCastOnNonMagicImmune(hTarget)
+        and J.CanCastOnTargetAdvanced(hTarget)
+        and J.IsInRange(bot, hTarget, nCastRange)
+        and not J.IsSuspiciousIllusion(hTarget)
+        and not hTarget:HasModifier('modifier_cold_feet')
+        and not hTarget:HasModifier('modifier_necrolyte_reapers_scythe')
+end
+
 function X.ConsiderColdFeet()
     if not ColdFeet:IsFullyCastable()
     then
@@ -136,6 +171,20 @@ function X.ConsiderColdFeet()
 
     local nCastRange = J.GetProperCastRange(false, bot, ColdFeet:GetCastRange())
     local botTarget = J.GetProperTarget(bot)
+
+    -- Follow-up lockdown: a stunned/rooted enemy cannot walk out of the break distance, and the
+    -- Cold Feet stun then chains onto the ally's disable.
+    if J.IsInTeamFight(bot, 1200) or J.IsGoingOnSomeone(bot)
+    then
+        for _, enemyHero in pairs(J.GetNearbyHeroes(bot, nCastRange, true, BOT_MODE_NONE))
+        do
+            if X.CanColdFeet(enemyHero, nCastRange)
+            and J.IsDisabled(enemyHero)
+            then
+                return BOT_ACTION_DESIRE_HIGH, enemyHero
+            end
+        end
+    end
 
     local nAllyHeroes = J.GetNearbyHeroes(bot,nCastRange + 150, false, BOT_MODE_NONE)
     for _, allyHero in pairs(nAllyHeroes)
@@ -241,6 +290,24 @@ function X.ConsiderColdFeet()
     return BOT_ACTION_DESIRE_NONE, nil
 end
 
+-- Center the Vortex between the cursed target and where it was cursed, so the pull drags it back
+-- toward the Cold Feet origin while the target stays inside the radius.
+function X.GetColdFeetVortexLocation(hTarget, nRadius, nCastPoint)
+    local vTarget = hTarget:GetExtrapolatedLocation(nCastPoint)
+    if ColdFeetOrigin.unit ~= hTarget
+    or ColdFeetOrigin.location == nil
+    or DotaTime() > ColdFeetOrigin.time + ColdFeet:GetDuration() + 0.5
+    then
+        return vTarget
+    end
+
+    local nToOrigin = J.GetLocationToLocationDistance(vTarget, ColdFeetOrigin.location)
+    if nToOrigin < 1 then return vTarget end
+
+    local nOffset = math.min(nToOrigin, nRadius * 0.5)
+    return vTarget + (ColdFeetOrigin.location - vTarget):Normalized() * nOffset
+end
+
 function X.ConsiderIceVortex()
     if not IceVortex:IsFullyCastable()
     then
@@ -252,12 +319,26 @@ function X.ConsiderIceVortex()
     local nCastPoint = IceVortex:GetCastPoint()
     local botTarget = J.GetProperTarget(bot)
 
+    -- Cold Feet follow-up: the Vortex slow and pull keep the target inside the break distance, and
+    -- its magic resistance reduction amplifies the rest of the combo.
+    for _, enemyHero in pairs(J.GetNearbyHeroes(bot, nCastRange, true, BOT_MODE_NONE))
+    do
+        if J.IsValidHero(enemyHero)
+        and J.CanCastOnNonMagicImmune(enemyHero)
+        and enemyHero:HasModifier('modifier_cold_feet')
+        and not enemyHero:HasModifier('modifier_ice_vortex')
+        and not J.IsSuspiciousIllusion(enemyHero)
+        then
+            return BOT_ACTION_DESIRE_HIGH, X.GetColdFeetVortexLocation(enemyHero, nRadius, nCastPoint)
+        end
+    end
+
     if J.IsInTeamFight(bot, 1200)
     then
         local nLocationAoE = bot:FindAoELocation(true, true, bot:GetLocation(), nCastRange, nRadius, 0, 0)
         local nInRangeEnemy = J.GetEnemiesNearLoc(nLocationAoE.targetloc, nRadius)
 
-        if nInRangeEnemy ~= nil and #nInRangeEnemy and GetUnitToLocationDistance(bot, nLocationAoE.targetloc) <= nCastRange
+        if nInRangeEnemy ~= nil and #nInRangeEnemy >= 1 and GetUnitToLocationDistance(bot, nLocationAoE.targetloc) <= nCastRange
         then
             return BOT_ACTION_DESIRE_HIGH, nLocationAoE.targetloc
         end
@@ -377,6 +458,25 @@ function X.ConsiderChillingTouch()
         end
     end
 
+    -- Lane harass with the extended attack range, keeping mana for Cold Feet.
+    -- Stay out of enemy tower range so hitting a hero does not draw tower aggro.
+    if J.IsLaning(bot)
+    and J.GetMP(bot) > 0.5
+    and #bot:GetNearbyTowers(900, true) == 0
+    then
+        for _, enemyHero in pairs(nEnemyHeroes)
+        do
+            if J.IsValidHero(enemyHero)
+            and J.CanCastOnNonMagicImmune(enemyHero)
+            and J.CanCastOnTargetAdvanced(enemyHero)
+            and J.IsInRange(bot, enemyHero, nCastRange)
+            and not J.IsSuspiciousIllusion(enemyHero)
+            then
+                return BOT_ACTION_DESIRE_HIGH, enemyHero
+            end
+        end
+    end
+
     local nAllyHeroes = J.GetNearbyHeroes(bot,nCastRange + 50, false, BOT_MODE_NONE)
     for _, allyHero in pairs(nAllyHeroes)
     do
@@ -484,43 +584,77 @@ function X.ConsiderIceBlast()
         return BOT_ACTION_DESIRE_NONE, 0
     end
 
-    local nMinRadius = IceBlast:GetSpecialValueInt('radius_min')
-    local nGrowSpeed = IceBlast:GetSpecialValueInt('radius_grow')
-    local nMaxRadius = IceBlast:GetSpecialValueInt('radius_max')
-
-    if J.IsInTeamFight(bot, 1600)
+    -- Global: a fight anywhere on the map, AA's own included. Aim at the enemy whose surroundings the
+    -- blast covers best; Frostbite stops their healing for the rest of the fight.
+    local nTeamFightLocation = J.GetTeamFightLocation(bot)
+    if nTeamFightLocation ~= nil
     then
-        local nTeamFightLocation = J.GetTeamFightLocation(bot)
-
-        if nTeamFightLocation ~= nil
+        local vBest, nBestCount = X.GetBestIceBlastLocation(J.GetEnemiesNearLoc(nTeamFightLocation, 1400))
+        if vBest ~= nil and nBestCount >= 1
         then
-            local dist = GetUnitToLocationDistance(bot, nTeamFightLocation)
-            local nRadius = math.min(nMinRadius + (dist * nGrowSpeed), nMaxRadius)
-            local nLocationAoE = bot:FindAoELocation(true, true, bot:GetLocation(), 1600, nRadius, 0, 0)
-            local nInRangeEnemy = J.GetEnemiesNearLoc(nLocationAoE.targetloc, nRadius)
+            return BOT_ACTION_DESIRE_HIGH, vBest
+        end
+    end
 
-            if nInRangeEnemy ~= nil and #nInRangeEnemy >= 2
+    -- Snipe: a visible enemy the initial hit drops below the shatter threshold.
+    local nDamage = IceBlast:GetAbilityDamage()
+    local nKillPct = IceBlast:GetSpecialValueInt('kill_pct') / 100
+    local nDamagePerSecond = IceBlast:GetSpecialValueInt('damage_per_second')
+    for _, enemyHero in pairs(GetUnitList(UNIT_LIST_ENEMY_HEROES))
+    do
+        if J.IsValidHero(enemyHero)
+        and J.CanCastOnMagicImmune(enemyHero)
+        and GetUnitToUnitDistance(bot, enemyHero) <= 4000
+        and not J.IsSuspiciousIllusion(enemyHero)
+        and not enemyHero:HasModifier('modifier_ice_blast')
+        and not enemyHero:HasModifier('modifier_abaddon_borrowed_time')
+        and not enemyHero:HasModifier('modifier_dazzle_shallow_grave')
+        and not enemyHero:HasModifier('modifier_oracle_false_promise_timer')
+        then
+            local nHealthAfter = enemyHero:GetHealth()
+                - enemyHero:GetActualIncomingDamage(nDamage + nDamagePerSecond, DAMAGE_TYPE_MAGICAL)
+            if nHealthAfter <= enemyHero:GetMaxHealth() * nKillPct
             then
-                return BOT_ACTION_DESIRE_HIGH, nLocationAoE.targetloc
+                local nTravel = GetUnitToUnitDistance(bot, enemyHero) / X.GetIceBlastSpeed()
+                return BOT_ACTION_DESIRE_HIGH, enemyHero:GetExtrapolatedLocation(nTravel)
             end
         end
     end
 
-    local nTeamFightLocation = J.GetTeamFightLocation(bot)
+    return BOT_ACTION_DESIRE_NONE, 0
+end
 
-    if nTeamFightLocation ~= nil
-    then
-        local dist = GetUnitToLocationDistance(bot, nTeamFightLocation)
-        local nRadius = math.min(nMinRadius + (dist * nGrowSpeed), nMaxRadius)
-        local nInRangeEnemy = J.GetEnemiesNearLoc(nTeamFightLocation, nRadius)
+function X.GetIceBlastSpeed()
+    local nSpeed = IceBlast:GetSpecialValueInt('speed')
+    return nSpeed > 0 and nSpeed or 1500
+end
 
-        if nInRangeEnemy ~= nil and #nInRangeEnemy >= 1
+-- The tracer starts at AA and the blast radius grows with its travel time:
+-- radius_min + radius_grow * seconds travelled, capped at radius_max.
+function X.GetIceBlastRadius(vLocation)
+    local nTravel = GetUnitToLocationDistance(bot, vLocation) / X.GetIceBlastSpeed()
+    return math.min(IceBlast:GetSpecialValueInt('radius_min') + IceBlast:GetSpecialValueFloat('radius_grow') * nTravel,
+                    IceBlast:GetSpecialValueInt('radius_max'))
+end
+
+function X.GetBestIceBlastLocation(tEnemies)
+    local vBest, nBestCount = nil, 0
+    for _, enemyHero in pairs(tEnemies)
+    do
+        if J.IsValidHero(enemyHero)
+        and J.CanCastOnMagicImmune(enemyHero)
+        and not enemyHero:HasModifier('modifier_ice_blast')
         then
-            return BOT_ACTION_DESIRE_HIGH, nTeamFightLocation
+            local vLocation = enemyHero:GetLocation()
+            local nCount = #J.GetEnemiesNearLoc(vLocation, X.GetIceBlastRadius(vLocation))
+            if nCount > nBestCount
+            then
+                vBest, nBestCount = vLocation, nCount
+            end
         end
     end
 
-    return BOT_ACTION_DESIRE_NONE, 0
+    return vBest, nBestCount
 end
 
 function X.ConsiderIceBlastRelease()
