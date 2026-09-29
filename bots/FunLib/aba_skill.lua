@@ -209,37 +209,27 @@ function X.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBu
 	end
 	if botName == 'npc_dota_hero_invoker'
 	then
-		sSkillList = {
-						[1] = sAbilityList[nAbilityBuildList[1]],
-						[2] = sAbilityList[nAbilityBuildList[2]],
-						[3] = sAbilityList[nAbilityBuildList[3]],
-						[4] = sAbilityList[nAbilityBuildList[4]],
-						[5] = sAbilityList[nAbilityBuildList[5]],
-						[6] = sAbilityList[nAbilityBuildList[6]],
-						[7] = sAbilityList[nAbilityBuildList[7]],
-						[8] = sAbilityList[nAbilityBuildList[8]],
-						[9] = sAbilityList[nAbilityBuildList[9]],
-						[10] = sTalentList[nTalentBuildList[1]],
-						[11] = sAbilityList[nAbilityBuildList[10]],
-						[12] = sAbilityList[nAbilityBuildList[11]],
-						[13] = sAbilityList[nAbilityBuildList[12]],
-						[14] = sAbilityList[nAbilityBuildList[13]],
-						[15] = sTalentList[nTalentBuildList[2]],
-						[16] = sAbilityList[nAbilityBuildList[14]],
-						[17] = sAbilityList[nAbilityBuildList[15]],
-						[18] = sAbilityList[nAbilityBuildList[16]],
-						[19] = sAbilityList[nAbilityBuildList[17]],
-						[20] = sTalentList[nTalentBuildList[3]],
-						[21] = sAbilityList[nAbilityBuildList[18]],
-						[22] = sAbilityList[nAbilityBuildList[19]],
-						[23] = sAbilityList[nAbilityBuildList[20]],
-						[24] = sAbilityList[nAbilityBuildList[21]],
-						[25] = sTalentList[nTalentBuildList[4]],
-						[26] = sTalentList[nTalentBuildList[5]],
-						[27] = sTalentList[nTalentBuildList[6]],
-						[28] = sTalentList[nTalentBuildList[7]],
-						[29] = sTalentList[nTalentBuildList[8]],
-					}
+		-- 7.41b: Invoke grants a bonus orb point at levels 6, 12 and 18 (orbs max at 8, i.e. 24 points).
+		-- Points are spent in list order, so the orb points before each talent level are
+		-- levels 1-9 + bonus = 10, levels 11-14 + bonus = 5, levels 16-19 + bonus = 5, levels 21-24 = 4.
+		sSkillList = {}
+		local nOrb = 1
+		local function AddOrbs(count)
+			for _ = 1, count do
+				if nAbilityBuildList[nOrb] ~= nil then
+					table.insert(sSkillList, sAbilityList[nAbilityBuildList[nOrb]])
+					nOrb = nOrb + 1
+				end
+			end
+		end
+		AddOrbs(10)
+		table.insert(sSkillList, sTalentList[nTalentBuildList[1]])
+		AddOrbs(5)
+		table.insert(sSkillList, sTalentList[nTalentBuildList[2]])
+		AddOrbs(5)
+		table.insert(sSkillList, sTalentList[nTalentBuildList[3]])
+		AddOrbs(#nAbilityBuildList - nOrb + 1)
+		for k = 4, 8 do table.insert(sSkillList, sTalentList[nTalentBuildList[k]]) end
 	end
 
 	-- print("Aba list for: "..botName)
