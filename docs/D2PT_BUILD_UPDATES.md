@@ -115,7 +115,11 @@ discovers every `bots/BotLib/Builds/<hero>.lua` and checks, for each role:
   notes, not failures. `defaultRole` is migrated, and the hero source mentions the patch.
 - **Items:** every buy/sell item is a known item name; no duplicate purchases apart from
   consumables; an upgrade never precedes its base (Blink, Orchid, Basher, Mekansm, ...;
-  see `UPGRADES` in the validator). Sell lists are (new item, old item) pairs.
+  see `UPGRADES` in the validator). Sell lists are (new item, old item) pairs. A starting
+  component (Branches, Circlet, Gauntlets, Slippers, Mantle, Magic Stick) with no consumer in
+  the same list (derived from Valve's recipes) is reported as a note, not a failure: they give
+  early attributes and `inventory_upkeep.lua` sells them at a shop after minute 8. Wards are
+  a failure on pos 1-3 because only supports ever place them (`mode_ward_generic`).
 - **Skills and talents:** loaded with generic names (`A1`..`A6`, `T1`..`T8`). Basics are
   leveled 4 times, the ultimate 3, each talent once, talents go tier 1-4; and the
   level-up queue is simulated so that no talent or premature ability blocks a learnable

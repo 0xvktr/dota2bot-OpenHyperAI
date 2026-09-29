@@ -20,9 +20,10 @@ local nTalentBuildList = J.Skill.GetTalentBuild({
 })
 local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
 X.sBuyList = {
-    -- Observed opening with Tango (third-most common), for reliable bot sustain.
-    'item_double_branches', 'item_double_circlet', 'item_ward_observer',
-    'item_tango', 'item_faerie_fire', 'item_bottle',
+    -- D2PT opening: Branches and Circlets for early attributes (not upgraded in this build; the inventory
+    -- upkeep sells them once they stop mattering), Faerie Fire, Tango. The Observer Ward is left out: only
+    -- supports ever place wards (mode_ward_generic), so a core would carry it unused.
+    'item_tango', 'item_double_branches', 'item_double_circlet', 'item_faerie_fire', 'item_bottle',
     'item_hand_of_midas', 'item_maelstrom', 'item_mjollnir',
     'item_travel_boots', 'item_orchid', 'item_aghanims_shard',
     'item_yasha', 'item_manta', 'item_bloodthorn', 'item_sheepstick',

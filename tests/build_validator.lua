@@ -178,11 +178,64 @@ local UPGRADES = {
     item_ultimate_scepter = { 'item_ultimate_scepter_2' },
 }
 
+-- Starting components need a consumer in the same list, or they sit in the inventory as dead weight
+-- (a full inventory then pushes real items into the inactive backpack). Consumers are derived from
+-- Valve's recipes (items.txt, transitive), plus this library's item_double_* macros.
+local function withMacros(list)
+    local out = {}
+    for _, name in ipairs(list) do
+        out[#out + 1] = name
+        out[#out + 1] = name:gsub('^item_', 'item_double_')
+    end
+    return out
+end
+local BRANCH_USERS = { 'item_magic_wand', 'item_holy_locket' }
+local CIRCLET_USERS = withMacros({ 'item_bracer', 'item_essence_distiller', 'item_null_talisman', 'item_spirit_vessel',
+    'item_urn_of_shadows', 'item_wraith_band' })
+local GAUNTLET_USERS = withMacros({ 'item_bracer', 'item_soul_ring' })
+local SLIPPER_USERS = withMacros({ 'item_wraith_band' })
+local MANTLE_USERS = withMacros({ 'item_null_talisman' })
+local CONSUMERS = {
+    item_branches = BRANCH_USERS, item_double_branches = BRANCH_USERS,
+    item_magic_stick = BRANCH_USERS,
+    item_circlet = CIRCLET_USERS, item_double_circlet = CIRCLET_USERS,
+    item_gauntlets = GAUNTLET_USERS, item_double_gauntlets = GAUNTLET_USERS,
+    item_slippers = SLIPPER_USERS, item_double_slippers = SLIPPER_USERS,
+    item_mantle = MANTLE_USERS, item_double_mantle = MANTLE_USERS,
+}
+-- Wards are a support purchase: cores never place them.
+local SUPPORT_ONLY = { item_ward_observer = true, item_ward_sentry = true, item_ward_dispenser = true }
+
+local function checkStartingItems(list, pos, report, note)
+    local present = {}
+    for _, name in ipairs(list) do present[name] = true end
+    for _, name in ipairs(list) do
+        local users = CONSUMERS[name]
+        if users then
+            local used = false
+            for _, u in ipairs(users) do if present[u] then used = true end end
+            -- Early attributes are a fine reason to buy them; the inventory upkeep sells them after minute 8.
+            if not used then note('sBuyList buys '..name..' with no consumer in the list (sold by the inventory upkeep)') end
+        end
+        if SUPPORT_ONLY[name] and pos ~= 'pos_4' and pos ~= 'pos_5' then
+            report('sBuyList buys '..name..' for a core role (wards are a support purchase)')
+        end
+    end
+end
+
+-- Real items the game does not sell directly (Valve items.txt: ItemPurchasable 0): they only exist as the
+-- combination of other purchasable items, so buying the name fails.
+local NOT_PURCHASABLE = {
+    item_ward_dispenser = 'buy item_ward_observer and item_ward_sentry; they combine into the dispenser',
+}
+
 local function checkItems(list, label, report, allowDuplicates)
     if #list == 0 then return report(label..' is empty') end
     local seen = {}
     for i, name in ipairs(list) do
-        if type(name) ~= 'string' or not CTX.items[name] then
+        if type(name) == 'string' and NOT_PURCHASABLE[name] then
+            report(label..' lists '..name..', which cannot be bought directly: '..NOT_PURCHASABLE[name])
+        elseif type(name) ~= 'string' or not CTX.items[name] then
             report(label..' has unknown item '..tostring(name)..' at index '..i)
         elseif seen[name] and not REPEATABLE[name] and not allowDuplicates then
             report(label..' buys '..name..' twice (indexes '..seen[name]..' and '..i..')')
@@ -388,6 +441,9 @@ for _, hero in ipairs(CTX.heroes) do
             report(tostring(built))
         else
             checkItems(built.sBuyList or {}, 'sBuyList', report)
+            if migrated[pos] then
+                checkStartingItems(built.sBuyList or {}, pos, report, function(message) note(name, pos..': '..message) end)
+            end
             -- sSellList holds (new item, old item to sell) pairs (SetPairedItems); chains may repeat an item.
             local sells = built.sSellList or {}
             if #sells > 0 then checkItems(sells, 'sSellList', report, true) end

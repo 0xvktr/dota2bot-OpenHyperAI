@@ -1,4 +1,5 @@
 local AlchemistScepter = require(GetScriptDirectory()..'/FunLib/alchemist_scepter')
+local InventoryUpkeep = require(GetScriptDirectory()..'/FunLib/inventory_upkeep')
 local GateProbe = require(GetScriptDirectory()..'/FunLib/twin_gate_probe')
 local LaneRotation = require(GetScriptDirectory()..'/FunLib/lane_rotation')
 local BossCombat = require(GetScriptDirectory()..'/FunLib/boss_combat')
@@ -1000,6 +1001,18 @@ local function ItemUsageComplement()
 
 	local aether = J.IsItemAvailable( "item_aether_lens" )
 	if aether ~= nil then aetherRange = 250 else aetherRange = 0 end
+
+	-- Backpack items are inactive and the loop below only scans the main slots: bring a wanted consumable
+	-- (e.g. a Clarity delivered into a full inventory) into the main inventory first.
+	if InventoryUpkeep.SwapInBackpackConsumable( bot, function( sItemName, hItem )
+			local fConsider = X.ConsiderItemDesire[sItemName]
+			if fConsider == nil then return BOT_ACTION_DESIRE_NONE end
+			local bOk, nDesire = pcall( fConsider, hItem )
+			return ( bOk and nDesire ) or BOT_ACTION_DESIRE_NONE
+		end, DotaTime() )
+	then
+		return BOT_ACTION_DESIRE_NONE
+	end
 
 	local nItemSlot = { 5, 4, 3, 2, 1, 0, 15, 16 }
 

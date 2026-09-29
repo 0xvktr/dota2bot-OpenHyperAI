@@ -9,6 +9,7 @@ local J = require( GetScriptDirectory()..'/FunLib/jmz_func')
 local Utils = require( GetScriptDirectory()..'/FunLib/utils')
 
 local AlchemistScepter = require(GetScriptDirectory()..'/FunLib/alchemist_scepter')
+local InventoryUpkeep = require(GetScriptDirectory()..'/FunLib/inventory_upkeep')
 local X = {}
 
 if bot:IsInvulnerable()
@@ -1145,6 +1146,9 @@ function ItemPurchaseThink()
 
 
 	AlchemistScepter.UpdatePurchase(bot, J, BotBuild.enableScepterGifts)
+
+	-- Sell starting components (Branches, Circlets...) that nothing left in the buy plan will consume.
+	if bot:IsAlive() then InventoryUpkeep.SellDeadComponents(bot, currentTime) end
 
 	if #bot.purchaseListInReverseOrder == 0 then
 		_resetCurrentTarget()

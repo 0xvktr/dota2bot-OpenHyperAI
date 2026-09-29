@@ -18,7 +18,7 @@ for (const name of heroNames) {
 // 1. Lua syntax: every migrated hero, its build data, and the shared infrastructure.
 const lua = [
     ...heroNames.flatMap(n => [`bots/BotLib/hero_${n}.lua`, `${buildsDir}/${n}.lua`]),
-    'bots/FunLib/hero_build_preferences.lua', 'bots/FunLib/alchemist_scepter.lua', 'bots/FunLib/aba_item.lua',
+    'bots/FunLib/hero_build_preferences.lua', 'bots/FunLib/alchemist_scepter.lua', 'bots/FunLib/inventory_upkeep.lua', 'bots/FunLib/aba_item.lua',
     'bots/FunLib/aba_hero_pos_weights.lua', 'bots/FretBots/BonusTimers.lua', 'bots/Buff/NeutralItems.lua',
     'bots/FretBots/NeutralItems.lua', 'bots/hero_selection.lua', 'bots/item_purchase_generic.lua',
     'bots/ability_item_usage_generic.lua',
@@ -100,6 +100,7 @@ run(['tests/build_validator.lua'], 'Build validation passed');
 run(['tests/neutral_consumers_spec.lua'], 'Neutral consumer wiring passed');
 run(['tests/alchemist_scepter_spec.lua'], 'Alchemist Scepter gift scenarios passed');
 run(['tests/axe_culling_blade_spec.lua'], 'Axe Culling Blade talent scenario passed');
+run(['tests/inventory_upkeep_spec.lua'], 'Inventory upkeep scenarios passed');
 
 // 5. Shared logic the build migration changed, executed from the real source.
 // Draft scoring with controlled positive/negative matchups.
@@ -167,4 +168,6 @@ assert(purchase.includes('AlchemistScepter.UpdatePurchase(bot, J, BotBuild.enabl
 const usage = read('bots/ability_item_usage_generic.lua');
 assert(usage.includes('AlchemistScepter.Prepare(bot, J)'));
 assert(usage.includes('return AlchemistScepter.Consider(bot, hItem, J)'));
-console.log('Generic purchase/item-use gift hooks present');
+assert(purchase.includes('InventoryUpkeep.SellDeadComponents(bot, currentTime)'));
+assert(usage.includes('InventoryUpkeep.SwapInBackpackConsumable( bot,'));
+console.log('Generic purchase/item-use gift and inventory upkeep hooks present');
