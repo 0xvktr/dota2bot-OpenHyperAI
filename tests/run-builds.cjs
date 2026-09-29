@@ -136,6 +136,37 @@ assert(r[1].score==5.5, 'positive synergy bonus remains')
 print('Draft scoring scenarios passed')
 `], 'Draft scoring scenarios passed');
 
+// Weak-hero cap: Customize presets are never replaced; random picks leave room for pending weak presets.
+const capStart = selection.indexOf('local function CountPendingCustomWeakPicks(');
+const capEnd = selection.indexOf('-- Random pick within a role pool', capStart);
+assert(capStart >= 0 && capEnd > capStart);
+assert(selection.includes('X.CanPickHero(team, pick, pick == preselect and X.IsInCustomizedPicks(preselect))'),
+    'the final pick check must pass the Customize flag');
+run(['-e', `
+TEAM_RADIANT=2
+local Customize={Radiant_Heros={'Random','weak_a','npc_x','npc_y','weak_b'}}
+local Utils={TrimString=function(s) return s end,HasValue=function(t,v) for _,x in pairs(t) do if x==v then return true end end return false end}
+local WeakHeroes={'weak_a','weak_b','weak_c'}
+local WeakHeroCount={[2]=0}
+local selected={}
+function GetTeam() return 2 end
+function GetTeamPlayers() return {0,1,2,3,4} end
+function GetSelectedHeroName(id) return selected[id] or '' end
+local function GetWeakCapForTeam() return 1 end
+local function AlreadyPickedOnTeam() return false end
+local X={IsBannedHero=function(h) return h=='banned' end}
+${selection.slice(capStart, capEnd)}
+assert(not X.CanPickHero(2,'weak_c'), 'random weak pick blocked: two weak presets are still pending')
+assert(X.CanPickHero(2,'npc_z'), 'non-weak random picks are unaffected')
+assert(X.CanPickHero(2,'weak_a',true), 'first weak preset is kept')
+selected[1]='weak_a'; WeakHeroCount[2]=1
+assert(X.CanPickHero(2,'weak_b',true), 'second weak preset is kept despite the cap')
+assert(not X.CanPickHero(2,'banned',true), 'bans still apply to presets')
+Customize.Radiant_Heros={'Random'}; WeakHeroCount[2]=0; selected={}
+assert(X.CanPickHero(2,'weak_c'), 'without weak presets a random weak pick fits under the cap')
+print('Weak cap custom pick scenarios passed')
+`], 'Weak cap custom pick scenarios passed');
+
 // The real duplicate check and recursive component expansion used for Scepter gifts.
 const itemLibrary = read('bots/FunLib/aba_item.lua');
 const itemStart = itemLibrary.indexOf('function Item.IsItemInTargetHero(');

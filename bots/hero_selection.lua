@@ -427,21 +427,42 @@ local function AlreadyPickedOnTeam(sHero)
 	return false
 end
 
--- Should we *block* picking a weak hero due to cap?
-local function IsWeakHeroOverCap(team, sHero)
-	if not Utils.HasValue(WeakHeroes, sHero) then return false end
-	return WeakHeroCount[team] >= GetWeakCapForTeam(team)
+-- Weak heroes preset in Customize for this team that nobody on the team has selected yet.
+local function CountPendingCustomWeakPicks(team)
+	if not Customize or team ~= GetTeam() then return 0 end
+	local heroes = (team == TEAM_RADIANT and Customize.Radiant_Heros) or Customize.Dire_Heros or {}
+	local cnt = 0
+	for _, name in pairs(heroes) do
+		local hero = Utils.TrimString(name)
+		if Utils.HasValue(WeakHeroes, hero) then
+			local selected = false
+			for _, id in pairs(GetTeamPlayers(team)) do
+				if GetSelectedHeroName(id) == hero then selected = true break end
+			end
+			if not selected then cnt = cnt + 1 end
+		end
+	end
+	return cnt
 end
 
--- Single source of truth whether a hero can be picked *right now* by this team
-function X.CanPickHero(team, sHero)
+-- Should we *block* picking a weak hero due to cap?
+-- Customize picks are the user's explicit choice and are never blocked; random picks leave room for them.
+local function IsWeakHeroOverCap(team, sHero, bCustomPick)
+	if not Utils.HasValue(WeakHeroes, sHero) then return false end
+	if bCustomPick then return false end
+	return WeakHeroCount[team] + CountPendingCustomWeakPicks(team) >= GetWeakCapForTeam(team)
+end
+
+-- Single source of truth whether a hero can be picked *right now* by this team.
+-- bCustomPick: the hero is this slot's Customize preset, which bypasses the weak cap (bans and repeats still apply).
+function X.CanPickHero(team, sHero, bCustomPick)
 	if not sHero then return false end
 
 	-- Bans always block
 	if X.IsBannedHero(sHero) then return false end
 
 	-- Weak cap enforcement per team
-	if IsWeakHeroOverCap(team, sHero) then return false end
+	if IsWeakHeroOverCap(team, sHero, bCustomPick) then return false end
 
 	-- Repeats policy
 	if Customize and Customize.Allow_Repeated_Heroes then
@@ -700,7 +721,7 @@ local function PickHeroForBotSlot(i, id)
 	end
 
 	-- Final safety: ensure policy still holds (e.g., late ban added)
-	if not X.CanPickHero(team, pick) then
+	if not X.CanPickHero(team, pick, pick == preselect and X.IsInCustomizedPicks(preselect)) then
 		pick = X.GetRandomAvailableHero(team, rolePool) or preselect
 	end
 

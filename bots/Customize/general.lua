@@ -63,6 +63,7 @@ Customize.Dire_Heros = {
 Customize.Allow_Repeated_Heroes = false
 
 -- The max number of weak heroes allowed in a team the bots can pick.
+-- Applies to the bots' own picks: heroes preset in Radiant_Heros / Dire_Heros above are never replaced by the cap.
 Customize.Weak_Hero_Cap = 1
 
 -- The weak penalty curve for bots picking weak heroes:
