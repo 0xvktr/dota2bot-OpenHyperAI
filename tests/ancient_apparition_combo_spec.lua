@@ -208,4 +208,23 @@ assert(actions[1] == nil, 'no Release order while stunned')
 botStunned = false; J.CanNotUseAbility = nil; now = 100
 castable.ancient_apparition_ice_blast_release = nil; hidden.ancient_apparition_ice_blast_release = nil; projectiles = {}
 
+-- 10. Rubick's stolen copy shares the Ice Blast radius and snipe logic.
+local Rubick = dofile('bots/FunLib/rubick_hero/ancient_apparition.lua')
+reset()
+castable.ancient_apparition_ice_blast = true
+local stolen = bot:GetAbilityByName('ancient_apparition_ice_blast')
+stolen.GetName = function() return 'ancient_apparition_ice_blast' end
+local runner = Enemy(2000, 0, 450, 2000)
+Rubick.ConsiderStolenSpell(stolen)
+assert(actions[1] and actions[1][1] == 'location' and actions[1][3] == runner.loc, 'stolen Ice Blast snipes a shatterable enemy')
+assert(math.abs(Rubick.GetIceBlastRadius(V(3000, 0)) - 400) < 0.01, 'stolen Ice Blast uses the travel-time radius')
+-- The tracer stepped past the target while Rubick is silenced: Release still fires.
+castable.ancient_apparition_ice_blast_release = true; hidden.ancient_apparition_ice_blast_release = false
+local release = bot:GetAbilityByName('ancient_apparition_ice_blast_release')
+release.GetName = function() return 'ancient_apparition_ice_blast_release' end
+Tracer(2150); actions = {}; J.CanNotUseAbility = function() return true end
+Rubick.ConsiderStolenSpell(release)
+assert(actions[1] and actions[1][2] == 'ancient_apparition_ice_blast_release', 'stolen Release fires past the target while silenced')
+J.CanNotUseAbility = nil
+
 print('Ancient Apparition combo scenarios passed')
