@@ -1,7 +1,7 @@
 project_name: "OpenHyperAI"
 default_status: "To Do"
 statuses: ["To Do", "In Progress", "Needs In-Game Test", "Done"]
-labels: ["laning", "farming", "macro", "teamfight", "wards", "hero", "draft", "builds", "tooling"]
+labels: ["laning", "farming", "macro", "teamfight", "wards", "hero", "weak-hero", "draft", "builds", "tooling"]
 date_format: yyyy-mm-dd
 max_column_width: 20
 auto_open_browser: true

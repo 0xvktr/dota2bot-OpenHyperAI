@@ -4,8 +4,11 @@ title: Validate Ancient Apparition ability rework in a lobby
 status: Needs In-Game Test
 assignee: []
 created_date: '2026-09-29 21:29'
+updated_date: '2026-09-30 13:59'
 labels:
   - hero
+  - weak-hero
+milestone: m-0
 dependencies: []
 references:
   - bots/BotLib/hero_ancient_apparition.lua

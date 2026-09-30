@@ -4,9 +4,11 @@ title: Document weak-hero reasons and sync the Customize appendix
 status: To Do
 assignee: []
 created_date: '2026-09-29 21:29'
-updated_date: '2026-09-29 22:14'
+updated_date: '2026-09-30 13:59'
 labels:
   - draft
+  - weak-hero
+milestone: m-0
 dependencies: []
 references:
   - bots/hero_selection.lua
