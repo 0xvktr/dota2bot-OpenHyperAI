@@ -12,8 +12,17 @@ local function resourceRatio(h)
     return math.min(hp, mp)
 end
 
+-- A support keeps its lotus for the cores unless it is itself nearly out of
+-- both resources. Heroes without a mana pool only need the health condition.
+local function supportCritical(h)
+    local maxMana = h:GetMaxMana()
+    return h:GetHealth() / math.max(1, h:GetMaxHealth()) < 0.3
+        and (maxMana <= 0 or h:GetMana() / maxMana < 0.2)
+end
+
 function L.Target(bot, item)
     if not restore[item:GetName()] or bot:DistanceFromFountain() < 1200 then return nil end
+    if not J.IsCore(bot) and supportCritical(bot) then return bot end
     local best, lowest = nil, 0.5
     local candidates = { bot }
     for _, h in ipairs(J.GetAlliesNearLoc(bot:GetLocation(), item:GetCastRange())) do
@@ -25,11 +34,9 @@ function L.Target(bot, item)
             if ratio < lowest then best, lowest = h, ratio end
         end
     end
-    -- A depleted core takes priority even over a more depleted support holder.
-    -- All tiers use the same strict threshold; otherwise save the lotus.
-    if best then return best end
-    if resourceRatio(bot) < 0.5 then return bot end
-    return nil
+    -- Cores below half health or mana (the holder included, if it is a core)
+    -- get the lotus; otherwise save it. All tiers use the same thresholds.
+    return best
 end
 
 function L.Prepare(bot)

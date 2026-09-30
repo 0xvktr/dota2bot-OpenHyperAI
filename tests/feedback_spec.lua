@@ -75,7 +75,7 @@ local function test(name,fn)
     fn();passed=passed+1;print('PASS '..name)
 end
 test('basic lotus can restore health during combat',function()
-    local h=hero();h.hp=400;h.damaged=true;threat=true
+    local h=hero();h.hp=250;h.mp=150;h.damaged=true;threat=true
     assert(L.Target(h,item('item_famango'))==h)
 end)
 test('lotus prioritizes depleted nearby human over healthy holder',function()
@@ -86,7 +86,7 @@ test('large lotus is not wasted on tiny deficits',function()
     local h=hero();h.hp=950;assert(L.Target(h,item('item_greater_famango'))==nil)
 end)
 test('backpack lotus replaces cheap item and restores it after use',function()
-    local h=hero();h.hp=400
+    local h=hero();h.hp=250;h.mp=150
     for i=0,5 do h.items[i]=item('item_expensive')end
     local branch,lotus=item('item_branches'),item('item_famango');h.items[2]=branch;h.items[6]=lotus
     L.Prepare(h);assert(h.items[2]==lotus and h.items[6]==branch)
@@ -94,11 +94,11 @@ test('backpack lotus replaces cheap item and restores it after use',function()
     h.items[2]=nil;now=208;L.Prepare(h);assert(h.items[2]==branch and h.swaps==2)
 end)
 test('backpack swapping does not remove stats in combat',function()
-    local h=hero();h.hp=400;h.items[6]=item('item_famango');h.damaged=true
+    local h=hero();h.hp=250;h.mp=150;h.items[6]=item('item_famango');h.damaged=true
     L.Prepare(h);assert(not h.swaps)
 end)
 test('active lotus prevents repeated backpack swaps',function()
-    local h=hero();h.hp=400;h.items[0]=item('item_famango');h.items[6]=item('item_great_famango')
+    local h=hero();h.hp=250;h.mp=150;h.items[0]=item('item_famango');h.items[6]=item('item_great_famango')
     L.Prepare(h);assert(not h.swaps)
 end)
 local function fight()
@@ -142,11 +142,11 @@ test('Ogre buffs a teammate attacking Roshan',function()
     assert(B.AbilityThink(h));assert(h.castTarget==a)
 end)
 test('do not swap away defensive slots while a creep or boss is damaging us',function()
-    local h=hero();h.hp=400;h.creepDamage=true;h.items[6]=item('item_famango')
+    local h=hero();h.hp=250;h.mp=150;h.creepDamage=true;h.items[6]=item('item_famango')
     L.Prepare(h);assert(not h.swaps)
 end)
 test('never backpack BKB or boots to prepare a lotus',function()
-    local h=hero();h.hp=400;h.items[6]=item('item_famango')
+    local h=hero();h.hp=250;h.mp=150;h.items[6]=item('item_famango')
     for i=0,5 do h.items[i]=item(i==0 and 'item_black_king_bar' or 'item_phase_boots')end
     L.Prepare(h);assert(not h.swaps)
 end)
@@ -156,33 +156,44 @@ test('Drums require a group actually attacking the boss',function()
     allies[2].target=h.target;allies[3].target=h.target
     assert(B.ItemDesire(h,item('item_ancient_janggo'))>0)
 end)
-test('every lotus tier holds at full resources and at exactly fifty percent',function()
+test('every lotus tier holds at full resources and at exact thresholds',function()
     for _,name in ipairs({'item_famango','item_great_famango','item_greater_famango'}) do
         local h,c=hero(),hero();c.core=true;allies={h,c}
         assert(L.Target(h,item(name))==nil)
-        h.hp=500;h.mp=500;c.hp=500;c.mp=500
+        h.hp=300;h.mp=200;c.hp=500;c.mp=500
         assert(L.Target(h,item(name))==nil)
-        h.hp=499;assert(L.Target(h,item(name))==h)
+        c.hp=499;assert(L.Target(h,item(name))==c)
+        h.hp=299;h.mp=199;assert(L.Target(h,item(name))==h)
     end
 end)
-test('depleted core outranks even more depleted support',function()
+test('depleted core outranks a support that is low on only one resource',function()
     local h,c=hero(),hero();h.hp=100;c.mp=499;c.core=true;allies={h,c}
     assert(L.Target(h,item('item_famango'))==c)
     c.mp=1000;c.hp=499
     assert(L.Target(h,item('item_famango'))==c)
-    c.hp=1000;assert(L.Target(h,item('item_famango'))==h)
+    c.hp=1000;assert(L.Target(h,item('item_famango'))==nil)
+end)
+test('critically depleted support restores itself before a core',function()
+    local h,c=hero(),hero();h.hp=200;h.mp=100;c.hp=100;c.core=true;allies={h,c}
+    assert(L.Target(h,item('item_famango'))==h)
+end)
+test('core holder still uses its lotus below fifty percent',function()
+    local h=hero();h.core=true;h.mp=499;allies={h}
+    assert(L.Target(h,item('item_famango'))==h)
 end)
 test('hold lotus when both heroes exceed fifty percent despite large deficits',function()
     local h,c=hero(),hero();h.hp=600;h.mp=600;c.hp=600;c.mp=600;c.core=true;allies={h,c}
     h.items[6]=item('item_famango')
     assert(L.Target(h,h.items[6])==nil);L.Prepare(h);assert(not h.swaps)
 end)
-test('low self mana permits use when nearby core is healthy',function()
-    local h,c=hero(),hero();h.mp=499;c.core=true;allies={h,c}
-    assert(L.Target(h,item('item_famango'))==h)
+test('support needs both low health and low mana to use its lotus',function()
+    local h,c=hero(),hero();h.mp=100;c.core=true;allies={h,c}
+    assert(L.Target(h,item('item_famango'))==nil)
+    h.mp=1000;h.hp=100;assert(L.Target(h,item('item_famango'))==nil)
 end)
 test('zero mana capacity does not count as missing mana',function()
     local h=hero();h.mp=0;h.GetMaxMana=function()return 0 end
     assert(L.Target(h,item('item_famango'))==nil)
+    h.hp=299;assert(L.Target(h,item('item_famango'))==h)
 end)
 print(passed..' feedback scenarios passed')
