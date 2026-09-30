@@ -9,98 +9,37 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						{--pos1
-                            ['t25'] = {0, 10},
-                            ['t20'] = {0, 10},
-                            ['t15'] = {10, 0},
-                            ['t10'] = {10, 0},
-                        },
-                        {--pos2
-                            ['t25'] = {0, 10},
-                            ['t20'] = {0, 10},
-                            ['t15'] = {0, 10},
-                            ['t10'] = {10, 0},
-                        }
+-- Updated to 7.41f from D2PT; forced skipped roles use pos 1.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/morphling')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Waveform, [2] Adaptive Strike, [4] Attribute Shift, [6] Morph.
+local nAbilityBuildList = {4,1,1,4,1,2,1,2,2,2,6,4,4,6,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- Magic resistance
+    t15={0,10}, -- Waveform range
+    t20={10,0}, -- Agility
+    t25={0,10}, -- Waveform cooldown
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    'item_double_branches','item_magic_wand','item_power_treads','item_lifesteal','item_vladmir',
+    'item_yasha','item_manta','item_butterfly',
+    -- Bot policy: late upgrades; Satanic replaces Vladmir's with a new Morbid Mask.
+    'item_black_king_bar','item_aghanims_shard','item_lesser_crit','item_greater_crit','item_satanic',
+    'item_ultimate_scepter','item_ultimate_scepter_2','item_moon_shard',
 }
-
-local tAllAbilityBuildList = {
-						{4,2,2,1,2,4,2,1,1,1,6,6,4,4,6},--pos1
-                        {4,2,2,1,2,4,2,1,1,1,6,6,4,4,6},--pos2
-}
-
-local nAbilityBuildList
-local nTalentBuildList
-
-if sRole == "pos_2"
-then
-    nAbilityBuildList   = tAllAbilityBuildList[2]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[2])
-else
-    nAbilityBuildList   = tAllAbilityBuildList[1]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[1])
-end
-
-local nItems = {"item_butterfly", "item_skadi", "item_mjollnir"}
-local sItems = nItems[RandomInt(1, #nItems)]
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_quelling_blade",
-
-    "item_wraith_band",
-    "item_boots_of_elves",
-    "item_magic_wand",
-    "item_power_treads",
-    "item_lifesteal",
-    "item_manta",--
-    "item_angels_demise",--
-    "item_black_king_bar",--
-    "item_butterfly",--
-    "item_aghanims_shard",
-    "item_moon_shard",
-    "item_satanic",--
-    "item_disperser",--
-    "item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_2'] = {
-	"item_mid_outfit",
-    "item_lifesteal",
-    "item_manta",--
-    "item_angels_demise",--
-    "item_black_king_bar",--
-    sItems,--
-    "item_aghanims_shard",
-    "item_moon_shard",
-    "item_satanic",--
-    "item_disperser",--
-    "item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-}
+X.sSellList = {'item_lesser_crit','item_magic_wand','item_satanic','item_vladmir'}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_mid' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- D2PT takes an ability at 10, then the first talent at 11.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

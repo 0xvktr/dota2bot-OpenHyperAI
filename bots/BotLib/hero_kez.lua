@@ -8,123 +8,37 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {10, 0},
-						['t20'] = {0, 10},
-						['t15'] = {0, 10},
-						['t10'] = {10, 0},
+-- Updated to 7.41f from D2PT; forced skipped roles use pos 1.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/kez')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Echo Slash, [2] Grappling Claw, [3] Kazurai Katana, [6] Raptor Dance.
+local nAbilityBuildList = {1,3,2,3,3,6,3,1,1,1,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- Raptor Dance radius
+    t15={10,0}, -- Raptor Dance strike
+    t20={0,10}, -- Kazurai Katana damage
+    t25={10,0}, -- Echo Slash attack
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    'item_quelling_blade','item_double_branches','item_magic_stick','item_tango','item_faerie_fire',
+    'item_magic_wand','item_power_treads','item_mage_slayer','item_desolator','item_ultimate_scepter','item_black_king_bar',
+    -- Bot policy: late upgrades and continuation.
+    'item_ultimate_scepter_2','item_lesser_crit','item_greater_crit','item_blink',
+    'item_aghanims_shard','item_satanic','item_swift_blink','item_moon_shard',
 }
-
-local tAllAbilityBuildList = {
-	{1,3,1,2,3,6,3,3,1,1,6,2,2,2,6},--pos1
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_double_branches",
-	"item_quelling_blade",
-	"item_tango",
-
-	"item_wraith_band",
-	"item_magic_wand",
-	"item_power_treads",
-	"item_bfury",--
-	"item_lesser_crit",
-	"item_manta",--
-	"item_black_king_bar",--
-	"item_greater_crit",--
-    "item_satanic",--
-	"item_aghanims_shard",
-	-- "item_butterfly",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_2'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_quelling_blade",
-
-    "item_magic_wand",
-    "item_wraith_band",
-    "item_power_treads",
-    "item_sange_and_yasha",--
-	"item_orchid",
-    "item_black_king_bar",--
-    "item_bloodthorn",--
-    "item_satanic",--
-    "item_aghanims_shard",
-    "item_monkey_king_bar",--
-    "item_moon_shard",
-    "item_travel_boots_2",--
-    "item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_4'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_blood_grenade",
-	"item_orb_of_frost",
-	"item_magic_wand",
-
-	"item_boots",
-	"item_tranquil_boots",
-	"item_ancient_janggo",
-	"item_guardian_greaves",--
-	"item_solar_crest",--
-	"item_heavens_halberd",--
-	"item_sheepstick",--
-	"item_lotus_orb",--
-	"item_assault",--
-	"item_moon_shard",
-	"item_aghanims_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_blood_grenade",
-	"item_orb_of_frost",
-	"item_magic_wand",
-
-	"item_boots",
-	"item_arcane_boots",
-	"item_ancient_janggo",
-	"item_pipe",--
-	"item_solar_crest",--
-	"item_boots_of_bearing",--
-	-- "item_force_staff",--
-	"item_heavens_halberd",--
-	"item_sheepstick",--
-	"item_lotus_orb",--
-	"item_moon_shard",
-	"item_aghanims_shard",
-	"item_ultimate_scepter_2",
-}
-
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-	"item_black_king_bar",
-	"item_quelling_blade",
-}
-
+X.sSellList = {'item_desolator','item_quelling_blade','item_black_king_bar','item_magic_wand','item_blink','item_mage_slayer'}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_tank' }, {"item_heavens_halberd", 'item_quelling_blade'} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- D2PT takes an ability at 10, then the first talent at 11.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

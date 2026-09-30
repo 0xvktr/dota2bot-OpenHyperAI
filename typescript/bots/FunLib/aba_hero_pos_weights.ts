@@ -56,6 +56,7 @@ const HeroPositions: HeroPositionMap = {
     [HeroName.Jakiro]: [0, 0, 0, 35, 38], // D2PT 7.41f
     [HeroName.Juggernaut]: [94, 0, 0, 0, 0], // D2PT 7.41f
     [HeroName.KeeperOfTheLight]: [0, 96, 0, 62, 0], // D2PT 7.41f
+    [HeroName.Kez]: [57, 0, 0, 0, 0], // D2PT 7.41f
     [HeroName.Kunkka]: [0, 47, 58, 0, 0], // D2PT 7.41f
     [HeroName.Largo]: [0, 44, 47, 46, 48], // D2PT 7.41f
     [HeroName.LegionCommander]: [0, 0, 97, 0, 0], // D2PT 7.41f
@@ -68,15 +69,15 @@ const HeroPositions: HeroPositionMap = {
     [HeroName.Luna]: [94, 0, 0, 0, 0], // D2PT 7.41f
     [HeroName.Lycan]: [0, 0, 66, 0, 0], // D2PT 7.41f
     [HeroName.Magnus]: [0, 55, 78, 0, 0], // D2PT 7.41f
-    [HeroName.Marci]: [0, 5, 20, 20, 15],
-    [HeroName.Mars]: [5, 55, 55, 5, 0],
-    [HeroName.Medusa]: [50, 65, 5, 0, 0],
-    [HeroName.Meepo]: [20, 20, 5, 0, 0],
-    [HeroName.Mirana]: [10, 65, 10, 65, 20],
-    [HeroName.MonkeyKing]: [50, 35, 45, 0, 0],
-    [HeroName.Morphling]: [20, 15, 5, 0, 0],
-    [HeroName.Muerta]: [35, 5, 5, 15, 5],
-    [HeroName.NagaSiren]: [45, 25, 20, 10, 0],
+    [HeroName.Marci]: [0, 69, 53, 0, 0], // D2PT 7.41f
+    [HeroName.Mars]: [0, 0, 51, 0, 0], // D2PT 7.41f
+    [HeroName.Medusa]: [48, 0, 0, 0, 0], // D2PT 7.41f
+    [HeroName.Meepo]: [45, 67, 0, 0, 0], // D2PT 7.41f
+    [HeroName.Mirana]: [0, 0, 0, 95, 80], // D2PT 7.41f
+    [HeroName.MonkeyKing]: [53, 49, 0, 0, 0], // D2PT 7.41f
+    [HeroName.Morphling]: [61, 0, 0, 0, 0], // D2PT 7.41f
+    [HeroName.Muerta]: [55, 0, 0, 0, 0], // D2PT 7.41f
+    [HeroName.NagaSiren]: [57, 0, 0, 0, 0], // D2PT 7.41f
     [HeroName.Necrophos]: [5, 60, 30, 5, 0],
     [HeroName.ShadowFiend]: [45, 80, 5, 0, 0],
     [HeroName.NightStalker]: [25, 35, 55, 25, 0],
@@ -137,7 +138,6 @@ const HeroPositions: HeroPositionMap = {
     [HeroName.IO]: [0, 5, 10, 25, 20],
     [HeroName.WitchDoctor]: [0, 5, 10, 35, 55],
     [HeroName.Zeus]: [25, 60, 15, 40, 20],
-    [HeroName.Kez]: [50, 40, 5, 0, 0],
 };
 
 export function GetHeroPositions(): HeroPositionMap {

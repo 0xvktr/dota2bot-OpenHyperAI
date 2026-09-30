@@ -26,6 +26,9 @@ local DEFAULT_ABILITIES = { 'A1', 'A2', 'A3', 'A4', 'A5', 'A6' }
 local ABILITY_LAYOUTS = {
     -- Bedlam (the ultimate, linked with Terrorize) sits at index 4, Pixie Dust (innate) at 5, Terrorize at 6.
     npc_dota_hero_dark_willow = { 'A1', 'A2', 'A3', 'A6', 'A5', 'A4' },
+    -- Jingu and Attribute Shift occupy index 4; index 3 is linked/hidden.
+    npc_dota_hero_monkey_king = { 'A1', 'A2', 'A4', 'A3', 'A5', 'A6' },
+    npc_dota_hero_morphling = { 'A1', 'A2', 'A4', 'A3', 'A5', 'A6' },
 }
 H.abilities = DEFAULT_ABILITIES
 H.talents = { 'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8' }
@@ -52,7 +55,7 @@ H.J = J
 package.loaded['bots/FunLib/jmz_func'] = J
 
 dofile = function(path)
-    if path == 'bots/FunLib/aba_minion' then return {} end
+    if path == 'bots/FunLib/aba_minion' or path == 'bots/FunLib/morphling_utility' then return {} end
     return realDofile(path)
 end
 

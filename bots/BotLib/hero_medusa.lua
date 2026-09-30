@@ -16,87 +16,37 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {10, 0},
-						['t20'] = {0, 10},
-						['t15'] = {0, 10},
-						['t10'] = {10, 0},
+-- Updated to 7.41f from D2PT; forced skipped roles use pos 1.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/medusa')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Split Shot, [2] Mystic Snake, [3] Gorgon's Grasp, [6] Stone Gaze.
+local nAbilityBuildList = {2,3,2,1,2,1,2,1,1,6,6,3,3,3,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- Stone Gaze physical damage
+    t15={10,0}, -- Mystic Snake cooldown
+    t20={10,0}, -- Split Shot outgoing damage
+    t25={10,0}, -- Intelligence
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    'item_double_branches','item_magic_wand','item_null_talisman','item_power_treads',
+    'item_yasha','item_manta','item_butterfly','item_skadi',
+    'item_lesser_crit','item_aghanims_shard','item_greater_crit',
+    -- Bot policy: late upgrades and continuation.
+    'item_blink','item_swift_blink','item_ultimate_scepter','item_ultimate_scepter_2','item_moon_shard',
 }
-
-local tAllAbilityBuildList = {
-						{2,3,2,1,2,1,2,6,1,1,3,3,3,6,6},--pos1
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-	'item_tango',
-	'item_double_branches',
-	'item_null_talisman',
-	'item_null_talisman',
-	"item_magic_wand",
-
-	"item_ring_of_basilius",
-	"item_power_treads",
-	"item_manta",--
-	"item_ultimate_scepter",
-	"item_skadi",--
-    "item_force_staff",
-	"item_hurricane_pike",--
-	"item_butterfly",--
-	"item_hydras_breath",--
-	"item_greater_crit",--
-	"item_travel_boots",
-	"item_aghanims_shard",
-	"item_disperser",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_2'] = {
-	"item_medusa_outfit",
-	"item_ultimate_scepter",
-	"item_aghanims_shard",
-	"item_dragon_lance",
-	"item_manta",--
-	"item_mjollnir",--
-    "item_force_staff",
-	"item_hurricane_pike", --
-	"item_travel_boots",
-	"item_skadi",--
---	"item_sphere",	
-	"item_ultimate_scepter_2",
-	"item_moon_shard",
-	"item_butterfly",--
-	"item_hydras_breath",--
-	"item_travel_boots_2",--
-
-}
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_2']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_2']
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_2']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-}
+X.sSellList = {'item_skadi','item_magic_wand','item_lesser_crit','item_null_talisman'}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_mid' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- D2PT takes an ability at 10, then the first talent at 11.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 
 X['bDeafaultAbility'] = false

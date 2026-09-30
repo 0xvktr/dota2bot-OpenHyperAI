@@ -193,18 +193,12 @@ function X.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBu
 						[16] = sAbilityList[nAbilityBuildList[14]],
 						[17] = sAbilityList[nAbilityBuildList[15]],
 						[18] = sTalentList[nTalentBuildList[3]],
-						[19] = sTalentList[nTalentBuildList[4]],
-						[20] = sTalentList[nTalentBuildList[5]],
-						[21] = sTalentList[nTalentBuildList[6]],
-						[22] = sTalentList[nTalentBuildList[7]],
-						[23] = sTalentList[nTalentBuildList[8]],
-						[24] = sAbilityList[nAbilityBuildList[16]],
-						[25] = sTalentList[nTalentBuildList[3]],
-						[26] = sTalentList[nTalentBuildList[4]],
-						[27] = sTalentList[nTalentBuildList[5]],
-						[28] = sTalentList[nTalentBuildList[6]],
-						[29] = sTalentList[nTalentBuildList[7]],
-						[30] = sTalentList[nTalentBuildList[8]],
+						[19] = sAbilityList[nAbilityBuildList[16]], -- fourth ultimate at 24
+						[20] = sTalentList[nTalentBuildList[4]],
+						[21] = sTalentList[nTalentBuildList[5]],
+						[22] = sTalentList[nTalentBuildList[6]],
+						[23] = sTalentList[nTalentBuildList[7]],
+						[24] = sTalentList[nTalentBuildList[8]],
 		}
 	end
 	if botName == 'npc_dota_hero_invoker'

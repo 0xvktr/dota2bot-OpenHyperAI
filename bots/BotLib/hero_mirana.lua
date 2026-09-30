@@ -16,93 +16,59 @@ local sTalentList = J.Skill.GetTalentList(bot)
 local sAbilityList = J.Skill.GetAbilityList(bot)
 local sRole = J.Item.GetRoleItemsBuyList(bot)
 
-local tTalentTreeList = {
-	['t25'] = {10, 0},
-	['t20'] = {10, 0},
-	['t15'] = {10, 0},
-	['t10'] = {10, 0},
-}
+-- Updated to 7.41f from D2PT; forced skipped roles use pos 4.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/mirana')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Starstorm, [2] Sacred Arrow, [3] Leap, [6] Moonlight Shadow.
+local nAbilityBuildList = {2,3,1,1,1,6,1,2,2,2,6,3,3,3,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- Starstorm cooldown
+    t15={0,10}, -- Moonlight Shadow evasion
+    t20={0,10}, -- Starstorm damage
+    t25={0,10}, -- Multishot Sacred Arrows
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+if sRole == 'pos_5' then
+    X.sBuyList = {
+        'item_branches','item_circlet','item_magic_stick','item_ward_sentry','item_tango','item_blood_grenade',
+        'item_urn_of_shadows','item_magic_wand','item_essence_distiller','item_arcane_boots',
+        'item_cyclone','item_ultimate_scepter',
+        -- Bot policy: late upgrades and continuation.
+        'item_ultimate_scepter_2','item_aghanims_shard','item_blink','item_wind_waker','item_sheepstick','item_octarine_core',
+    }
+    X.sSellList = {'item_blink','item_magic_wand'}
+else
+    -- Bot policy: buy ward components for the observed dispenser.
+    X.sBuyList = {
+        'item_branches','item_circlet','item_magic_stick','item_tango',
+        'item_ward_observer','item_ward_sentry','item_blood_grenade',
+        'item_urn_of_shadows','item_magic_wand','item_essence_distiller','item_arcane_boots',
+        'item_cyclone','item_ultimate_scepter',
+        -- Bot policy: late upgrades and continuation.
+        'item_ultimate_scepter_2','item_aghanims_shard','item_blink','item_wind_waker','item_sheepstick','item_octarine_core',
+    }
+    X.sSellList = {'item_blink','item_magic_wand'}
+end
 
-local tAllAbilityBuildList = {
-	{1,3,1,2,1,6,1,3,3,3,6,2,2,2,6},
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild(tAllAbilityBuildList)
-
-local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList)
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-
-	"item_ranged_carry_outfit",
-	"item_dragon_lance",
-	"item_rod_of_atos",
-	"item_maelstrom",
-	"item_black_king_bar",
-	"item_mjollnir",
-	"item_travel_boots",
-	"item_orchid",
-	"item_bloodthorn",
-    "item_force_staff",
-	"item_hurricane_pike",
-	"item_ultimate_scepter",
-	"item_moon_shard",
-	"item_travel_boots_2",
-	"item_ultimate_scepter_2",
-	"item_butterfly",
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_4'] = {
-	"item_priest_outfit",
-	"item_mekansm",
-	"item_glimmer_cape",
-	"item_aghanims_shard",
-	"item_guardian_greaves",
-	"item_spirit_vessel",
---	"item_wraith_pact",
-	"item_ultimate_scepter",
-	"item_shivas_guard",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-	"item_sheepstick",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-    "item_blood_grenade",
-	"item_mage_outfit",
-	"item_ancient_janggo",
-	"item_glimmer_cape",
-	"item_boots_of_bearing",
-	"item_pipe",
-    "item_ultimate_scepter",
-	"item_cyclone",
---	"item_wraith_pact",
-	"item_shivas_guard",
-	"item_sheepstick",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-}
-
+-- Forced core picks omit wards.
+if sRole ~= 'pos_4' and sRole ~= 'pos_5' then
+    for i = #X.sBuyList, 1, -1 do
+        if X.sBuyList[i] == 'item_ward_observer' or X.sBuyList[i] == 'item_ward_sentry' then
+            table.remove(X.sBuyList, i)
+        end
+    end
+end
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'],X['sSellList'] = { 'PvN_ranged_carry' }, {} end
 
 nAbilityBuildList,nTalentBuildList,X['sBuyList'],X['sSellList'] = J.SetUserHeroInit(nAbilityBuildList,nTalentBuildList,X['sBuyList'],X['sSellList']);
 
 X['sSkillList'] = J.Skill.GetSkillList(sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList)
+-- D2PT takes an ability at 10, then the first talent at 11.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

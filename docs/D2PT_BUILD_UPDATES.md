@@ -100,6 +100,8 @@ Doom, Dragon Knight, Drow Ranger, Earth Spirit, Earthshaker, Elder Titan, Ember 
 Enchantress, Enigma, Faceless Void, Nature's Prophet, Grimstroke, Gyrocopter, Hoodwink,
 Huskar, Jakiro, Juggernaut, Keeper of the Light, Kunkka and Largo were refreshed on 2026-09-30.
 Legion Commander, Leshrac, Lich, Lifestealer, Lina, Lion, Luna, Lycan and Magnus were also refreshed on 2026-09-30.
+Kez, Marci, Mars, Medusa and Mirana were refreshed on 2026-09-30.
+Meepo, Monkey King, Morphling, Muerta and Naga Siren were refreshed on 2026-09-30.
 Unmarked heroes retain their older lists and can be refreshed as their builds are updated.
 Source pages are `https://dota2protracker.com/hero/<hero>?section=matchups`. Both the builds and matchups
 sections take `&role=carry|mid|offlane|support|hard-support` (hyphen); an unrecognised value such as
@@ -112,7 +114,9 @@ mid for Earth Spirit/Earthshaker/Ember Spirit, and hard support for Elder Titan/
 The next batch uses carry for Nature's Prophet/Juggernaut, support for Gyrocopter/Hoodwink,
 hard support for Grimstroke/Jakiro, mid for Keeper of the Light, and offlane for Kunkka/Largo.
 The following batch uses offlane for Legion Commander/Lycan/Magnus, mid for Huskar/Leshrac/Lina,
-hard support for Lich/Lion, and carry for Lifestealer/Luna. Select **All** opponent/ally
+hard support for Lich/Lion, and carry for Lifestealer/Luna. Kez/Medusa use carry,
+Marci uses mid, Mars uses offlane, and Mirana uses support. Meepo uses mid;
+Monkey King/Morphling/Muerta/Naga Siren use carry. Select **All** opponent/ally
 roles and enable **Normalized** for both tables. Collapse the displayed role rows
 by hero using a match-count-weighted mean of their normalized values; this is an
 approximation from rounded UI values, not an independently calculated all-role
@@ -147,9 +151,9 @@ discovers every `bots/BotLib/Builds/<hero>.lua` and checks, for each role:
   early attributes and `inventory_upkeep.lua` sells them at a shop after minute 8. Wards are
   a failure on pos 1-3 because only supports ever place them (`mode_ward_generic`).
 - **Skills and talents:** loaded with generic names (`A1`..`A6`, `T1`..`T8`). Basics are
-  leveled 4 times, the ultimate 3, each talent once, talents go tier 1-4; and the
+  leveled 4 times, the ultimate 3 (Meepo: 4 at levels 3/10/17/24), each talent once, talents go tier 1-4; and the
   level-up queue is simulated so that no talent or premature ability blocks a learnable
-  ability. A user-supplied ability build must keep the standard layout.
+  ability. A user-supplied ability build must keep the standard layout (Meepo's first talent is at 11).
   Observed early attribute points use `special_bonus_attributes`; the validator includes
   them in the queue and the level-up handler permits this learnable hidden ability.
 - **Neutrals:** items exist in the tier they are listed under, pick rates are valid, the

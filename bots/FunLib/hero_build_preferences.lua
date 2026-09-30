@@ -1,5 +1,15 @@
 -- Shared data-only preferences: never execute a hero BotLib in the server VM.
 local builds = {
+    npc_dota_hero_naga_siren = require('bots.BotLib.Builds.naga_siren'),
+    npc_dota_hero_muerta = require('bots.BotLib.Builds.muerta'),
+    npc_dota_hero_morphling = require('bots.BotLib.Builds.morphling'),
+    npc_dota_hero_monkey_king = require('bots.BotLib.Builds.monkey_king'),
+    npc_dota_hero_meepo = require('bots.BotLib.Builds.meepo'),
+    npc_dota_hero_mirana = require('bots.BotLib.Builds.mirana'),
+    npc_dota_hero_medusa = require('bots.BotLib.Builds.medusa'),
+    npc_dota_hero_mars = require('bots.BotLib.Builds.mars'),
+    npc_dota_hero_marci = require('bots.BotLib.Builds.marci'),
+    npc_dota_hero_kez = require('bots.BotLib.Builds.kez'),
     npc_dota_hero_legion_commander = require('bots.BotLib.Builds.legion_commander'),
     npc_dota_hero_leshrac = require('bots.BotLib.Builds.leshrac'),
     npc_dota_hero_lich = require('bots.BotLib.Builds.lich'),

@@ -9,85 +9,30 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-							['t25'] = {0, 10},
-							['t20'] = {10, 0},
-							['t15'] = {0, 10},
-							['t10'] = {0, 10},
+-- Updated to 7.41f from D2PT; forced skipped roles use pos 3.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/mars')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Spear of Mars, [2] God's Rebuke, [3] Bulwark, [6] Arena of Blood.
+local nAbilityBuildList = {2,1,1,2,1,6,1,2,2,3,6,3,3,3,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- God's Rebuke distance
+    t15={10,0}, -- Spear damage
+    t20={10,0}, -- Spear stun duration
+    t25={10,0}, -- Arena team HP regeneration
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    'item_quelling_blade','item_double_gauntlets','item_double_branches','item_tango',
+    'item_double_bracer','item_magic_wand','item_soul_ring','item_phase_boots',
+    'item_blink','item_aghanims_shard','item_black_king_bar',
+    -- Bot policy: late upgrades and continuation.
+    'item_cyclone','item_sheepstick','item_ultimate_scepter','item_ultimate_scepter_2',
+    'item_refresher','item_wind_waker','item_overwhelming_blink',
 }
-
-local tAllAbilityBuildList = {
-							{2,1,1,2,1,6,1,2,2,3,6,3,3,3,6},--pos3
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sUtility = {"item_pipe", "item_lotus_orb", "item_heavens_halberd", "item_crimson_guard"}
-local nUtility = sUtility[RandomInt(1, #sUtility)]
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_3'] = {
-    "item_tango",
-	"item_double_branches",
-    "item_quelling_blade",
-
-	"item_magic_wand",
-	"item_double_bracer",
-	"item_boots",
-    "item_phase_boots",
-	"item_soul_ring",
-    "item_blink",
-	"item_cyclone",
-    "item_black_king_bar",--
-    "item_aghanims_shard",
-    nUtility,--
-    "item_octarine_core",--
-	"item_wind_waker",--
-    "item_travel_boots",
-    "item_overwhelming_blink",--
-	"item_travel_boots_2",--
-    "item_moon_shard",
-    "item_ultimate_scepter_2"
-}
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_2'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_quelling_blade",
-
-	"item_double_bracer",
-	"item_bottle",
-	"item_boots",
-	"item_magic_wand",
-	"item_phase_boots",
-	"item_desolator",--
-	"item_blink",
-	"item_black_king_bar",--
-	"item_aghanims_shard",
-	"item_assault",--
-	"item_satanic",--
-	"item_travel_boots",
-	"item_moon_shard",
-	"item_overwhelming_blink",--
-	"item_travel_boots_2",--
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_3']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
+X.sSellList = {
+    'item_blink','item_quelling_blade','item_black_king_bar','item_bracer','item_cyclone','item_bracer',
+    'item_sheepstick','item_magic_wand','item_refresher','item_soul_ring',
 }
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_mid' }, {} end
@@ -95,6 +40,10 @@ if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList']
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- D2PT takes an ability at 10, then the first talent at 11.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
