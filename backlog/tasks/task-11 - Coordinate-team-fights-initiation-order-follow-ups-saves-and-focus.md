@@ -4,13 +4,12 @@ title: 'Coordinate team fights: initiation order, follow-ups, saves and focus'
 status: To Do
 assignee: []
 created_date: '2026-09-29 21:29'
-updated_date: '2026-09-29 22:14'
+updated_date: '2026-09-30 15:22'
 labels:
   - teamfight
 dependencies: []
 references:
-  - bots/mode_attack_generic.lua
-  - bots/FunLib/fight_response.lua
+  - 'https://github.com/forest0xia/dota2bot-OpenHyperAI/issues/40'
 documentation:
   - backlog/docs/doc-1 - OpenAI-Five-lessons-for-the-bot-scripts.md
 priority: low
@@ -35,4 +34,6 @@ Fight target choice and movement are Valve's default attack mode for most heroes
 
 <!-- SECTION:NOTES:BEGIN -->
 OpenAI Five (doc-1, section 4): unlike humans, the final agent spent long-cooldown spells and consumables readily instead of holding them, and judged low-HP aggression well. Once a fight is on, holding ultimates for a better moment is a real cost.
+
+Upstream issue 40 lists target-priority factors: distance, target HP/MP, armor and magic resistance, the target's cooldowns and damage output, spell/attack immunity, unkillable buffs (Shallow Grave, False Promise), allies' current target (focus one), own HP/MP, and high-impact enemies (stuns, big ultimates such as Enigma, Oracle, Omniknight).
 <!-- SECTION:NOTES:END -->

@@ -4,16 +4,14 @@ title: Mid laner rune-driven rotations and ganks
 status: To Do
 assignee: []
 created_date: '2026-09-29 21:44'
-updated_date: '2026-09-29 22:14'
+updated_date: '2026-09-30 15:22'
 labels:
   - laning
   - macro
 dependencies:
   - TASK-19
 references:
-  - bots/mode_rune_generic.lua
-  - bots/mode_roam_generic.lua
-  - bots/FunLib/lane_rotation.lua
+  - 'https://github.com/forest0xia/dota2bot-OpenHyperAI/issues/44'
 documentation:
   - backlog/docs/doc-1 - OpenAI-Five-lessons-for-the-bot-scripts.md
 priority: medium
@@ -38,4 +36,6 @@ Human mids rotate after taking a power rune: a rune at 6/8/10 minutes gives a wi
 
 <!-- SECTION:NOTES:BEGIN -->
 OpenAI Five (doc-1, section 4) rotated heroes across the map far more often than humans do, and it was a strength. Supports frequent, cheap mid rotations when the lane state allows.
+
+Upstream issue 44 asks for individual roaming: mid roams side lanes after level 6 with ult ready, enough HP/mana and enemies pushed up; side-lane supports rotate to mid with stuns to kill the enemy mid. The author noted Twin Gates did not work for bots (2024); FunLib/twin_gate_probe.lua now exists in the fork, so check before relying on TP only.
 <!-- SECTION:NOTES:END -->

@@ -4,10 +4,12 @@ title: 'Save items: pick the threatened ally and the right moment'
 status: To Do
 assignee: []
 created_date: '2026-09-29 22:03'
-updated_date: '2026-09-29 22:14'
+updated_date: '2026-09-30 15:22'
 labels:
   - teamfight
 dependencies: []
+references:
+  - 'https://github.com/forest0xia/dota2bot-OpenHyperAI/issues/55'
 documentation:
   - backlog/docs/doc-1 - OpenAI-Five-lessons-for-the-bot-scripts.md
 parent_task_id: TASK-21
@@ -33,4 +35,6 @@ Glimmer Cape, Force Staff, Hurricane Pike, Ghost Scepter, Eul's Scepter, Wind Wa
 
 <!-- SECTION:NOTES:BEGIN -->
 OpenAI Five's reward (doc-1, section 5) values HP on a concave curve: the last part of a hero's HP is worth the most (at 20% HP about 40% of the value remains). Saves should weigh how close the ally is to dying, not just a flat HP threshold.
+
+Upstream issue 55: dispel allies of dangerous debuffs (poisons such as Queen of Pain's Shadow Strike or Dazzle's Poison Touch, strong disables) with items and spells that dispel, and evade targeted spells (Windranger's Shackleshot, Lina's Dragon Slave, Clockwerk's Hookshot) where an item allows it.
 <!-- SECTION:NOTES:END -->

@@ -4,15 +4,14 @@ title: Give cores human-like jungle farming patterns
 status: To Do
 assignee: []
 created_date: '2026-09-29 21:29'
-updated_date: '2026-09-29 22:14'
+updated_date: '2026-09-30 15:22'
 labels:
   - farming
 dependencies:
   - TASK-7
   - TASK-6
 references:
-  - bots/mode_farm_generic.lua
-  - bots/FunLib/aba_site.lua
+  - 'https://github.com/forest0xia/dota2bot-OpenHyperAI/issues/46'
 documentation:
   - backlog/docs/doc-1 - OpenAI-Five-lessons-for-the-bot-scripts.md
 priority: high
@@ -36,4 +35,6 @@ A human pos 1 beats these bots 90%+ of games by farming the jungle in the mid ga
 
 <!-- SECTION:NOTES:BEGIN -->
 OpenAI Five (doc-1, sections 2-3): the final agent concentrated farm on its strongest heroes, and grouping as five on one lane was a trap that gave up the map's other resources. Farm priority should go to the strongest cores, and grouping should not stop side lanes and jungle being farmed. Related: TASK-22.
+
+Upstream issue 46: farming big stacks early is dangerous for weak heroes without area damage; stack farming should match the hero's clear speed and survivability.
 <!-- SECTION:NOTES:END -->

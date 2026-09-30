@@ -4,13 +4,12 @@ title: 'Adapt team play to the game state: press when ahead, farm when behind'
 status: To Do
 assignee: []
 created_date: '2026-09-29 22:14'
+updated_date: '2026-09-30 15:22'
 labels:
   - macro
 dependencies: []
 references:
-  - bots/FunLib/aba_push.lua
-  - bots/mode_farm_generic.lua
-  - bots/mode_team_roam_generic.lua
+  - 'https://github.com/forest0xia/dota2bot-OpenHyperAI/issues/37'
 documentation:
   - backlog/docs/doc-1 - OpenAI-Five-lessons-for-the-bot-scripts.md
 priority: medium
@@ -30,3 +29,9 @@ OpenAI Five's final play style shifted with the game state: it grouped and press
 - [ ] #3 When clearly ahead, bots group to take objectives while side lanes or jungle keep being farmed
 - [ ] #4 Offline spec covers the ahead, even and behind cases
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Upstream issue 37: bots die pushing towers alone or outnumbered while the enemy defends as five. Suggested: do not push alone or with fewer allies than living enemies (farm or help elsewhere instead); join allies already pushing or defending; gather near the target before pushing rather than arriving one by one. A comment adds: when defending, account for allies' respawn times rather than running alone into 4-5 enemies (unless the ancient is under attack). aba_push.lua already checks alive counts (allowNumbers); defence has no respawn-time check.
+<!-- SECTION:NOTES:END -->
