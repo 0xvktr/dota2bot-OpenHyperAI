@@ -62,6 +62,17 @@ When user says "update for patch X.XX" or provides patch notes:
 - **Verify on Liquipedia** before trusting patch note summaries about ability names
 - **Test in-game** after changes -- some things can only be verified at runtime
 
+## Running Backlog
+
+If `backlog` is not on PATH (e.g. inside the Codex Windows sandbox, which runs as a separate user without your npm global dir), use the repo-local copy instead -- same commands, same arguments:
+
+```
+node node_modules/backlog.md/cli.js instructions overview
+```
+
+If `node_modules/backlog.md` is missing, run `npm install --legacy-peer-deps` first. Do not go looking for other installations.
+
+
 <!-- BACKLOG.MD GUIDELINES START -->
 <!-- backlog.md-instructions-version: 1.53.0 -->
 <CRITICAL_INSTRUCTION>
