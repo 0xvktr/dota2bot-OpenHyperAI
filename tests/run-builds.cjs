@@ -27,7 +27,7 @@ const lua = [
 for (const file of lua) parser.parse(read(file), {luaVersion: '5.2'});
 console.log(`Lua syntax passed for ${lua.length} files`);
 
-for (const file of ['creep_deny_spec.cjs', 'mask_disassembly_spec.cjs']) {
+for (const file of ['creep_deny_spec.cjs', 'mask_disassembly_spec.cjs', 'valve_ability_check.cjs']) {
     const result = cp.spawnSync(process.execPath, [path.join('tests', file)], {stdio: 'inherit'});
     assert.strictEqual(result.status, 0, `${file} failed`);
 }

@@ -763,7 +763,7 @@ function X.ConsiderR()
 	local nRawDamage = 475 + 125 * nSkillLV
 	if bot:HasScepter()
 	then
-		nRadius = abilityR:GetSpecialValueInt( 'splash_radius_scepter' )
+		nRadius = abilityR:GetSpecialValueInt( 'splash_radius' )
 		nRawDamage = 575 + 125 * nSkillLV
 	end
 

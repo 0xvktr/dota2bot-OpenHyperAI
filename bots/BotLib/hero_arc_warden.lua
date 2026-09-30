@@ -364,9 +364,9 @@ function X.ConsiderSparkWraith()
 
 	local nCastRange = J.GetProperCastRange(false, bot, SparkWraith:GetCastRange())
 	local nRadius = SparkWraith:GetSpecialValueInt('radius')
-	local nDamage = SparkWraith:GetSpecialValueInt('spark_damage')
+	local nDamage = SparkWraith:GetSpecialValueInt('spark_damage_base')
 	local nCastPoint = SparkWraith:GetCastPoint()
-	local nDelay = SparkWraith:GetSpecialValueInt('activation_delay') + nCastPoint
+	local nDelay = SparkWraith:GetSpecialValueFloat('base_activation_delay') + nCastPoint
 
 	local nEnemyHeroes = J.GetNearbyHeroes(bot,nCastRange, true, BOT_MODE_NONE)
 	for _, enemyHero in pairs(nEnemyHeroes)

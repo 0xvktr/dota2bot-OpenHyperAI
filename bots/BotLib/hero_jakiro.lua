@@ -544,7 +544,7 @@ function X.ConsiderR()
 	if nCastRange > 1500 then nCastRange = 1500 end
 	local nCastPoint = abilityR:GetCastPoint()
 	local manaCost = abilityR:GetManaCost()
-	local nRadius = abilityR:GetSpecialValueInt( "path_radius" )
+	local nRadius = abilityR:GetSpecialValueInt( 'path_width' ) / 2
 	local nDamage = abilityR:GetSpecialValueInt( 'damage' )
 
 	local botTarget = J.GetProperTarget( bot )

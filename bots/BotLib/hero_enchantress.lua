@@ -355,7 +355,7 @@ function X.ConsiderSproink()
 
     local nAllyHeroes = J.GetNearbyHeroes(bot,nAttackRange + 100, false, BOT_MODE_NONE)
     local nEnemyHeroes = J.GetNearbyHeroes(bot,nAttackRange, true, BOT_MODE_NONE)
-    local nImpetusMul = Impetus:GetSpecialValueFloat('value') / 100
+    local nImpetusMul = Impetus:GetSpecialValueFloat('distance_damage_pct') / 100
     local botTarget = J.GetProperTarget(bot)
 
     for _, enemyHero in pairs(nEnemyHeroes)

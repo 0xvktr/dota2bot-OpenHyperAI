@@ -215,7 +215,6 @@ function X.ConsiderE()
 	local nRadius = 600
 	local nCastPoint = abilityE:GetCastPoint()
 	local nManaCost = abilityE:GetManaCost()
-	local nDamage = abilityE:GetSpecialValueInt( 'damage' )
 	local nDamageType = DAMAGE_TYPE_MAGICAL
 	local nInRangeEnemyList = J.GetAroundEnemyHeroList( nCastRange )
 	local nInBonusEnemyList = J.GetAroundEnemyHeroList( nCastRange + 200 )

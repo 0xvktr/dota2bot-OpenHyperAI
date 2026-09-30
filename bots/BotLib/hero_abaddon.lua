@@ -133,7 +133,7 @@ function X.ConsiderMistCoil()
 	end
 
 	local nCastRange = MistCoil:GetCastRange()
-	local nDamage = MistCoil:GetSpecialValueInt('target_damage')
+	local nDamage = MistCoil:GetSpecialValueInt('damage_heal')
 	local nSelfDamage = MistCoil:GetSpecialValueInt('self_damage')
     local nDamageType = DAMAGE_TYPE_MAGICAL
     local botTarget = J.GetProperTarget(bot)

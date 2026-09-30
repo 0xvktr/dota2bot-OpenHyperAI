@@ -675,7 +675,6 @@ function X.ConsiderR()
 	
 	local nRadius = abilityR:GetSpecialValueInt( 'final_aoe' ) * 0.88
 	
-	if bot:HasScepter() then nDamage = abilityR:GetSpecialValueInt( 'damage_scepter' ) end
 	
 	local nDamageType = DAMAGE_TYPE_PURE
 	

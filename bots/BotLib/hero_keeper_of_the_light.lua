@@ -569,7 +569,7 @@ function X.ConsiderWillOWisp()
 	local nCastRange = J.GetProperCastRange(false, bot, WillOWisp:GetCastRange())
     local nRadius = WillOWisp:GetSpecialValueInt('radius')
     local nCastPoint = WillOWisp:GetCastPoint()
-    local nDuration = WillOWisp:GetSpecialValueInt('duration')
+    local nDuration = WillOWisp:GetSpecialValueFloat('wisp_duration_tooltip')
 
     -- TP-cancel: catch enemies channeling a TP if Wisp can lock them down in time
     for _, enemyHero in pairs(nEnemyHeroes) do

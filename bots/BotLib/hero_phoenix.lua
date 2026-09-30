@@ -482,7 +482,7 @@ function X.ConsiderFireSpiritsLaunch()
     local nCastRange = FireSpirits:GetCastRange()
 	local nRadius = FireSpirits:GetSpecialValueInt('radius')
     local nSpeed = FireSpirits:GetSpecialValueInt('spirit_speed')
-    local nDuration = FireSpirits:GetSpecialValueFloat('burn_duration')
+    local nDuration = FireSpirits:GetSpecialValueFloat('duration')
 	local nDamage = FireSpirits:GetSpecialValueInt('damage_per_second') * nDuration
     local botTarget = J.GetProperTarget(bot)
 

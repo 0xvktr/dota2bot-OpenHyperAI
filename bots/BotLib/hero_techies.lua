@@ -100,7 +100,7 @@ function X.SkillsComplement()
     then
         bot:Action_ClearActions(false)
         local nCastPoint = BlastOff:GetCastPoint()
-        local nLeapDuration = BlastOff:GetSpecialValueInt('stun_radius')
+        local nLeapDuration = BlastOff:GetSpecialValueFloat('duration')
 
         if Flag == 1
         then
@@ -406,7 +406,7 @@ function X.ConsiderReactiveTazer()
         return BOT_ACTION_DESIRE_NONE
     end
 
-    local nRadius = ReactiveTazer:GetSpecialValueInt('stun_radius')
+    local nRadius = ReactiveTazer:GetSpecialValueInt('explosion_radius')
 
     if J.IsGoingOnSomeone(bot)
     and not CanDoCombo1()

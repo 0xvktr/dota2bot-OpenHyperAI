@@ -78,11 +78,9 @@ end
 -- Ability handles initialized at load time; re-fetched each tick in SkillsComplement for Aghs safety
 local WildAxes          = bot:GetAbilityByName('beastmaster_wild_axes')
 -- 7.41: Boar→Razorback, Hawk→Raptor. Use sAbilityList for resilience to name changes.
-local CallOfTheWildBoar = bot:GetAbilityByName('beastmaster_call_of_the_wild_razorback')
-                          or bot:GetAbilityByName('beastmaster_summon_razorback')
+local CallOfTheWildBoar = bot:GetAbilityByName('beastmaster_summon_razorback')
                           or (sAbilityList[2] and bot:GetAbilityByName(sAbilityList[2]))
-local CallOfTheWildHawk = bot:GetAbilityByName('beastmaster_call_of_the_wild_raptor')
-                          or bot:GetAbilityByName('beastmaster_summon_raptors')
+local CallOfTheWildHawk = bot:GetAbilityByName('beastmaster_summon_raptor')
                           or (sAbilityList[3] and bot:GetAbilityByName(sAbilityList[3]))
 -- local InnerBeast     -- 7.41: now innate, cannot be cast
 -- local DrumsOfSlom        = bot:GetAbilityByName('beastmaster_drums_of_slom')
@@ -116,11 +114,9 @@ function X.SkillsComplement()
 
     -- Re-fetch ability handles each tick for safety against Aghs upgrades
     WildAxes = bot:GetAbilityByName('beastmaster_wild_axes')
-    CallOfTheWildBoar = bot:GetAbilityByName('beastmaster_call_of_the_wild_razorback')
-                        or bot:GetAbilityByName('beastmaster_summon_razorback')
+    CallOfTheWildBoar = bot:GetAbilityByName('beastmaster_summon_razorback')
                         or (sAbilityList[2] and bot:GetAbilityByName(sAbilityList[2]))
-    CallOfTheWildHawk = bot:GetAbilityByName('beastmaster_call_of_the_wild_raptor')
-                        or bot:GetAbilityByName('beastmaster_summon_raptors')
+    CallOfTheWildHawk = bot:GetAbilityByName('beastmaster_summon_raptor')
                         or (sAbilityList[3] and bot:GetAbilityByName(sAbilityList[3]))
     PrimalRoar = bot:GetAbilityByName('beastmaster_primal_roar')
 

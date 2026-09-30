@@ -233,7 +233,7 @@ function ConsiderEarthSplitter()
 	if not EarthSplitter:IsFullyCastable() then return BOT_ACTION_DESIRE_NONE end
     if bot:IsUsingAbility() or bot:IsCastingAbility() then return BOT_ACTION_DESIRE_NONE end
 
-	local nCastRange = EarthSplitter:GetSpecialValueInt('AbilityCastRange')
+	local nCastRange = EarthSplitter:GetCastRange()
     local crack_width = 300
     local crack_time = 3.14
 

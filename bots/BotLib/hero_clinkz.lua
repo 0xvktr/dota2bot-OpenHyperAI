@@ -503,7 +503,7 @@ function X.ConsiderBurningBarrage()
     end
 
     local nCastRange = J.GetProperCastRange(false, bot, BurningBarrage:GetCastRange())
-    local nRadius = BurningBarrage:GetSpecialValueInt('radius')
+    local nRadius = BurningBarrage:GetSpecialValueInt('projectile_width')
 
     if J.IsGoingOnSomeone(bot)
 	then

@@ -358,7 +358,7 @@ function X.ConsiderDemonZeal()
 		return BOT_ACTION_DESIRE_NONE
 	end
 
-    local nHealthCost = bot:GetHealth() * DemonZeal:GetSpecialValueFloat('value')
+    local nHealthCost = bot:GetHealth() * (DemonZeal:GetSpecialValueFloat('health_cost_pct') / 100)
     local nRadius = bot:GetAttackRange() + Metamorphosis:GetSpecialValueInt('bonus_range')
 	local botTarget = J.GetProperTarget(bot)
 

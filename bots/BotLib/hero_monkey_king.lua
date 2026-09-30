@@ -482,7 +482,7 @@ function X.ConsiderPrimalSpring()
         return BOT_ACTION_DESIRE_NONE, 0
     end
 
-    local nMaxDistance = PrimalSpring:GetSpecialValueInt('max_distance')
+    local nMaxDistance = PrimalSpring:GetCastRange()
 	local nChannelTime = PrimalSpring:GetChannelTime()
 	local nRadius = PrimalSpring:GetSpecialValueInt('impact_radius')
 

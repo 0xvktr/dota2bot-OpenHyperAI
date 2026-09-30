@@ -145,6 +145,22 @@ commit for the patch we last updated for and `master`:
 The 7.41b-f pass scripts followed exactly this approach; the result was a short list of talent slot
 changes and a handful of behavior flags (see "Lessons Learned (7.41b-f)").
 
+### 1C-3. Refresh the Valve Ability Data and Run the Check
+
+`tests/valve/abilities.json` is a compact snapshot of every hero's d2vpkr file (ability slots, value
+keys, behaviour flags, talent links), pinned to one d2vpkr commit. After a patch:
+
+```bash
+node tests/valve/refresh.cjs
+node tests/valve_ability_check.cjs
+```
+
+The check (also part of `node tests/run-builds.cjs`) reports every `GetAbilityByName('...')` name
+that no longer exists and every `GetSpecialValueInt/Float('...')` key the ability no longer has --
+renames that otherwise fail silently (nil handle, value 0). Fix them, or add intentional cases to
+`tests/valve/allowlist.json` with a reason; entries that stop matching fail the check, so the list
+stays current. Commit the refreshed JSON with the fixes so the diff shows what Valve changed.
+
 ### 1D. Verify Ability Names via Liquipedia
 For each hero with major ability changes:
 ```

@@ -1,0 +1,6 @@
+[
+  {
+    "id": "witch_doctor|key|abilityR:bounce_range",
+    "reason": "Pending D2PT migration (TASK-4). Death Ward's key is bounce_radius and it only exists with Aghanim's Scepter, so this reads 0 either way; fix together with the migration."
+  }
+]

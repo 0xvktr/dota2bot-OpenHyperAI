@@ -352,7 +352,7 @@ function X.ConsiderBedlam()
 
     if Terrorize:IsTrained()
     then
-        local nFearDuration = Bedlam:GetSpecialValueInt('destination_status_duration')
+        local nFearDuration = Terrorize:GetSpecialValueFloat('destination_status_duration')
         if DotaTime() - TerrorizeTime <= nFearDuration
         then
             return BOT_ACTION_DESIRE_NONE, nil

@@ -419,7 +419,7 @@ function X.ConsiderE()
 	if not abilityE:IsFullyCastable() then return 0 end
 
 	local nSkillLV = abilityE:GetLevel()
-	local nRadius = abilityE:GetSpecialValueInt( 'radius' )
+	local nRadius = bot:GetAttackRange() + abilityE:GetSpecialValueInt( 'additional_range' )
 	local nCastRange = nRadius	
 	local nCastPoint = abilityE:GetCastPoint()
 	local nManaCost = abilityE:GetManaCost()

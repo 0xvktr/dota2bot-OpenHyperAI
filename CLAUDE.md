@@ -52,6 +52,7 @@ When user says "update for patch X.XX" or provides patch notes:
 2. The `SkillsComplement()` function controls ability casting priority
 3. Each ability has a `ConsiderX()` function returning desire + target
 4. See "Skill / Ability System" in `docs/ARCHITECTURE.md`
+5. Ability names and `GetSpecialValueInt/Float` keys must exist in Valve's data: `node tests/valve_ability_check.cjs` checks them (a wrong key silently reads 0)
 
 ## Important Rules
 

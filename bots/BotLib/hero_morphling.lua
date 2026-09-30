@@ -50,7 +50,6 @@ end
 
 local Waveform              = bot:GetAbilityByName('morphling_waveform')
 local AdaptiveStrikeAGI     = bot:GetAbilityByName('morphling_adaptive_strike_agi')
-local AdaptiveStrikeSTR     = bot:GetAbilityByName('morphling_adaptive_strike_str')
 local AttributeShiftAGI     = bot:GetAbilityByName('morphling_morph_agi')
 local AttributeShiftSTR     = bot:GetAbilityByName('morphling_morph_str')
 local Morph                 = bot:GetAbilityByName('morphling_replicate')
@@ -58,7 +57,6 @@ local MorphReplicate        = bot:GetAbilityByName('morphling_morph_replicate')
 
 local WaveformDesire, WaveformLocation
 local AdaptiveStrikeAGIDesire, AdaptiveStrikeAGITarget
-local AdaptiveStrikeSTRDesire, AdaptiveStrikeSTRTarget
 local AtttributeShiftDesire
 local MorphDesire, MorphTarget
 
@@ -192,13 +190,6 @@ function X.SkillsComplement()
             return
         end
 
-        AdaptiveStrikeSTRDesire, AdaptiveStrikeSTRTarget = X.ConsiderAdaptiveStrikeSTR()
-        if AdaptiveStrikeSTRDesire > 0
-        then
-            bot:Action_UseAbilityOnEntity(AdaptiveStrikeSTR, AdaptiveStrikeSTRTarget)
-            return
-        end
-
         AdaptiveStrikeAGIDesire, AdaptiveStrikeAGITarget = X.ConsiderAdaptiveStrikeAGI()
         if AdaptiveStrikeAGIDesire > 0
         then
@@ -226,7 +217,7 @@ function X.ConsiderWaveform()
     local nCastRange = J.GetProperCastRange(false, bot, Waveform:GetCastRange())
 	local nCastPoint = Waveform:GetCastPoint()
 	local nSpeed = Waveform:GetSpecialValueInt('speed')
-    local nDamage = Waveform:GetSpecialValueInt('#AbilityDamage')
+    local nDamage = Waveform:GetAbilityDamage()
     local nRadius = Waveform:GetSpecialValueInt('width')
     local nManaAfter = J.GetManaAfter(Waveform:GetManaCost())
 
@@ -544,52 +535,6 @@ function X.ConsiderAdaptiveStrikeAGI()
 		then
 			return BOT_ACTION_DESIRE_HIGH
 		end
-	end
-
-    return BOT_ACTION_DESIRE_NONE, nil
-end
-
-function X.ConsiderAdaptiveStrikeSTR()
-    if not J.CanCastAbility(AdaptiveStrikeSTR)
-    then
-        return BOT_ACTION_DESIRE_NONE, nil
-    end
-
-    local nCastRange = J.GetProperCastRange(false, bot, AdaptiveStrikeSTR:GetCastRange())
-
-    local nEnemyHeroes = bot:GetNearbyHeroes(nCastRange, true, BOT_MODE_NONE)
-	for _, enemyHero in pairs(nEnemyHeroes)
-	do
-        if  J.IsValidHero(enemyHero)
-        and J.CanCastOnNonMagicImmune(enemyHero)
-        and enemyHero:IsChanneling()
-        then
-            return BOT_ACTION_DESIRE_HIGH, enemyHero
-        end
-	end
-
-    if  J.IsRetreating(bot)
-    and not J.IsRealInvisible(bot)
-    and bot:GetActiveModeDesire() > BOT_MODE_DESIRE_MODERATE
-	then
-        local nInRangeEnemy = bot:GetNearbyHeroes(nCastRange, true, BOT_MODE_NONE)
-		for _, enemyHero in pairs(nInRangeEnemy)
-        do
-			if  J.IsValidHero(enemyHero)
-            and J.CanCastOnNonMagicImmune(enemyHero)
-			and not J.IsDisabled(enemyHero)
-			then
-				local nInRangeAlly = enemyHero:GetNearbyHeroes(1200, true, BOT_MODE_NONE)
-				local nTargetInRangeAlly = enemyHero:GetNearbyHeroes(1200, false, BOT_MODE_NONE)
-
-				if  nInRangeAlly ~= nil and nTargetInRangeAlly ~= nil
-				and ((#nTargetInRangeAlly > #nInRangeAlly)
-					or bot:WasRecentlyDamagedByAnyHero(1.5))
-				then
-					return BOT_ACTION_DESIRE_HIGH, enemyHero
-				end
-			end
-        end
 	end
 
     return BOT_ACTION_DESIRE_NONE, nil

@@ -476,8 +476,7 @@ function X.ConsiderKazuraiKatana()
         return BOT_ACTION_DESIRE_NONE, nil
     end
 
-    local nCastRange = KazuraiKatana:GetSpecialValueInt('katana_attack_range')
-    local fBonusDamagePercentage = KazuraiKatana:GetSpecialValueInt('katana_bonus_damage') / 100
+    local nCastRange = SwitchWeapons:GetSpecialValueInt('katana_attack_range')
 
     for _, enemy in pairs(hEnemyList) do
         if J.IsValidHero(enemy)

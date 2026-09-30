@@ -168,11 +168,11 @@ function X.ConsiderMalefice()
     end
 
 	local nCastRange = J.GetProperCastRange(false, bot, Malefice:GetCastRange())
-    local nStunInstances = Malefice:GetSpecialValueInt('value')
+    local nStunInstances = Malefice:GetSpecialValueInt('stun_instances')
 
     if MaleficeAdditionalInstanceTalent:IsTrained()
     then
-        nStunInstances = nStunInstances + Malefice:GetSpecialValueInt('value')
+        nStunInstances = nStunInstances + MaleficeAdditionalInstanceTalent:GetSpecialValueInt('value')
     end
 
 	local nDamage = Malefice:GetSpecialValueInt('damage') * nStunInstances
@@ -465,7 +465,7 @@ function X.ConsiderMidnightPulse()
 
     if MidnightPulseRadiusTalent:IsTrained()
     then
-        nRadius = nRadius + MidnightPulse:GetSpecialValueInt('value')
+        nRadius = nRadius + MidnightPulseRadiusTalent:GetSpecialValueInt('value')
     end
 
 	if J.IsInTeamFight(bot, 1200)
@@ -550,7 +550,7 @@ function X.ConsiderBlackHole()
 
 	local nCastRange = J.GetProperCastRange(false, bot, BlackHole:GetCastRange())
     local nRadius = BlackHole:GetSpecialValueInt('radius')
-    local nDamage = BlackHole:GetSpecialValueInt('value')
+    local nDamage = BlackHole:GetSpecialValueInt('damage')
     local nDuration = BlackHole:GetSpecialValueInt('duration')
 
 	if J.IsInTeamFight(bot, 1200)

@@ -194,7 +194,7 @@ function X.ConsiderQ()
 	local nCastRange = abilityQ:GetCastRange() + aetherRange
 	local nCastPoint = abilityQ:GetCastPoint()
 	local nManaCost = abilityQ:GetManaCost()
-	local nDamage = abilityQ:GetSpecialValueInt( "AbilityDamage" )
+	local nDamage = abilityQ:GetSpecialValueInt( "dragon_slave_damage" )
 	local nRadius = abilityQ:GetSpecialValueInt( "dragon_slave_width_end" )
 	local nDamageType = DAMAGE_TYPE_MAGICAL
 
