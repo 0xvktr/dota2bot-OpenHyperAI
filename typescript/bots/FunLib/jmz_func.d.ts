@@ -121,3 +121,4 @@ declare function RandomForwardVector(distance: number): Vector;
 declare const Skill: ISkill;
 declare const Item: IItem;
 declare const Utils: typeof Util;
+declare function SetUserHeroInit(abilities: number[], talents: number[], items: string[], sells: string[]): LuaMultiReturn<[number[], number[], string[], string[]]>;

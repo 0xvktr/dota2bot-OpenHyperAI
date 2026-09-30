@@ -1,5 +1,5 @@
 import * as jmz from "bots/FunLib/jmz_func";
-import { BotSetup, BotRole, ItemBuilds, SkillBuilds, TalentBuilds, TalentTreeBuild } from "bots/ts_libs/bots";
+import { BotSetup, BotRole, ItemBuilds, SkillBuilds, TalentBuilds } from "bots/ts_libs/bots";
 import { BotActionDesire, BotMode, Location, Talent, Unit, UnitType } from "bots/ts_libs/dota";
 import { hero_is_healing } from "bots/FunLib/aba_buff";
 import { GetTeamFountainTpPoint, HasAnyEffect, IsValidHero } from "bots/FunLib/utils";
@@ -10,93 +10,174 @@ const minion = dofile("bots/FunLib/aba_minion");
 
 const role: BotRole = jmz.Item.GetRoleItemsBuyList(bot);
 
-// Construct for normal ability skills.
-const defaultAbilityBuild = [1, 3, 1, 3, 1, 6, 1, 3, 3, 2, 6, 2, 2, 2, 6]; // Pos 5 Build
+// Updated to 7.41f from D2PT; forced offlane uses hard support.
+const BuildData = require(GetScriptDirectory() + "/BotLib/Builds/wisp") as { patch: string; neutrals: Partial<Record<BotRole, unknown>> };
+// [1] Tether, [2] Spirits, [3] Overcharge, [6] Relocate.
 const allAbilitiesList: string[] = jmz.Skill.GetAbilityList(bot);
-const roleSkillBuildList: SkillBuilds = {
-    pos_1: defaultAbilityBuild,
-    pos_2: defaultAbilityBuild,
-    pos_3: defaultAbilityBuild,
-    pos_4: defaultAbilityBuild,
-    pos_5: defaultAbilityBuild,
-};
-const skillBuildList = roleSkillBuildList[role];
-
-// Construct for talent skills.
 const allTalentsList: Talent[] = jmz.Skill.GetTalentList(bot);
-const defaultTalentTree: TalentTreeBuild = {
-    t25: [10, 0],
-    t20: [10, 0],
-    t15: [0, 10],
-    t10: [0, 10],
+const roleSkillBuildList: SkillBuilds = {
+    pos_1: [2,1,2,3,2,6,2,3,3,3,6,1,1,1,6],
+    pos_2: [2,1,2,3,2,6,2,3,3,3,6,1,1,1,6],
+    pos_3: [1,3,3,1,3,6,3,1,1,2,6,2,2,2,6],
+    pos_4: [2,1,2,3,2,6,2,3,3,3,6,1,1,1,6],
+    pos_5: [1,3,3,1,3,6,3,1,1,2,6,2,2,2,6],
 };
 const roleTalentBuildList: TalentBuilds = {
-    pos_1: defaultTalentTree,
-    pos_2: defaultTalentTree,
-    pos_3: defaultTalentTree,
-    pos_4: defaultTalentTree,
-    pos_5: defaultTalentTree,
+    pos_1: {
+        t10: [0,10], // Overcharge duration
+        t15: [10,0], // Spirits damage
+        t20: [10,0], // Relocate cooldown
+        t25: [0,10], // Relocate cast delay
+    },
+    pos_2: {
+        t10: [0,10], // Overcharge duration
+        t15: [10,0], // Spirits damage
+        t20: [10,0], // Relocate cooldown
+        t25: [0,10], // Relocate cast delay
+    },
+    pos_3: {
+        t10: [0,10], // Overcharge duration
+        t15: [0,10], // Tether movement speed
+        t20: [10,0], // Relocate cooldown
+        t25: [0,10], // Relocate cast delay
+    },
+    pos_4: {
+        t10: [0,10], // Overcharge duration
+        t15: [10,0], // Spirits damage
+        t20: [10,0], // Relocate cooldown
+        t25: [0,10], // Relocate cast delay
+    },
+    pos_5: {
+        t10: [0,10], // Overcharge duration
+        t15: [0,10], // Tether movement speed
+        t20: [10,0], // Relocate cooldown
+        t25: [0,10], // Relocate cast delay
+    },
 };
-const talentBuildList = jmz.Skill.GetTalentBuild(roleTalentBuildList[role]);
-
-// Aggregate all talents and abilities to a single consective skill build list.
-const fullSkillBuildList = jmz.Skill.GetSkillList(allAbilitiesList, skillBuildList, allTalentsList, talentBuildList);
-
-// Construct for items build.
-const defaultBuild = [
-    "item_tango",
-    "item_faerie_fire",
-    "item_gauntlets",
-    "item_gauntlets",
-    "item_gauntlets",
-    //
-    "item_boots",
-    "item_armlet",
-    "item_black_king_bar",
-    "item_sange",
-    "item_ultimate_scepter",
-    "item_heavens_halberd",
-    "item_travel_boots",
-    "item_satanic",
-    "item_aghanims_shard",
-    "item_assault",
-    "item_travel_boots_2",
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-];
 const roleItemBuyList: ItemBuilds = {
-    pos_1: defaultBuild,
-    pos_2: defaultBuild,
-    pos_3: defaultBuild,
-    pos_4: [
-        "item_priest_outfit",
-        "item_mekansm",
-        "item_glimmer_cape",
-        "item_guardian_greaves",
-        "item_spirit_vessel",
-        "item_shivas_guard",
-        "item_sheepstick",
-        "item_moon_shard",
+    pos_1: [
+        "item_gauntlets",
+        "item_branches",
+        "item_sobi_mask",
+        "item_magic_stick",
+        "item_helm_of_iron_will",
+        "item_magic_wand",
+        "item_helm_of_the_dominator",
+        "item_soul_ring",
+        "item_ultimate_scepter",
+        "item_black_king_bar",
+        // Bot policy: selected situational items and late upgrades.
+        "item_maelstrom",
+        "item_mjollnir",
+        "item_lifesteal",
         "item_ultimate_scepter_2",
+        "item_lesser_crit",
+        "item_greater_crit",
+        "item_satanic",
+        "item_helm_of_the_overlord",
+        "item_heart",
+        "item_aghanims_shard",
+        "item_moon_shard",
     ],
-    pos_5: [
-        "item_blood_grenade",
-        "item_mage_outfit",
-        "item_ancient_janggo",
-        "item_glimmer_cape",
-        "item_pipe",
-        "item_boots_of_bearing",
+    pos_2: [
+        "item_double_branches",
+        "item_double_branches",
+        "item_branches",
+        "item_tango",
+        "item_bottle",
+        "item_null_talisman",
+        "item_magic_wand",
+        "item_ultimate_scepter",
+        "item_black_king_bar",
         "item_shivas_guard",
+        // Bot policy: selected situational items and late upgrades.
+        "item_ultimate_scepter_2",
+        "item_octarine_core",
+        "item_aghanims_shard",
+        "item_sheepstick",
         "item_cyclone",
+        "item_wind_waker",
+        "item_heart",
+    ],
+    pos_3: [
+        "item_tango",
+        "item_headdress",
+        "item_blood_grenade",
+        "item_magic_wand",
+        "item_mekansm",
+        "item_holy_locket",
+        // Bot policy: selected situational items and late upgrades.
+        "item_glimmer_cape",
+        "item_cyclone",
+        "item_vladmir",
+        "item_arcane_boots",
+        "item_guardian_greaves",
         "item_sheepstick",
         "item_wind_waker",
-        "item_moon_shard",
+        "item_aghanims_shard",
+    ],
+    pos_4: [
+        "item_tango",
+        "item_headdress",
+        "item_blood_grenade",
+        "item_magic_wand",
+        "item_soul_ring",
+        "item_mekansm",
+        "item_holy_locket",
+        // Bot policy: selected situational items and late upgrades.
+        "item_ultimate_scepter",
         "item_ultimate_scepter_2",
+        "item_black_king_bar",
+        "item_arcane_boots",
+        "item_guardian_greaves",
+        "item_glimmer_cape",
+        "item_sheepstick",
+        "item_lotus_orb",
+        "item_aghanims_shard",
+    ],
+    pos_5: [
+        "item_tango",
+        "item_headdress",
+        "item_blood_grenade",
+        "item_magic_wand",
+        "item_mekansm",
+        "item_holy_locket",
+        // Bot policy: selected situational items and late upgrades.
+        "item_glimmer_cape",
+        "item_cyclone",
+        "item_vladmir",
+        "item_arcane_boots",
+        "item_guardian_greaves",
+        "item_sheepstick",
+        "item_wind_waker",
+        "item_aghanims_shard",
     ],
 };
-const itemBuildList: string[] = roleItemBuyList[role];
-
-const sellList: string[] = ["item_black_king_bar", "item_quelling_blade"];
+const roleItemSellList: ItemBuilds = {
+    pos_1: ["item_maelstrom","item_soul_ring","item_lesser_crit","item_magic_wand"],
+    pos_2: ["item_octarine_core","item_bottle","item_sheepstick","item_null_talisman","item_cyclone","item_magic_wand"],
+    pos_3: [],
+    pos_4: ["item_glimmer_cape","item_soul_ring"],
+    pos_5: [],
+};
+let skillBuildList = roleSkillBuildList[role];
+let talentBuildList = jmz.Skill.GetTalentBuild(roleTalentBuildList[role]);
+let itemBuildList = roleItemBuyList[role];
+let sellList = roleItemSellList[role];
+const defaultAbilityBuild = skillBuildList, defaultTalentBuild = talentBuildList;
+[skillBuildList, talentBuildList, itemBuildList, sellList] = jmz.SetUserHeroInit(skillBuildList, talentBuildList, itemBuildList, sellList);
+const fullSkillBuildList = jmz.Skill.GetSkillList(allAbilitiesList, skillBuildList, allTalentsList, talentBuildList);
+if (BuildData.patch === "7.41f" && skillBuildList === defaultAbilityBuild && talentBuildList === defaultTalentBuild) {
+    if (role === "pos_5" || role === "pos_3") {
+        // D2PT: attributes at 10, talents at 11/15.
+        table.insert(fullSkillBuildList, 10, "special_bonus_attributes");
+        [fullSkillBuildList[11], fullSkillBuildList[12]] = [fullSkillBuildList[12], fullSkillBuildList[11]];
+        [fullSkillBuildList[14], fullSkillBuildList[15]] = [fullSkillBuildList[15], fullSkillBuildList[14]];
+    } else {
+        // D2PT takes an ability at 10, then the first talent at 11.
+        [fullSkillBuildList[9], fullSkillBuildList[10]] = [fullSkillBuildList[10], fullSkillBuildList[9]];
+    }
+}
 
 const abilityTether = bot.GetAbilityByName(allAbilitiesList[0]);
 const abilitySpirits = bot.GetAbilityByName(allAbilitiesList[1]);
@@ -234,4 +315,6 @@ export = {
     sSellList: sellList,
     sBuyList: itemBuildList,
     sSkillList: fullSkillBuildList,
-} satisfies BotSetup;
+    buildMetadata: BuildData,
+    neutralPreferences: BuildData.neutrals[role],
+} satisfies BotSetup & { buildMetadata: typeof BuildData; neutralPreferences: unknown };

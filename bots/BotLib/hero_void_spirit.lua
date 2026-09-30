@@ -8,94 +8,65 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {0, 10},
-						['t20'] = {10, 0},
-						['t15'] = {10, 0},
-						['t10'] = {10, 0},
+-- Updated to 7.41f from D2PT; forced skipped roles use pos 2.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/void_spirit')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Aether Remnant, [2] Dissimilate, [3] Resonant Pulse, [6] Astral Step.
+local roleAbilityBuilds, roleTalentTrees = {}, {}
+roleAbilityBuilds.pos_2 = {3,1,3,2,3,6,3,2,2,2,6,1,1,1,6}
+roleTalentTrees.pos_2 = {
+    t10={10,0}, -- Resonant Pulse damage
+    t15={10,0}, -- Aether Remnant damage
+    t20={0,10}, -- Dissimilate outer ring
+    t25={0,10}, -- Astral Step critical damage
 }
-
-local tAllAbilityBuildList = {
-						{3,1,3,2,3,6,3,1,1,1,2,6,2,2,6},--pos2
+roleAbilityBuilds.pos_3 = {3,1,3,2,3,6,3,1,1,1,6,2,2,2,6}
+roleTalentTrees.pos_3 = {
+    t10={10,0}, -- Resonant Pulse damage
+    t15={10,0}, -- Aether Remnant damage
+    t20={0,10}, -- Dissimilate outer ring
+    t25={0,10}, -- Astral Step critical damage
 }
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_2'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_circlet",
-    "item_gauntlets",
-
-    "item_bottle",
-    "item_bracer",
-    "item_boots",
-    "item_magic_wand",
-    "item_power_treads",
-    "item_echo_sabre",
-    "item_ultimate_scepter",
-    "item_manta",--
-    "item_black_king_bar",--
-    "item_travel_boots",
-    "item_greater_crit",--
-    "item_sheepstick",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-    "item_travel_boots_2",--
-	"item_orchid",
-    "item_bloodthorn",--
-    "item_aghanims_shard",
+local nAbilityBuildList = roleAbilityBuilds[sRole] or roleAbilityBuilds.pos_2
+local nTalentBuildList = J.Skill.GetTalentBuild(roleTalentTrees[sRole] or roleTalentTrees.pos_2)
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+local sRoleItemsBuyList, sRoleItemsSellList = {}, {}
+sRoleItemsBuyList.pos_2 = {
+        'item_double_branches','item_double_branches','item_tango','item_faerie_fire','item_bottle',
+        'item_magic_wand','item_urn_of_shadows','item_power_treads','item_spirit_vessel','item_aghanims_shard',
+        'item_ultimate_scepter',
+        -- Bot policy: selected situational items and late upgrades.
+        'item_kaya','item_yasha_and_kaya','item_black_king_bar','item_ultimate_scepter_2','item_shivas_guard',
+        'item_octarine_core',
 }
-
-sRoleItemsBuyList['pos_1'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_circlet",
-    "item_gauntlets",
-    
-    "item_bracer",
-    "item_boots",
-    "item_magic_wand",
-    "item_power_treads",
-    "item_echo_sabre",
-    "item_ultimate_scepter",
-    "item_manta",--
-    "item_black_king_bar",--
-    "item_travel_boots",
-    "item_greater_crit",--
-    "item_sheepstick",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-    "item_travel_boots_2",--
-	"item_orchid",--
-    "item_bloodthorn",--
-    "item_aghanims_shard",
+sRoleItemsSellList.pos_2 = {'item_kaya','item_bottle','item_black_king_bar','item_magic_wand'}
+sRoleItemsBuyList.pos_3 = {
+        'item_double_branches','item_double_circlet','item_tango','item_faerie_fire','item_magic_wand',
+        'item_urn_of_shadows','item_power_treads','item_spirit_vessel','item_aghanims_shard','item_ultimate_scepter',
+        -- Bot policy: selected situational items and late upgrades.
+        'item_yasha','item_manta','item_black_king_bar','item_ultimate_scepter_2','item_shivas_guard',
+        'item_octarine_core',
 }
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-}
+sRoleItemsSellList.pos_3 = {'item_black_king_bar','item_magic_wand'}
+sRoleItemsBuyList.pos_1 = sRoleItemsBuyList.pos_2
+sRoleItemsSellList.pos_1 = sRoleItemsSellList.pos_2
+sRoleItemsBuyList.pos_4 = sRoleItemsBuyList.pos_2
+sRoleItemsSellList.pos_4 = sRoleItemsSellList.pos_2
+sRoleItemsBuyList.pos_5 = sRoleItemsBuyList.pos_2
+sRoleItemsSellList.pos_5 = sRoleItemsSellList.pos_2
+X.sBuyList = sRoleItemsBuyList[sRole]
+X.sSellList = sRoleItemsSellList[sRole]
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- D2PT takes an ability at 10, then the first talent at 11.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

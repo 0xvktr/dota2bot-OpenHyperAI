@@ -112,6 +112,8 @@ Snapfire, Sniper, Spectre, Spirit Breaker, Storm Spirit, Sven, Techies,
 Templar Assassin, Terrorblade and Tidehunter were refreshed on 2026-09-30.
 Tinker, Tiny, Treant Protector, Troll Warlord, Tusk, Undying, Ursa,
 Vengeful Spirit, Venomancer and Viper were refreshed on 2026-09-30.
+Visage, Void Spirit, Warlock, Weaver, Windranger, Winter Wyvern, Io,
+Witch Doctor and Zeus were refreshed on 2026-09-30.
 Unmarked heroes retain their older lists and can be refreshed as their builds are updated.
 Source pages are `https://dota2protracker.com/hero/<hero>?section=matchups`. Both the builds and matchups
 sections take `&role=carry|mid|offlane|support|hard-support` (hyphen); an unrecognised value such as
@@ -136,6 +138,8 @@ Snapfire/Sniper/Storm Spirit use mid; Spectre/Sven/Templar Assassin/Terrorblade 
 Spirit Breaker/Techies use support, and Tidehunter uses offlane.
 Tinker/Viper use mid, Tiny/Troll Warlord/Ursa use carry, and
 Treant Protector/Tusk/Undying/Vengeful Spirit/Venomancer use hard support.
+Visage uses offlane, Void Spirit uses mid, Weaver/Windranger/Zeus use support,
+and Warlock/Winter Wyvern/Io/Witch Doctor use hard support.
 Select **All** opponent/ally
 roles and enable **Normalized** for both tables. Collapse the displayed role rows
 by hero using a match-count-weighted mean of their normalized values; this is an

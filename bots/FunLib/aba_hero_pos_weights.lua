@@ -140,69 +140,15 @@ local HeroPositions = {
     [HeroName.VengefulSpirit] = {53, 0, 44, 48, 59}, -- D2PT 7.41f
     [HeroName.Venomancer] = {0, 0, 0, 33, 54}, -- D2PT 7.41f
     [HeroName.Viper] = {0, 60, 46, 0, 0}, -- D2PT 7.41f
-    [HeroName.Visage] = {
-        5,
-        15,
-        25,
-        5,
-        0
-    },
-    [HeroName.VoidSpirit] = {
-        15,
-        30,
-        15,
-        0,
-        0
-    },
-    [HeroName.Warlock] = {
-        0,
-        35,
-        0,
-        70,
-        70
-    },
-    [HeroName.Weaver] = {
-        35,
-        15,
-        10,
-        45,
-        15
-    },
-    [HeroName.Windrunner] = {
-        5,
-        45,
-        45,
-        5,
-        0
-    },
-    [HeroName.WinterWyvern] = {
-        0,
-        35,
-        10,
-        20,
-        25
-    },
-    [HeroName.IO] = {
-        0,
-        5,
-        10,
-        25,
-        20
-    },
-    [HeroName.WitchDoctor] = {
-        0,
-        5,
-        10,
-        35,
-        55
-    },
-    [HeroName.Zeus] = {
-        25,
-        60,
-        15,
-        40,
-        20
-    },
+    [HeroName.Visage] = {0, 54, 66, 0, 0}, -- D2PT 7.41f
+    [HeroName.VoidSpirit] = {0, 66, 48, 0, 0}, -- D2PT 7.41f
+    [HeroName.Warlock] = {0, 0, 0, 0, 56}, -- D2PT 7.41f
+    [HeroName.Weaver] = {43, 0, 41, 41, 43}, -- D2PT 7.41f
+    [HeroName.Windrunner] = {91, 56, 76, 75, 41}, -- D2PT 7.41f
+    [HeroName.WinterWyvern] = {0, 0, 0, 54, 100}, -- D2PT 7.41f
+    [HeroName.IO] = {45, 55, 0, 46, 76}, -- D2PT 7.41f
+    [HeroName.WitchDoctor] = {0, 0, 0, 53, 81}, -- D2PT 7.41f
+    [HeroName.Zeus] = {0, 46, 0, 77, 64}, -- D2PT 7.41f
 }
 function ____exports.GetHeroPositions()
     return HeroPositions

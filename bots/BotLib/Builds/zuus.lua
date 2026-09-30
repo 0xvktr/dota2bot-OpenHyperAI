@@ -1,0 +1,64 @@
+-- Mid/support/hard support; other roles below threshold. Header 4372; role rows 4366.
+return {
+    patch='7.41f', updated='2026-09-30', defaultRole='pos_4',
+    source='https://dota2protracker.com/hero/Zeus?section=builds',
+    overviewWindow='last 8 days, 7000+', buildWindow='2026-09-16 to 2026-09-30', buildUpdated='2026-09-30',
+    roles={
+        pos_1={matches=12,winRate=41.7,skipped=true},
+        pos_2={matches=845,winRate=43.8,rating=25,weight=46,buildMatches=1498,buildWinRate=46,skillMatches=578,openingMatches=193,openingObserved=1498},
+        pos_3={matches=40,winRate=35,skipped=true},
+        pos_4={matches=2380,winRate=51,rating=47,weight=77,buildMatches=3986,buildWinRate=52,skillMatches=1763,openingMatches=129,openingObserved=3986},
+        pos_5={matches=1089,winRate=51,rating=46,weight=64,buildMatches=2012,buildWinRate=50,skillMatches=796,openingMatches=65,openingObserved=2012},
+    },
+    -- Current-tier pick frequencies; T5 uses reviewed suitability.
+    neutrals={
+        pos_2={tier5Profile='caster',
+            neutral={
+                [1]={item_dormant_curio=26.3,item_occult_bracelet=17.6,item_stonefeather_satchel=8.4,item_weighted_dice=8.3,item_duelist_gloves=8.1,item_polliwog_charm=6.8,item_kobold_cup=6.5},
+                [2]={item_searing_signet=36.8,item_mana_draught=27.2,item_pogo_stick=9.3,item_essence_ring=6.6,item_defiant_shell=1.3},
+                [3]={item_partisans_brand=18.3,item_spellslinger=17.4,item_psychic_headband=6.6,item_stormcrafter=5.2},
+                [4]={item_conjurers_catalyst=40.8,item_enchanters_bauble=22.1,item_dandelion_amulet=5.8,item_prophets_pendulum=4.4},
+                [5]={item_divine_regalia=18.6,item_harmonizer=14,item_demonicon=7,item_minotaur_horn=7,item_dezun_bloodrite=4.7},
+            },
+            enhancement={
+                [1]={item_enhancement_mystical=85.2,item_enhancement_quickened=13.6,item_enhancement_vital=0.9},
+                [2]={item_enhancement_greedy=43.8,item_enhancement_mystical=40.7,item_enhancement_quickened=9.8},
+                [3]={item_enhancement_greedy=47.3,item_enhancement_mystical=32.6,item_enhancement_quickened=10.3},
+                [4]={item_enhancement_timeless=79.6,item_enhancement_mystical=9.3,item_enhancement_quickened=6.4},
+                [5]={item_enhancement_timeless=74.4,item_enhancement_feverish=16.3,item_enhancement_fleetfooted=9.3},
+            },
+        },
+        pos_4={tier5Profile='caster',
+            neutral={
+                [1]={item_dormant_curio=23,item_polliwog_charm=11.5,item_foragers_kit=10.9,item_occult_bracelet=10.7,item_ash_legion_shield=9.5,item_kobold_cup=9.1,item_stonefeather_satchel=7.9},
+                [2]={item_searing_signet=35.9,item_mana_draught=26.2,item_pogo_stick=10.3,item_essence_ring=6.6,item_poor_mans_shield=1.6,item_seeds_of_serenity=1.6},
+                [3]={item_spellslinger=19.5,item_partisans_brand=17,item_stormcrafter=6.3,item_psychic_headband=4.9},
+                [4]={item_conjurers_catalyst=42.6,item_enchanters_bauble=21.4,item_dandelion_amulet=6,item_prophets_pendulum=2.9},
+                [5]={item_divine_regalia=20.3,item_demonicon=12.2,item_harmonizer=12.2,item_fallen_sky=8.1,item_desolator_2=2.7},
+            },
+            enhancement={
+                [1]={item_enhancement_mystical=82.6,item_enhancement_quickened=16.4,item_enhancement_vital=0.7},
+                [2]={item_enhancement_greedy=69,item_enhancement_mystical=21.2,item_enhancement_quickened=6.3},
+                [3]={item_enhancement_greedy=70.9,item_enhancement_mystical=20.1,item_enhancement_quickened=5.1},
+                [4]={item_enhancement_timeless=83.6,item_enhancement_mystical=9.7,item_enhancement_keen_eyed=3.7},
+                [5]={item_enhancement_timeless=82.4,item_enhancement_feverish=12.2,item_enhancement_evolved=2.7},
+            },
+        },
+        pos_5={tier5Profile='caster',
+            neutral={
+                [1]={item_dormant_curio=24.3,item_polliwog_charm=12,item_foragers_kit=11.1,item_occult_bracelet=10.7,item_ash_legion_shield=10.1,item_kobold_cup=8.9,item_stonefeather_satchel=8.3},
+                [2]={item_searing_signet=33.7,item_mana_draught=27,item_pogo_stick=9.6,item_essence_ring=6.9,item_poor_mans_shield=2,item_seeds_of_serenity=2},
+                [3]={item_spellslinger=19.6,item_partisans_brand=19.4,item_stormcrafter=6.1,item_psychic_headband=4},
+                [4]={item_conjurers_catalyst=43.6,item_enchanters_bauble=20.8,item_dandelion_amulet=4.1,item_prophets_pendulum=2.5},
+                [5]={item_divine_regalia=20,item_harmonizer=12,item_demonicon=8},
+            },
+            enhancement={
+                [1]={item_enhancement_mystical=80.8,item_enhancement_quickened=17.4,item_enhancement_vital=1.6},
+                [2]={item_enhancement_greedy=71.6,item_enhancement_mystical=18.9,item_enhancement_quickened=4.8},
+                [3]={item_enhancement_greedy=76,item_enhancement_mystical=14.3,item_enhancement_keen_eyed=5},
+                [4]={item_enhancement_timeless=82.9,item_enhancement_mystical=11,item_enhancement_keen_eyed=4.1},
+                [5]={item_enhancement_timeless=72,item_enhancement_feverish=28},
+            },
+        },
+    },
+}

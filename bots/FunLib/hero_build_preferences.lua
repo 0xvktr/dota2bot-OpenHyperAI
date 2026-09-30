@@ -1,5 +1,14 @@
 -- Shared data-only preferences: never execute a hero BotLib in the server VM.
 local builds = {
+    npc_dota_hero_zuus = require('bots.BotLib.Builds.zuus'),
+    npc_dota_hero_witch_doctor = require('bots.BotLib.Builds.witch_doctor'),
+    npc_dota_hero_wisp = require('bots.BotLib.Builds.wisp'),
+    npc_dota_hero_winter_wyvern = require('bots.BotLib.Builds.winter_wyvern'),
+    npc_dota_hero_windrunner = require('bots.BotLib.Builds.windrunner'),
+    npc_dota_hero_weaver = require('bots.BotLib.Builds.weaver'),
+    npc_dota_hero_warlock = require('bots.BotLib.Builds.warlock'),
+    npc_dota_hero_void_spirit = require('bots.BotLib.Builds.void_spirit'),
+    npc_dota_hero_visage = require('bots.BotLib.Builds.visage'),
     npc_dota_hero_viper = require('bots.BotLib.Builds.viper'),
     npc_dota_hero_venomancer = require('bots.BotLib.Builds.venomancer'),
     npc_dota_hero_vengefulspirit = require('bots.BotLib.Builds.vengefulspirit'),
