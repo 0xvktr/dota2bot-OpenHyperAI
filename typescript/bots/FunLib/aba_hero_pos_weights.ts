@@ -35,7 +35,7 @@ const HeroPositions: HeroPositionMap = {
     [HeroName.DarkWillow]: [0, 0, 0, 75, 80], // D2PT 7.41f
     [HeroName.Dawnbreaker]: [0, 42, 98, 0, 0], // D2PT 7.41f
     [HeroName.Dazzle]: [0, 0, 0, 39, 100], // D2PT 7.41f
-    [HeroName.DeathProphet]: [0, 51, 56, 0, 0], // D2PT 7.41f; mid/offlane only.
+    [HeroName.DeathProphet]: [0, 51, 56, 0, 0], // D2PT 7.41f
     [HeroName.Disruptor]: [0, 0, 0, 42, 100], // D2PT 7.41f
     [HeroName.Doom]: [38, 0, 86, 0, 0], // D2PT 7.41f
     [HeroName.DragonKnight]: [52, 100, 93, 0, 0], // D2PT 7.41f
