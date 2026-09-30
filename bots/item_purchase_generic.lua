@@ -92,10 +92,14 @@ local function _countOwnedEverywhere(unit, itemName)
 	return count
 end
 
-local function _buildRequiredCounts(list)
+-- claimed: owned copies the plan relies on (Item.GetBasicItems), so owned + bought covers the item.
+local function _buildRequiredCounts(list, claimed)
 	local m = {}
 	for _, n in ipairs(list) do
 		m[n] = (m[n] or 0) + 1
+	end
+	for n in pairs(m) do
+		m[n] = m[n] + (claimed and claimed[n] or 0)
 	end
 	return m
 end
@@ -195,6 +199,93 @@ local function _resetCurrentTarget()
 	bot.currBuyingBasicItemList = {}
 	bot.currBuyingBasicItemRefList = {}
 	bot.currBuyingRequiredCounts = nil
+	bot.rebuildCount = 0
+	bot.recipeHoldStart = nil
+end
+
+-- Queue the current target's missing components (Item.GetBasicItems), first purchase at the end.
+local function _queueComponents(basicItemTable, claimed)
+	bot.currBuyingBasicItemList = {}
+	for i = 1, #basicItemTable do
+		bot.currBuyingBasicItemList[i] = basicItemTable[#basicItemTable - i + 1]
+	end
+	bot.currBuyingBasicItemRefList = Utils.Deepcopy(bot.currBuyingBasicItemList)
+	bot.currBuyingRequiredCounts = _buildRequiredCounts(bot.currBuyingBasicItemRefList, claimed)
+	for _, name in ipairs(basicItemTable) do
+		if name:find('^item_recipe_') then
+			print("[Purchase] "..botName.." plans "..tostring(bot.currBuyingItemInPurchaseList)..": "..table.concat(basicItemTable, ','))
+			break
+		end
+	end
+end
+
+-- Recipe -> the real items built with it. Usually one, but Boots of Travel 2 reuses the Boots of
+-- Travel recipe.
+local tRecipeUsers = nil
+local function _recipeUsers(recipe)
+	if tRecipeUsers == nil then
+		tRecipeUsers = {}
+		for name, parts in pairs(Item) do
+			if type(name) == 'string' and name:find('^item_') and type(parts) == 'table'
+				and GetItemComponents(name)[1] ~= nil
+			then
+				for _, part in ipairs(parts) do
+					if part:find('^item_recipe_') then
+						tRecipeUsers[part] = tRecipeUsers[part] or {}
+						table.insert(tRecipeUsers[part], name)
+					end
+				end
+			end
+		end
+	end
+	return tRecipeUsers[recipe] or {}
+end
+
+-- The first part of itemName (other than the recipe) with too few copies in slots 0-14, or nil.
+local function _missingPart(itemName, recipe)
+	local need = {}
+	for _, part in ipairs(Item[itemName]) do
+		if part ~= recipe then need[part] = (need[part] or 0) + 1 end
+	end
+	for part, count in pairs(need) do
+		if _countOwnedEverywhere(bot, part) < count then return part end
+	end
+	return nil
+end
+
+-- A recipe only assembles once every other part of its item is in the inventory, backpack or stash.
+-- Hold it while a part is missing; with nothing on the way, plan the target again so the part is bought.
+local function _recipeWaitsForParts(itemName)
+	-- Lone Druid parts can sit on the Spirit Bear; its ownership plan handles them.
+	if not itemName:find('^item_recipe_') or BotBuild.itemOwnership or botName == "npc_dota_hero_lone_druid" then return false end
+	local users = _recipeUsers(itemName)
+	if #users == 0 then return false end
+	local missing
+	for _, user in ipairs(users) do
+		missing = _missingPart(user, itemName)
+		if missing == nil then
+			bot.recipeHoldStart = nil
+			return false
+		end
+	end
+	bot.recipeHoldStart = bot.recipeHoldStart or DotaTime()
+	if DotaTime() > bot.recipeHoldStart + 3 * 60 then
+		-- Still missing after three minutes: empty the queue and let the timeout skip the target.
+		print("[Purchase] "..botName.." gives up on "..tostring(bot.currBuyingItemInPurchaseList)..": "..itemName.." still missing "..missing)
+		bot.currBuyingBasicItemList = {}
+		bot.currBuyingBasicItem = nil
+		bot.rebuildCount = 3
+		bot.countInvCheck = math.huge
+		bot.recipeHoldStart = nil
+		return true
+	end
+	if botCourierValue == 0 and botStashValue == 0 and DotaTime() > (bot.lastRecipeReplan or -90) + 3 then
+		bot.lastRecipeReplan = DotaTime()
+		print("[Purchase] "..botName.." holds "..itemName..": missing "..missing)
+		_queueComponents(Item.GetBasicItems({ bot.currBuyingItemInPurchaseList }))
+		bot.currBuyingBasicItem = nil
+	end
+	return true
 end
 
 local function GeneralPurchase()
@@ -222,6 +313,7 @@ local function GeneralPurchase()
 	local neededHead = _popIfNoLongerNeeded()
 	if not neededHead then return end -- nothing left; higher-level loop will progress/retarget
 	bot.currBuyingBasicItem = neededHead
+	if _recipeWaitsForParts(bot.currBuyingBasicItem) then return end
 	if _antiSpamPurchase(bot.currBuyingBasicItem) then return end
 
 	local cost = itemCost
@@ -377,6 +469,7 @@ local function TurboModeGeneralPurchase()
 	local neededHead = _popIfNoLongerNeeded()
 	if not neededHead then return end
 	bot.currBuyingBasicItem = neededHead
+	if _recipeWaitsForParts(bot.currBuyingBasicItem) then return end
 	if _antiSpamPurchase(bot.currBuyingBasicItem) then return end
 
 	if bot.lastItemToBuy ~= bot.currBuyingBasicItem
@@ -1197,22 +1290,15 @@ function ItemPurchaseThink()
 		end
 
 		bot.currBuyingItemInPurchaseList = bot.purchaseListInReverseOrder[#bot.purchaseListInReverseOrder]
-		local basicItemTable = Item.GetBasicItems( { bot.currBuyingItemInPurchaseList } )
+		local basicItemTable, claimed = Item.GetBasicItems( { bot.currBuyingItemInPurchaseList } )
         if BotBuild.itemOwnership then
-            basicItemTable = LoneDruidItems.BasicItems(bot.currBuyingItemInPurchaseList, Item)
+            basicItemTable, claimed = LoneDruidItems.BasicItems(bot.currBuyingItemInPurchaseList, Item), nil
             if bot.currBuyingItemInPurchaseList == 'item_double_branches' then
                 bot.loneDruidOpeningBranches = (bot.loneDruidOpeningBranches or 0) + 2
             end
         end
-		-- original behavior: reverse-half interleave to spread purchases
-		for i = 1, math.ceil( #basicItemTable / 2 )
-		do
-			bot.currBuyingBasicItemList[i] = basicItemTable[#basicItemTable-i+1]
-			bot.currBuyingBasicItemList[#basicItemTable-i+1] = basicItemTable[i]
-		end
-		bot.currBuyingBasicItemRefList = Utils.Deepcopy(bot.currBuyingBasicItemList)
-		-- build the required counts map for dedupe and re-buy-missing
-		bot.currBuyingRequiredCounts = _buildRequiredCounts(bot.currBuyingBasicItemRefList)
+		-- required counts drive the dedupe and re-buying a component lost before its recipe
+		_queueComponents(basicItemTable, claimed)
         if BotBuild.itemOwnership and bot.currBuyingItemInPurchaseList == 'item_double_branches' then
             bot.currBuyingRequiredCounts.item_branches = bot.loneDruidOpeningBranches
         end
@@ -1249,23 +1335,16 @@ function ItemPurchaseThink()
                 end
             elseif bot.rebuildCount < 3 and botCourierValue == 0 and botStashValue == 0 and botName ~= "npc_dota_hero_lone_druid" then
 				bot.rebuildCount = bot.rebuildCount + 1
-				-- try rebuild it based on what's actually missing
-				local newList = Item.GetReducedPurchaseList(bot, bot.currBuyingBasicItemRefList)
-				for _, value in pairs(newList) do
-					if not Item.IsItemInHero(value) then
-						bot.currBuyingBasicItemList[#bot.currBuyingBasicItemList+1] = value
-					end
-				end
-				-- refresh counts after rebuild
-				bot.currBuyingRequiredCounts = _buildRequiredCounts(bot.currBuyingBasicItemList)
+				-- Everything was bought but the item did not assemble (a part was sold, dropped or used):
+				-- plan it again from what is owned now.
+				_queueComponents(Item.GetBasicItems({ bot.currBuyingItemInPurchaseList }))
 				_popIfNoLongerNeeded()
 			else
-				-- and can't finish even with lots of gold
-				if botGold > GetItemCost(bot.currBuyingItemInPurchaseList) * 2 and botGold >= 2000 then
+				-- Parts on the way, or re-planning did not help: give up on the item after the timeout
+				-- so one broken item cannot freeze the rest of the list.
 					bot.countInvCheck = bot.countInvCheck + 1
 				end
 			end
-		end
 	elseif #bot.currBuyingBasicItemList > 0
 	then
 		if bot.currBuyingBasicItem == nil

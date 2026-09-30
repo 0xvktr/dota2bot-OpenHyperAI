@@ -148,7 +148,9 @@ changes and a handful of behavior flags (see "Lessons Learned (7.41b-f)").
 ### 1C-3. Refresh the Valve Ability Data and Run the Check
 
 `tests/valve/abilities.json` is a compact snapshot of every hero's d2vpkr file (ability slots, value
-keys, behaviour flags, talent links), pinned to one d2vpkr commit. After a patch:
+keys, behaviour flags, talent links), pinned to one d2vpkr commit. `tests/valve/recipes.json` holds
+the item recipes and costs from the same commit's items.txt, for `tests/purchase_plan_spec.lua`.
+After a patch:
 
 ```bash
 node tests/valve/refresh.cjs

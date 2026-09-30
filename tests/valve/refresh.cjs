@@ -1,6 +1,7 @@
-// Refreshes tests/valve/abilities.json from d2vpkr (Valve's game files mirrored on GitHub).
-// Run after a patch: `node tests/valve/refresh.cjs [commit]` (default: latest d2vpkr master).
-// Only the compact JSON is committed, so tests/valve_ability_check.cjs runs offline.
+// Refreshes tests/valve/abilities.json and tests/valve/recipes.json from d2vpkr (Valve's game files
+// mirrored on GitHub). Run after a patch: `node tests/valve/refresh.cjs [commit]` (default: latest
+// d2vpkr master). Only the compact JSON is committed, so tests/valve_ability_check.cjs and
+// tests/purchase_plan_spec.lua run offline.
 const fs = require('fs');
 const path = require('path');
 const { parseKV } = require('./kv.cjs');
@@ -54,6 +55,26 @@ function talentBonuses(defs) {
     return Object.fromEntries(Object.entries(bonus).map(([k, s]) => [k, [...s].sort()]));
 }
 
+// items.txt recipes as GetItemComponents(item)[1] returns them: the parts, then the recipe when it
+// costs gold (a free recipe is never bought). Also the gold cost of every item.
+function recipes(text) {
+    const items = parseKV(text).DOTAAbilities || {};
+    const costs = {}, out = {};
+    for (const [name, def] of Object.entries(items)) {
+        if (typeof def === 'object' && def.ItemCost !== undefined) costs[name] = Number(def.ItemCost);
+    }
+    for (const [name, def] of Object.entries(items)) {
+        if (!name.startsWith('item_recipe_') || typeof def !== 'object' || !def.ItemResult) continue;
+        const first = (def.ItemRequirements || {})['01'];
+        if (!first) continue;
+        const parts = first.split(';').map(s => s.replace('*', '').trim()).filter(Boolean);
+        if (costs[name] > 0) parts.push(name);
+        out[def.ItemResult] = parts;
+    }
+    const sorted = o => Object.fromEntries(Object.keys(o).sort().map(k => [k, o[k]]));
+    return { recipes: sorted(out), costs: sorted(costs) };
+}
+
 async function main() {
     const commit = process.argv[2]
         || (await get(`https://api.github.com/repos/${repo}/commits/master`, true)).sha;
@@ -79,6 +100,11 @@ async function main() {
     }
     fs.writeFileSync(out, JSON.stringify(data, null, 1) + '\n');
     console.log(`\nWrote ${path.relative(root, out)}: ${heroes.length} heroes at d2vpkr ${commit.slice(0, 7)}`);
+
+    const items = recipes(await get(`https://raw.githubusercontent.com/${repo}/${commit}/dota/scripts/npc/items.txt`));
+    const recipesOut = path.join(__dirname, 'recipes.json');
+    fs.writeFileSync(recipesOut, JSON.stringify({ source: data.source, commit, ...items }, null, 1) + '\n');
+    console.log(`Wrote ${path.relative(root, recipesOut)}: ${Object.keys(items.recipes).length} recipes`);
 }
 
 main().catch(e => { console.error(e.message); process.exit(1); });

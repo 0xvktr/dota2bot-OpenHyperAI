@@ -65,7 +65,8 @@ package.loaded['bots/FunLib/jmz_func'] = J
 
 dofile = function(path)
     if path == 'bots/FunLib/aba_minion' or path == 'bots/FunLib/morphling_utility'
-        or path == 'bots/FunLib/techies_utility' then return {} end
+        or path == 'bots/FunLib/techies_utility' or path == 'bots/FunLib/rubick_utility'
+        or path == 'bots/FunLib/spell_prob_list' then return {} end
     return realDofile(path)
 end
 

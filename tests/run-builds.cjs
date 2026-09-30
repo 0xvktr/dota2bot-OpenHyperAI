@@ -108,6 +108,21 @@ fs.writeFileSync('.test-tools/lone-druid-purchase-hooks.lua',
     purchaseSection('local function _stillNeeds(', 'local function _popIfNoLongerNeeded(') +
     'return _stillNeeds\nend\n');
 
+// Purchase planning (tests/purchase_plan_spec.lua): Valve recipes, every hero file, and the real
+// dedupe / queue / recipe-hold functions of the purchase loop.
+const valveItems = JSON.parse(read('tests/valve/recipes.json'));
+const allHeroes = fs.readdirSync('bots/BotLib').map(f => f.match(/^hero_(.+)\.lua$/))
+    .filter(m => m && m[1] !== 'lone_druid_bear').map(m => m[1]).sort();
+fs.writeFileSync('.test-tools/purchase-plan-context.lua',
+    'return ' + toLua({recipes: valveItems.recipes, costs: valveItems.costs, heroes: allHeroes}) + '\n');
+fs.writeFileSync('.test-tools/purchase-plan-hooks.lua',
+    'return function(bot, BotBuild, Utils, Item, LoneDruidItems, print)\n' +
+    'local botName, botCourierValue, botStashValue = "npc_dota_hero_sim", 0, 0\n' +
+    purchaseSection('local function _countOwnedEverywhere(', 'local function _antiSpamPurchase(') +
+    purchaseSection('local function _resetCurrentTarget(', 'local function GeneralPurchase(') +
+    'return {stillNeeds=_stillNeeds, pop=_popIfNoLongerNeeded, queue=_queueComponents, recipeWaits=_recipeWaitsForParts,\n' +
+    '    transit=function(courier, stash) botCourierValue, botStashValue = courier, stash end}\nend\n');
+
 // 4. Run the Lua suites under fengari. fengari exits 0 even when a script errors, so every
 // suite must print its success marker.
 const fengari = path.resolve('.test-tools/node_modules/fengari-node-cli/src/lua-cli.js');
@@ -125,6 +140,7 @@ run(['tests/ancient_apparition_combo_spec.lua'], 'Ancient Apparition combo scena
 run(['tests/invoker_skill_spec.lua'], 'Invoker skill order scenarios passed');
 run(['tests/invoker_meteor_spec.lua'], 'Invoker Meteor Hammer scenarios passed');
 run(['tests/lone_druid_items_spec.lua'], 'Lone Druid ownership scenarios passed');
+run(['tests/purchase_plan_spec.lua'], 'Purchase plan scenarios passed');
 // Legacy explicit orb lists, when present, must retain eight points in each orb.
 for (const [, body] of read('bots/BotLib/hero_invoker.lua').matchAll(/^\s*\{([\d,]+)\},?\s*--/gm)) {
     const n = [0, 0, 0];
@@ -207,7 +223,7 @@ local bot={GetUnitName=function() return 'npc_dota_hero_alchemist' end,
     HasScepter=function() return true end, FindItemSlot=function(_,n) return inventory[n] or -1 end}
 function GetBot() return bot end
 local tDefineItemRealName={}
-local Item={IsTopItem=function() return true end,GetItemCount=function() return 0 end,
+local Item={IsTopItem=function() return true end,GetItemCount=function() return 0 end,GetItemCountInSolt=function() return 0 end,
     item_ultimate_scepter={'item_point_booster','item_ogre_axe','item_blade_of_alacrity','item_staff_of_wizardry'}}
 Item.IsItemInHero=function(name) return Item.IsItemInTargetHero(name,bot) end
 ${itemLibrary.slice(itemStart, itemEnd)}

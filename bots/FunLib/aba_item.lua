@@ -1181,37 +1181,45 @@ function Item.IsItemInTargetHero( sItemName, bot )
 	return nItemSolt >= 0 and ( nItemSolt <= 8 or Item.IsTopItem( sItemName ) )
 end
 
---获取物品当前不重复基础构造
+-- Purchasable components still missing for the items in sItemList, in purchase order (a recipe
+-- after its parts). An owned item in the list is skipped. Below it, each owned copy (slots 0-14)
+-- of a component or intermediate item covers one use: one Iron Branch covers one of the two a
+-- Magic Wand needs. Items already built into another item are not in a slot and never count, so
+-- a Sange inside Sange and Yasha does not cover the Sange of another item.
+-- Also returns the owned copies used that way: claimed + missing is what the items need of a name.
 function Item.GetBasicItems( sItemList )
 
 	local bot = GetBot()
-	local tBasicItem = {}
+	local tBasicItem, tClaimed, tOwned = {}, {}, {}
 
-	for i, v in pairs( sItemList )
-	do
-		local bRepeatedItem = Item.IsItemInHero( v )
-		if bRepeatedItem == false
-			or v == bot.sLastRepeatItem
+	local function Expand( sItemName )
+		if tOwned[sItemName] == nil then tOwned[sItemName] = Item.GetItemCountInSolt( bot, sItemName, 0, 14 ) end
+		if tOwned[sItemName] > 0
 		then
-			if Item[v] ~= nil	
-			then		
-				for _, w in pairs( Item.GetBasicItems( Item[v] ) )
-				do
-					tBasicItem[#tBasicItem + 1] = w
-				end
-			elseif Item[v] == nil
-				then
-					tBasicItem[#tBasicItem + 1] = v
-			end
+			tOwned[sItemName] = tOwned[sItemName] - 1
+			tClaimed[sItemName] = ( tClaimed[sItemName] or 0 ) + 1
+		elseif Item[sItemName] ~= nil
+		then
+			for _, sPart in ipairs( Item[sItemName] ) do Expand( sPart ) end
 		else
-			if Item.GetItemCount( GetBot(), v ) <= 1 --能修复"两个"系列重复的问题
+			tBasicItem[#tBasicItem + 1] = sItemName
+		end
+	end
+
+	for _, sItemName in ipairs( sItemList )
+	do
+		if not Item.IsItemInHero( sItemName )
+		then
+			if Item[sItemName] ~= nil
 			then
-				bot.sLastRepeatItem = v	--能修复单重重复的问题
+				for _, sPart in ipairs( Item[sItemName] ) do Expand( sPart ) end
+			else
+				tBasicItem[#tBasicItem + 1] = sItemName
 			end
 		end
 	end
 
-	return tBasicItem
+	return tBasicItem, tClaimed
 
 end
 
@@ -1551,85 +1559,6 @@ function Item.GetRoleItemsBuyList( bot )
 	-- end
 	return 'pos_'..tostring(Role.GetPosition(bot))
 end
-
-function Item.HasTargetItemCompositByItems(bot, items)
-	local purchased = {}
-	for i = 0, 8
-	do
-		local item = bot:GetItemInSlot( i )
-		if item ~= nil
-		then
-			local basicItems = Item.GetBasicItems( {item:GetName()} )
-			local intersection, built = Item.GetIntersection(items, basicItems)
-			if built then
-				purchased = Item.MergeLists(purchased, intersection)
-			end
-		end
-	end
-	return purchased
-end
-
-function Item.GetReducedPurchaseList(bot, items)
-	local purchasedList = Item.HasTargetItemCompositByItems(bot, items)
-	return Item.RemoveIntersectedItems(items, purchasedList)
-end
-
--- returns: interection of t1 and t2, and whether t2 is in t1
-function Item.GetIntersection(list1, list2)
-    -- Create a lookup table for quick membership testing in list1
-    local set1 = {}
-    for _, value in ipairs(list1) do
-        set1[value] = true
-    end
-
-    local intersection = {}
-    local containsAll = true
-
-    -- Check each element in list2: add to intersection if in list1,
-    -- and determine if list1 contains every element from list2.
-    for _, value in ipairs(list2) do
-        if set1[value] then
-            table.insert(intersection, value)
-        else
-            containsAll = false
-        end
-    end
-
-    return intersection, containsAll
-end
-
-function Item.MergeLists(list1, list2)
-    local merged = {}
-    -- Append elements from the first list
-    for _, value in ipairs(list1) do
-        table.insert(merged, value)
-    end
-    -- Append elements from the second list
-    for _, value in ipairs(list2) do
-        table.insert(merged, value)
-    end
-    return merged
-end
-
--- remove l2 from l1
-function Item.RemoveIntersectedItems(list1, list2)
-    -- Build a lookup table for elements in list2
-    local set2 = {}
-    for _, value in ipairs(list2) do
-        set2[value] = true
-    end
-
-    local result = {}
-    -- Add elements from list1 only if they are not in list2
-    for _, value in ipairs(list1) do
-        if not set2[value] then
-            table.insert(result, value)
-        end
-    end
-
-    return result
-end
-
 
 function Item.GetItemWardSolt()
 

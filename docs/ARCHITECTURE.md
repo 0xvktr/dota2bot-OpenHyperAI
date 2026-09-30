@@ -258,9 +258,18 @@ Item['item_bfury'] = GetItemComponents('item_bfury')[1]
 1. Loads hero's `sBuyList` from the BotLib file
 2. Processes in reverse order (highest priority first)
 3. Checks if the bot already owns the item
-4. Breaks items into components via the component definitions
-5. Purchases components from the correct shop (main/secret/side)
+4. Breaks items into components via the component definitions (`Item.GetBasicItems`). Each owned copy
+   in slots 0-14 covers one use of a component or intermediate item: one Iron Branch covers one of the
+   two a Magic Wand needs. Items built into another item never count (the Sange inside Sange and Yasha)
+5. Purchases components from the correct shop (main/secret/side). A recipe waits until every other part
+   of its item is owned; a part lost on the way is planned and bought again, and an item that still
+   cannot assemble is skipped after 3 minutes so it cannot freeze the list. Plans that include a
+   recipe are logged as `[Purchase] <hero> plans <item>: ...`
 6. Auto-sells items from `sSellList` when inventory is full
+
+`tests/purchase_plan_spec.lua` (part of `node tests/run-builds.cjs`) runs every hero's buy list for
+every role through this planner with Valve's recipes (`tests/valve/recipes.json`) and fails when an
+item never assembles or a recipe is left over.
 
 ### Self-Defined Items ("Outfits")
 
