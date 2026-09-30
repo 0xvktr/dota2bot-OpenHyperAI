@@ -7,169 +7,80 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						{--pos2
-                            ['t25'] = {10, 0},
-                            ['t20'] = {0, 10},
-                            ['t15'] = {10, 0},
-                            ['t10'] = {0, 10},
-                        },--pos3
-                        {
-                            ['t25'] = {0, 10},
-                            ['t20'] = {0, 10},
-                            ['t15'] = {0, 10},
-                            ['t10'] = {10, 0},
-                        },
-                        {--pos4,5
-                            ['t25'] = {10, 0},
-                            ['t20'] = {10, 0},
-                            ['t15'] = {10, 0},
-                            ['t10'] = {0, 10},
-                        }
+-- D2PT 7.41f: all roles; carry retained as a reviewed small-share exception.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/pudge')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+local support = sRole == 'pos_4' or sRole == 'pos_5'
+-- [1] Hook, [2] Rot, [3] Meat Shield, [6] Dismember.
+local nAbilityBuildList = {1,2,2,3,2,6,2,3,3,3,6,1,1,1,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- Armor
+    t15=support and {10,0} or {0,10}, -- Hook damage / spell lifesteal
+    t20={0,10}, -- Dismember duration
+    t25={0,10}, -- Dismember damage/heal
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+local offlaneItems = {
+    'item_double_gauntlets','item_double_branches','item_magic_stick','item_quelling_blade',
+    'item_bracer','item_bracer','item_magic_wand','item_phase_boots',
+    'item_blink','item_ultimate_scepter','item_black_king_bar',
+    'item_shivas_guard','item_heart','item_overwhelming_blink',
+    -- Bot policy: Hook Shard, consumed Scepter and cooldown reduction.
+    'item_aghanims_shard','item_ultimate_scepter_2','item_octarine_core',
 }
-
-local tAllAbilityBuildList = {
-						{1,2,2,3,1,6,1,1,2,2,6,3,3,3,6},--pos2
-                        {1,2,2,3,2,6,2,3,3,3,6,1,1,1,6},--pos3
-                        {1,2,2,3,1,6,1,1,2,2,3,6,3,3,6},--pos4,5
+local carryItems = {
+    'item_double_gauntlets','item_double_branches','item_magic_stick',
+    'item_bracer','item_bracer','item_magic_wand','item_phase_boots',
+    'item_ultimate_scepter','item_blink','item_black_king_bar','item_shivas_guard',
+    -- Bot policy: durable late continuation and natural upgrades.
+    'item_heart','item_aghanims_shard','item_ultimate_scepter_2','item_octarine_core','item_overwhelming_blink',
 }
-
-local nAbilityBuildList = tAllAbilityBuildList[2]
-if sRole == 'pos_2' then nAbilityBuildList = tAllAbilityBuildList[1] end
-if sRole == 'pos_3' then nAbilityBuildList = tAllAbilityBuildList[2] end
-if sRole == 'pos_4' then nAbilityBuildList = tAllAbilityBuildList[3] end
-if sRole == 'pos_5' then nAbilityBuildList = tAllAbilityBuildList[3] end
-
-local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[2])
-if sRole == 'pos_2' then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[1]) end
-if sRole == 'pos_3' then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[2]) end
-if sRole == 'pos_4' then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[3]) end
-if sRole == 'pos_5' then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[3]) end
-
-local sUtility = {"item_pipe", "item_lotus_orb", "item_crimson_guard"}
-local nUtility = sUtility[RandomInt(1, #sUtility)]
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_2'] = {
-    "item_tango",
-    "item_double_branches",
-
-    "item_bracer",
-    "item_bottle",
-    "item_magic_wand",
-    "item_boots",
-    "item_kaya_and_sange",--
-    "item_ultimate_scepter",
-    "item_pipe",--
-    "item_travel_boots",
-    "item_bloodstone",--
-    "item_black_king_bar",--
-    "item_shivas_guard",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-    "item_travel_boots_2",--
-    "item_aghanims_shard",
+local midItems = {
+    -- Observed ward omitted: core bots do not place wards.
+    'item_four_branches','item_tango','item_faerie_fire',
+    'item_bottle','item_magic_wand','item_phase_boots','item_blink','item_ultimate_scepter',
+    'item_black_king_bar','item_shivas_guard','item_heart',
+    -- Bot policy: Hook Shard, consumed Scepter and natural late upgrades.
+    'item_aghanims_shard','item_ultimate_scepter_2','item_octarine_core','item_overwhelming_blink',
 }
-
-sRoleItemsBuyList['pos_3'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_magic_stick",
-    "item_ring_of_protection",
-
-    "item_magic_wand",
-    "item_helm_of_iron_will",
-    "item_boots",
-    "item_phase_boots",
-    "item_veil_of_discord",
-    "item_pipe",--
-    "item_ultimate_scepter",
-    "item_blink",
-    "item_shivas_guard",--
-    nUtility,--
-    "item_black_king_bar",--
-    "item_travel_boots",
-    "item_overwhelming_blink",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-    "item_travel_boots_2",--
-    "item_aghanims_shard",
+local supportItems = {
+    'item_boots','item_blood_grenade','item_tranquil_boots','item_bracer','item_magic_wand',
+    'item_blink','item_ultimate_scepter','item_black_king_bar',
+    -- Bot policy: late tank/utility continuation and natural upgrades.
+    'item_shivas_guard','item_aghanims_shard','item_ultimate_scepter_2',
+    'item_octarine_core','item_lotus_orb','item_overwhelming_blink','item_boots_of_bearing',
 }
-
--- [Improvement #10] Pos 4 item build: rod_of_atos early for root -> hook setup
-sRoleItemsBuyList['pos_4'] = {
-	'item_priest_outfit',
-	"item_tranquil_boots",
-	"item_magic_wand",
-	"item_rod_of_atos",--
-	"item_blink",--
-	"item_aghanims_shard",
-	"item_boots_of_bearing",--
-	"item_ultimate_scepter",
-	"item_shivas_guard",--
-	"item_lotus_orb",--
-	"item_ultimate_scepter_2",
-    "item_moon_shard",
+local hardSupportItems = {
+    'item_boots','item_blood_grenade','item_tranquil_boots','item_magic_wand','item_blink',
+    'item_glimmer_cape','item_aether_lens','item_aghanims_shard',
+    -- Bot policy: channel protection, consumed Scepter and supportive late upgrades.
+    'item_black_king_bar','item_ultimate_scepter','item_ultimate_scepter_2',
+    'item_lotus_orb','item_overwhelming_blink','item_boots_of_bearing',
 }
+local roleItems = {pos_1=carryItems,pos_2=midItems,pos_3=offlaneItems,pos_4=supportItems,pos_5=hardSupportItems}
+X.sBuyList = roleItems[sRole] or offlaneItems
+if support then
+    X.sSellList = {
+        'item_ultimate_scepter','item_magic_wand',
+        'item_shivas_guard','item_bracer',
+    }
+else
+    X.sSellList = {
+        'item_ultimate_scepter',sRole == 'pos_2' and 'item_bottle' or 'item_quelling_blade',
+        'item_blink','item_bracer',
+        'item_black_king_bar','item_bracer',
+        'item_shivas_guard','item_magic_wand',
+    }
+end
 
-sRoleItemsBuyList['pos_5'] = {
-    "item_tango",
-    "item_flask",
-    "item_enchanted_mango",
-    "item_wind_lace",
-    "item_blood_grenade",
-
-    "item_magic_wand",
-    "item_arcane_boots",
-    "item_pipe",--
-    "item_blink",
-    "item_aether_lens",--
-    "item_force_staff",
-    "item_lotus_orb",--
-	"item_gungir",--
-    "item_overwhelming_blink",--
-    "item_wind_waker",--
-    "item_aghanims_shard",
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_1'] = {
-    "item_tango",
-    "item_double_branches",
-
-    "item_bracer",
-    "item_magic_wand",
-    "item_bracer",
-    "item_boots",
-    "item_kaya_and_sange",--
-    "item_ultimate_scepter",
-    "item_pipe",--
-    "item_travel_boots",
-    "item_bloodstone",--
-    "item_black_king_bar",--
-    "item_shivas_guard",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-    "item_travel_boots_2",--
-    "item_aghanims_shard",
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-}
-
-if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_mid' }, {} end
-
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X.sBuyList, X.sSellList = {'PvN_mid'}, {} end
+nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList = J.SetUserHeroInit(nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList)
+X.sSkillList = J.Skill.GetSkillList(sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList)
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

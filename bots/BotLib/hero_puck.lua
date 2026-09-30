@@ -7,93 +7,39 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {0, 10},
-						['t20'] = {0, 10},
-						['t15'] = {10, 0},
-						['t10'] = {0, 10},
+-- D2PT 7.41f: mid only; forced other roles use mid.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/puck')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Orb, [2] Rift, [3] Phase Shift, [6] Dream Coil.
+local nAbilityBuildList = {1,3,1,2,1,6,1,2,2,2,6,3,3,3,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- Orb damage
+    t15={10,0}, -- Rift damage
+    t20={0,10}, -- Rift cooldown
+    t25={10,0}, -- Rift radius/distance
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    -- Observed ward omitted: core bots do not place wards.
+    'item_four_branches','item_tango','item_faerie_fire',
+    'item_bottle','item_magic_wand','item_power_treads','item_witch_blade','item_blink',
+    'item_aghanims_shard','item_devastator','item_sphere','item_octarine_core',
+    -- Bot policy: consume Scepter before late Shiva; retain Treads within six slots.
+    'item_ultimate_scepter','item_ultimate_scepter_2','item_shivas_guard','item_overwhelming_blink',
+}
+X.sSellList = {
+    'item_sphere','item_bottle',
+    'item_octarine_core','item_magic_wand',
 }
 
-local tAllAbilityBuildList = {
-						{1,3,1,2,1,6,1,2,2,2,6,3,3,3,6},--pos2
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local nItemRand = RandomInt(1, 2) == 1 and "item_black_king_bar" or "item_sphere"
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_2'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_double_branches",
-    "item_faerie_fire",
-
-    "item_bottle",
-    "item_power_treads",
-    "item_magic_wand",
-    "item_witch_blade",
-    "item_cyclone",
-    "item_blink",
-    "item_aghanims_shard",
-    "item_devastator",--
-    "item_ultimate_scepter",
-    "item_mjollnir",--
-    nItemRand,--
-    "item_overwhelming_blink",--
-    "item_travel_boots",
-    "item_ultimate_scepter_2",
-    "item_wind_waker",--
-    "item_travel_boots_2",--
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_1'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_double_branches",
-
-    "item_power_treads",
-    "item_magic_wand",
-    "item_witch_blade",
-    "item_cyclone",
-    "item_blink",
-    "item_aghanims_shard",
-    "item_devastator",--
-    "item_ultimate_scepter",
-    "item_mjollnir",--
-    nItemRand,--
-    "item_overwhelming_blink",--
-    "item_travel_boots",
-    "item_ultimate_scepter_2",
-    "item_wind_waker",--
-    "item_travel_boots_2",--
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-}
-
-if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_mid' }, {} end
-
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X.sBuyList, X.sSellList = {'PvN_mid'}, {} end
+nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList = J.SetUserHeroInit(nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList)
+X.sSkillList = J.Skill.GetSkillList(sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList)
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
@@ -542,7 +488,7 @@ function X.ConsiderPhaseShift()
         return BOT_ACTION_DESIRE_NONE
     end
 
-	local nDuration = PhaseShift:GetSpecialValueInt('duration')
+	local nDuration = PhaseShift:GetSpecialValueFloat('duration')
 
     if J.IsStunProjectileIncoming(bot, 600)
     then
@@ -791,7 +737,7 @@ function X.ConsiderPhaseOrb()
     if CanDoPhaseOrb()
     then
         local nCastRange = J.GetProperCastRange(false, bot, IllusoryOrb:GetCastRange())
-        local nDuration = PhaseShift:GetSpecialValueInt('duration')
+        local nDuration = PhaseShift:GetSpecialValueFloat('duration')
 
         local realEnemyCount = J.GetEnemiesNearLoc(bot:GetLocation(), 800)
         local nInRangeAlly = J.GetNearbyHeroes(bot,800, false, BOT_MODE_NONE)

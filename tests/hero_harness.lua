@@ -10,6 +10,8 @@ local state = { role = 'pos_1', custom = false, unit = 'npc_dota_hero_abaddon' }
 
 function GetScriptDirectory() return 'bots' end
 function GameTime() return 0 end
+function DotaTime() return 0 end
+function Vector(x, y, z) return { x=x, y=y, z=z or 0 } end
 
 local bot = {}
 function bot.GetAbilityByName() return {} end
@@ -29,6 +31,12 @@ local ABILITY_LAYOUTS = {
     -- Jingu and Attribute Shift occupy index 4; index 3 is linked/hidden.
     npc_dota_hero_monkey_king = { 'A1', 'A2', 'A4', 'A3', 'A5', 'A6' },
     npc_dota_hero_morphling = { 'A1', 'A2', 'A4', 'A3', 'A5', 'A6' },
+    -- Shadowraze's linked casts occupy slots 2/3; Feast and Presence are the other basics.
+    npc_dota_hero_nevermore = { 'A1', 'A4', 'A5', 'A2', 'A3', 'A6' },
+    -- Blur is unlearnable; Immaterial is the third leveled basic.
+    npc_dota_hero_phantom_assassin = { 'A1', 'A2', 'A4', 'A5', 'A3', 'A6' },
+    -- Stance and linked melee axes precede Fervor and the leveled Berserker's Rage passive.
+    npc_dota_hero_troll_warlord = { 'A4', 'A1', 'A5', 'A2', 'A3', 'A6' },
 }
 H.abilities = DEFAULT_ABILITIES
 H.talents = { 'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8' }
@@ -55,7 +63,8 @@ H.J = J
 package.loaded['bots/FunLib/jmz_func'] = J
 
 dofile = function(path)
-    if path == 'bots/FunLib/aba_minion' or path == 'bots/FunLib/morphling_utility' then return {} end
+    if path == 'bots/FunLib/aba_minion' or path == 'bots/FunLib/morphling_utility'
+        or path == 'bots/FunLib/techies_utility' then return {} end
     return realDofile(path)
 end
 

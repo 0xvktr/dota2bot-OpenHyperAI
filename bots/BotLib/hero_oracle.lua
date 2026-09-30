@@ -16,98 +16,41 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {10, 0},
-						['t20'] = {0, 10},
-						['t15'] = {10, 0},
-						['t10'] = {10, 0},
+-- Updated to 7.41f from D2PT: pos 5/4; forced cores use pos 5 without wards.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/oracle')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Fortune's End, [2] Fate's Edict, [3] Purifying Flames, [6] False Promise.
+local nAbilityBuildList = {1,3,3,2,3,6,3,1,1,1,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, t15={0,10}, t20={0,10}, t25={10,0},
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {'item_double_branches','item_magic_stick','item_tango','item_faerie_fire','item_blood_grenade'}
+if sRole == 'pos_4' or sRole == 'pos_5' then table.insert(X.sBuyList,'item_ward_sentry') end
+local progression = sRole == 'pos_4' and {
+    'item_magic_wand','item_arcane_boots','item_blink','item_aether_lens',
+    'item_holy_locket','item_aghanims_shard',
+    -- Bot policy: protection and mobility upgrades within six slots.
+    'item_glimmer_cape','item_force_staff','item_arcane_blink','item_moon_shard',
+} or {
+    'item_magic_wand','item_arcane_boots','item_blink','item_glimmer_cape',
+    'item_aether_lens','item_aghanims_shard',
+    -- Bot policy: consume Scepter before the final six-slot support inventory.
+    'item_force_staff','item_ultimate_scepter','item_ultimate_scepter_2',
+    'item_arcane_blink','item_sheepstick','item_moon_shard',
 }
-
-local tAllAbilityBuildList = {
-						{1,3,3,2,3,6,3,2,2,2,6,1,1,1,6},
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_crystal_maiden_outfit",
---	"item_glimmer_cape",
-    "item_kaya",
-    "item_dagon_2",
-	"item_rod_of_atos",
-	"item_glimmer_cape",
-	"item_kaya_and_sange",--
-	"item_force_staff",
-	"item_dagon_5",--
-	"item_hurricane_pike",--
-	"item_aghanims_shard",
-	"item_shivas_guard",--
-	-- "item_sheepstick",--
-	"item_gungir",--
-	"item_moon_shard",
-	"item_ultimate_scepter",
-	"item_ultimate_scepter_2",
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_4'] = {
-	"item_priest_outfit",
-	"item_mekansm",
-	"item_glimmer_cape",
-	"item_aghanims_shard",
-	"item_guardian_greaves",
-	"item_spirit_vessel",
---	"item_wraith_pact",
-	"item_ultimate_scepter",
-	"item_shivas_guard",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-	"item_sheepstick",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-    "item_blood_grenade",
-	"item_mage_outfit",
-	"item_ancient_janggo",
-	"item_glimmer_cape",
-	"item_boots_of_bearing",
-	"item_pipe",
-    "item_ultimate_scepter",
-	"item_cyclone",
---	"item_wraith_pact",
-	"item_shivas_guard",
-	"item_sheepstick",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-	"item_shivas_guard",--
-	"item_glimmer_cape",--
-}
-
-if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_mage' }, {} end
-
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
-X['bDeafaultAbility'] = true
-X['bDeafaultItem'] = true
+for _,item in ipairs(progression) do table.insert(X.sBuyList,item) end
+X.sSellList = sRole == 'pos_4' and {'item_glimmer_cape','item_magic_wand'}
+    or {'item_force_staff','item_magic_wand'}
+if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X.sBuyList, X.sSellList = {'PvN_mage'}, {} end
+nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList = J.SetUserHeroInit(nAbilityBuildList,nTalentBuildList,X.sBuyList,X.sSellList)
+X.sSkillList = J.Skill.GetSkillList(sAbilityList,nAbilityBuildList,sTalentList,nTalentBuildList)
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
+X.bDeafaultAbility = false
+X.bDeafaultItem = false
 
 function X.MinionThink(hMinionUnit)
 
@@ -118,34 +61,7 @@ function X.MinionThink(hMinionUnit)
 
 end
 
---[[
 
-npc_dota_hero_oracle
-
-"Ability1"		"oracle_fortunes_end"
-"Ability2"		"oracle_fates_edict"
-"Ability3"		"oracle_purifying_flames"
-"Ability4"		"oracle_rain_of_destiny"
-"Ability5"		"generic_hidden"
-"Ability6"		"oracle_false_promise"
-"Ability10"		"special_bonus_unique_oracle_2"
-"Ability11"		"special_bonus_intelligence_12"
-"Ability12"		"special_bonus_unique_oracle_9"
-"Ability13"		"special_bonus_unique_oracle_5"
-"Ability14"		"special_bonus_unique_oracle_6"
-"Ability15"		"special_bonus_unique_oracle_8"
-"Ability16"		"special_bonus_unique_oracle_7"
-"Ability17"		"special_bonus_unique_oracle"
-
-modifier_oracle_fortunes_end_channel_target
-modifier_oracle_fortunes_end_purge
-modifier_oracle_fates_edict
-modifier_oracle_purifying_flames
-modifier_oracle_false_promise_timer
-modifier_oracle_false_promise_invis
-modifier_oracle_false_promise
-
---]]
 
 local abilityQ = bot:GetAbilityByName( sAbilityList[1] )
 local abilityW = bot:GetAbilityByName( sAbilityList[2] )
@@ -575,7 +491,6 @@ end
 
 return X
 -- dota2jmz@163.com QQ:2462331592..
-
 
 
 

@@ -7,112 +7,38 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {--pos4,5
-                        ['t25'] = {10, 0},
-                        ['t20'] = {0, 10},
-                        ['t15'] = {0, 10},
-                        ['t10'] = {10, 0},
+-- Updated to 7.41f from D2PT: support/hard support; forced other roles use hard support.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/ringmaster')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Tame the Beasts, [2] Escape Act, [3] Impalement Arts, [6] Wheel of Wonder.
+local nAbilityBuildList = {3,1,1,2,1,6,1,3,3,3,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- +75 Tame the Beasts radius
+    t15={10,0}, -- Tame the Beasts grants debuff immunity while channeling
+    t20={10,0}, -- +75/+300 Tame the Beasts damage
+    t25={10,0}, -- Escape Act strong dispel and flying movement
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+-- Bot policy: Sentry for the ambiguous pos4 ward bundle; both observed openings otherwise match.
+X.sBuyList = {
+    'item_double_branches','item_magic_stick','item_ward_sentry','item_tango','item_faerie_fire','item_blood_grenade',
+    'item_magic_wand','item_arcane_boots','item_glimmer_cape','item_blink','item_cyclone','item_aether_lens',
+    'item_ultimate_scepter','item_aghanims_shard',
+    -- Bot policy: consume Scepter, upgrade Eul's and add late control within six slots.
+    'item_ultimate_scepter_2','item_wind_waker','item_sheepstick',
 }
-
-local tAllAbilityBuildList = {
-						{3,1,3,2,3,6,3,1,1,1,6,2,2,2,6},--pos4,5
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild(tAllAbilityBuildList)
-
-local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList)
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_4'] = {
-	"item_enchanted_mango",
-	"item_blood_grenade",
-	"item_priest_outfit",
-	"item_mekansm",
-	"item_glimmer_cape",--
-    "item_rod_of_atos",
-	"item_guardian_greaves",--
-    "item_gungir",--
-	"item_shivas_guard",--
-	"item_aghanims_shard",
-	"item_ultimate_scepter",
-	"item_ultimate_scepter_2",
-	"item_sheepstick",--
-	"item_moon_shard",
-	"item_octarine_core",--
-}
-
-sRoleItemsBuyList['pos_5'] = {
-	"item_blood_grenade",
-	'item_mage_outfit',
-	'item_ancient_janggo',
-	'item_glimmer_cape',
-	'item_boots_of_bearing',
-	'item_pipe',
-	"item_rod_of_atos",
-    "item_gungir",--
-	"item_shivas_guard",
-	'item_cyclone',
-	'item_sheepstick',
-	"item_wind_waker",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_3'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_blight_stone",
-
-    "item_tranquil_boots",
-    "item_magic_wand",
-    "item_maelstrom",
-    "item_force_staff",
-    "item_gungir",--
-    "item_boots_of_bearing",--
-	"item_shivas_guard",--
-    "item_ultimate_scepter",
-    "item_sheepstick",--
-    "item_hurricane_pike",--
-    "item_aghanims_shard",
-    "item_ultimate_scepter_2",
-    "item_greater_crit",--
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_crystal_maiden_outfit",
-	"item_rod_of_atos",
-	"item_maelstrom",
-    "item_aether_lens",
-	"item_gungir",--
-	"item_black_king_bar",--
-	"item_travel_boots",
-	"item_orchid",
-	"item_bloodthorn",--
-	"item_ultimate_scepter",
-	"item_moon_shard",
-    "item_sheepstick",--
-	"item_travel_boots_2",--
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-}
+X.sSellList = {'item_aether_lens','item_magic_wand'}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Fourth Impalement Arts point at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

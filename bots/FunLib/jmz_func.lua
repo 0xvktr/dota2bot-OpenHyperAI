@@ -4362,7 +4362,7 @@ function J.ConsiderForMkbDisassembleMask( bot )
 		if not bot.maskDismantleDone then return end
 
 		local lifesteal = bot:FindItemSlot( "item_lifesteal" )
-		local staff = bot:FindItemSlot( "item_quarterstaff" )
+		local sword = bot:FindItemSlot( "item_broadsword" )
 
 		if lifesteal >= 0
 			and not bot.lifestealUnlockDone
@@ -4375,11 +4375,11 @@ function J.ConsiderForMkbDisassembleMask( bot )
 
 		local satanic = bot:FindItemSlot( "item_satanic" )
 
-		if satanic >= 0 and staff >= 0 and not bot.staffUnlockDone
+		if satanic >= 0 and sword >= 0 and not bot.staffUnlockDone
 		then
 			if bDebugMode then print( bot:GetUnitName().." staffUnlockDone" ) end
 			bot.staffUnlockDone = true
-			bot:ActionImmediate_SetItemCombineLock( bot:GetItemInSlot( staff ), false )
+			bot:ActionImmediate_SetItemCombineLock( bot:GetItemInSlot( sword ), false )
 			return
 		end
 

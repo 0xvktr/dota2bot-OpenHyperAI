@@ -16,77 +16,46 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {0, 10},
-						['t20'] = {0, 10},
-						['t15'] = {0, 10},
-						['t10'] = {0, 10},
+-- D2PT 7.41f: mid/offlane; forced other roles use offlane.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/slardar')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Guardian Sprint, [2] Slithereen Crush, [3] Bash of the Deep, [6] Corrosive Haze.
+local nAbilityBuildList = {2,3,2,1,2,6,2,1,1,1,6,3,3,3,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- +2s Guardian Sprint duration
+    t15={10,0}, -- -3 Corrosive Haze armor
+    t20={0,10}, -- +125 Slithereen Crush damage
+    t25={10,0}, -- Corrosive Haze undispellable
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+local mid = sRole == 'pos_2'
+X.sBuyList = mid and {
+    'item_double_branches','item_double_branches','item_tango','item_faerie_fire',
+    'item_bottle','item_magic_wand','item_power_treads','item_blink','item_aghanims_shard','item_black_king_bar',
+    'item_ultimate_scepter','item_assault',
+    -- Bot policy: consume Scepter; late dispel, pull and Blink upgrade preserve six slots.
+    'item_ultimate_scepter_2','item_nullifier','item_echo_sabre','item_harpoon','item_overwhelming_blink',
+} or {
+    'item_quelling_blade','item_gauntlets','item_double_branches','item_circlet','item_tango',
+    'item_bracer','item_magic_wand','item_power_treads','item_soul_ring','item_blink',
+    'item_aghanims_shard','item_black_king_bar','item_ultimate_scepter','item_nullifier',
+    -- Bot policy: consume Scepter before late armor/pull; upgrade Blink within six slots.
+    'item_ultimate_scepter_2','item_assault','item_echo_sabre','item_harpoon','item_overwhelming_blink',
 }
-
-local tAllAbilityBuildList = {
-						{2,3,3,1,3,6,3,1,1,1,6,2,2,2,6},--pos3
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_3'] = {
-	"item_tank_outfit",
-	"item_echo_sabre",
-	"item_crimson_guard",--
-	"item_ultimate_scepter",
-	"item_heavens_halberd",--
-	"item_assault",--
-	"item_travel_boots",
-	"item_aghanims_shard",
-	"item_satanic",--
-	"item_ultimate_scepter_2",
-	"item_moon_shard",
-	"item_heart",--
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_bristleback_outfit",
-	"item_bracer",
-	"item_echo_sabre",
-	"item_ultimate_scepter",
-	"item_blink",
-	"item_black_king_bar",--
-	"item_harpoon",--
-	"item_travel_boots",
-	"item_aghanims_shard",
-	"item_orchid",
-	"item_bloodthorn",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-	"item_heart",--
-	"item_overwhelming_blink",--
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_3']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-	"item_power_treads",
-	"item_quelling_blade",
-}
-
+X.sSellList = {'item_blink','item_bracer','item_black_king_bar','item_magic_wand',
+    'item_ultimate_scepter',mid and 'item_bottle' or 'item_soul_ring','item_blink','item_quelling_blade'}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_tank' }, {"item_power_treads", 'item_quelling_blade'} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

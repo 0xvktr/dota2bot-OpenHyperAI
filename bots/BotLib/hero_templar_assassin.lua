@@ -16,70 +16,45 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-							['t25'] = {10, 0},
-							['t20'] = {0, 10},
-							['t15'] = {10, 0},
-							['t10'] = {10, 0},
+-- D2PT 7.41f: carry/mid; forced other roles use carry.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/templar_assassin')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+local mid = sRole == 'pos_2'
+-- [1] Refraction, [2] Meld, [3] Psi Blades, [6] Psionic Trap.
+local nAbilityBuildList = {2,3,2,3,2,6,2,3,3,1,6,1,1,1,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10=mid and {10,0} or {0,10}, -- Trap slow / Meld debuff duration
+    t15={0,10}, -- +225 Meld attack range
+    t20={10,0}, -- +4 Meld armor reduction
+    t25={0,10}, -- 0.8s Meld hit bash
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = mid and {
+    'item_double_branches','item_double_branches','item_tango','item_faerie_fire',
+    'item_bottle','item_magic_wand','item_power_treads','item_desolator','item_blink','item_dragon_lance',
+    'item_lesser_crit','item_hurricane_pike','item_greater_crit','item_aghanims_shard','item_black_king_bar',
+    -- Bot policy: mobility upgrade; avoid a seventh permanent damage item.
+    'item_swift_blink',
+} or {
+    'item_magic_wand','item_faerie_fire','item_faerie_fire',
+    'item_power_treads','item_falcon_blade','item_desolator','item_dragon_lance','item_blink',
+    'item_lesser_crit','item_hurricane_pike','item_greater_crit','item_black_king_bar','item_aghanims_shard',
+    -- Bot policy: mobility upgrade within six persistent slots.
+    'item_swift_blink',
 }
-
-local tAllAbilityBuildList = {
-							{2,3,1,1,1,6,1,2,2,2,3,6,3,3,6},--pos1,2
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRandomItem_1 = RandomInt( 1, 9 ) > 6 and "item_sphere" or "item_black_king_bar"
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-
-	"item_tango",
-	"item_double_branches",
-	"item_circlet",
-	"item_circlet",
-	"item_quelling_blade",
-
-	"item_magic_wand",
-	"item_power_treads",
-	"item_dragon_lance",
-	"item_desolator",--
-	"item_blink",
-	"item_aghanims_shard",
-	"item_black_king_bar",--
-	"item_greater_crit",--
-    "item_force_staff",
-	"item_hurricane_pike",--
-	"item_swift_blink",--
-	"item_sheepstick",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-}
+X.sSellList = {'item_desolator','item_magic_wand','item_blink',mid and 'item_bottle' or 'item_falcon_blade'}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_TA' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

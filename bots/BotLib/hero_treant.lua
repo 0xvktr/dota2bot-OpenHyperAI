@@ -7,121 +7,45 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-                        ['t25'] = {0, 10},
-                        ['t20'] = {0, 10},
-                        ['t15'] = {10, 0},
-                        ['t10'] = {10, 0},
+-- D2PT 7.41f: both supports; forced cores use ward-free hard support.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/treant')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Nature's Grasp, [2] Leech Seed, [3] Living Armor, [6] Overgrowth.
+local nAbilityBuildList = {2,3,3,1,3,6,3,1,1,1,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- Living Armor duration
+    t15={10,0}, -- Nature's Grasp damage
+    t20={0,10}, -- Living Armor damage block
+    t25={10,0}, -- AoE Living Armor
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    -- Pos 4's ward dispenser is ambiguous; use the observed pos 5 sentry.
+    'item_boots','item_ward_sentry','item_blood_grenade',
+    'item_magic_wand','item_arcane_boots','item_blink','item_aghanims_shard',
+    -- Bot policy: observed utility and natural upgrades, within six slots.
+    'item_cyclone','item_force_staff','item_mekansm','item_guardian_greaves',
+    'item_ultimate_scepter','item_ultimate_scepter_2','item_refresher','item_wind_waker','item_lotus_orb',
+    'item_overwhelming_blink',
 }
-
-local tAllAbilityBuildList = {
-                        {2,1,2,1,2,6,2,1,1,3,6,3,3,3,6},--pos4,5
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild(tAllAbilityBuildList)
-
-local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList)
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_4'] = {
-    "item_double_tango",
-    "item_faerie_fire",
-    "item_wind_lace",
-
-    "item_arcane_boots",
-    "item_magic_wand",
-    "item_guardian_greaves",--
-    "item_blink",
-    "item_aghanims_shard",
-    "item_black_king_bar",--
-    "item_lotus_orb",--
-	"item_gungir",--
-    "item_wind_waker",--
-    -- "item_ultimate_scepter_2",
-    "item_ultimate_scepter",
-    "item_overwhelming_blink",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_enchanted_mango",
-    "item_blood_grenade",
-    "item_wind_lace",
-
-    "item_boots",
-    "item_ring_of_basilius",
-    "item_magic_wand",
-    "item_arcane_boots",
-    "item_pipe",--
-    "item_aghanims_shard",
-    "item_blink",
-    "item_glimmer_cape",--
-    "item_maelstrom",
-	"item_gungir",--
-    "item_sheepstick",--
-    "item_overwhelming_blink",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_3'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_enchanted_mango",
-    "item_wind_lace",
-
-    "item_boots",
-    "item_ring_of_basilius",
-    "item_magic_wand",
-    "item_arcane_boots",
-    "item_aghanims_shard",
-    "item_blink",
-    "item_glimmer_cape",--
-    "item_pipe",--
-    "item_maelstrom",
-	"item_gungir",--
-    "item_sheepstick",--
-    "item_overwhelming_blink",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_1'] = {
-    
-	"item_bristleback_outfit",
-	"item_aghanims_shard",
-	"item_blade_mail",--
-	"item_heavens_halberd",--
-	"item_lotus_orb",--
-	"item_black_king_bar",--
-	"item_travel_boots",
-	-- "item_abyssal_blade",
-	"item_heart",--
-	"item_moon_shard",
-	"item_travel_boots_2",--
-
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-}
+if sRole~='pos_4' and sRole~='pos_5' then
+    local items = {}
+    for _,item in ipairs(X.sBuyList) do if item~='item_ward_sentry' then items[#items+1]=item end end
+    X.sBuyList = items
+end
+X.sSellList = {'item_guardian_greaves','item_magic_wand'}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

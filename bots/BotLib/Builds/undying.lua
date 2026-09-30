@@ -1,0 +1,64 @@
+-- Skipped roles use pos 5; forced cores omit wards.
+return {
+    patch='7.41f', updated='2026-09-30', defaultRole='pos_5',
+    source='https://dota2protracker.com/hero/Undying?section=builds',
+    overviewWindow='last 8 days, 7000+', buildWindow='2026-09-16 to 2026-09-30', buildUpdated='2026-09-30',
+    roles={
+        pos_1={matches=9,winRate=33.3,skipped=true},
+        pos_2={matches=88,winRate=39.8,skipped=true},
+        pos_3={matches=1404,winRate=45.3,rating=18,weight=45,buildMatches=3001,buildWinRate=45.0,skillMatches=478,openingMatches=366,openingObserved=2999},
+        pos_4={matches=1026,winRate=46.1,rating=14,weight=40,buildMatches=1884,buildWinRate=46.0,skillMatches=181,openingMatches=156,openingObserved=1884},
+        pos_5={matches=3553,winRate=47.6,rating=47,weight=77,buildMatches=6869,buildWinRate=48.0,skillMatches=844,openingMatches=756,openingObserved=6868},
+    },
+    -- Current-tier picks only; sparse T5 uses reviewed suitability.
+    neutrals={
+        pos_3={tier5Profile='tank',
+            neutral={
+                [1]={item_chipped_vest=23.8,item_ash_legion_shield=12.0,item_occult_bracelet=12.0,item_dormant_curio=10.5,item_duelist_gloves=8.9,item_polliwog_charm=8.1,item_stonefeather_satchel=6.6},
+                [2]={item_searing_signet=20.0,item_mana_draught=18.2,item_poor_mans_shield=12.5,item_essence_ring=12.0,item_defiant_shell=8.1,item_pogo_stick=8.0,item_crippling_crossbow=7.4},
+                [3]={item_cloak_of_flames=31.4,item_gunpowder_gauntlets=11.3,item_stormcrafter=9.9,item_spellslinger=7.3,item_jidi_pollen_bag=6.5,item_unrelenting_eye=6.4},
+                [4]={item_conjurers_catalyst=27.0,item_prophets_pendulum=20.0,item_rattlecage=14.8,item_dandelion_amulet=7.9,item_enchanters_bauble=6.2,item_idol_of_screeauk=6.1},
+                [5]={item_fallen_sky=36.6,item_spider_legs=14.6,item_dezun_bloodrite=12.2,item_minotaur_horn=9.8,item_demonicon=7.3,item_harmonizer=4.9,item_heavy_blade=2.4},
+            },
+            enhancement={
+                [1]={item_enhancement_brawny=50.3,item_enhancement_quickened=30.2,item_enhancement_vital=18.3},
+                [2]={item_enhancement_brawny=42.4,item_enhancement_greedy=24.9,item_enhancement_quickened=16.9},
+                [3]={item_enhancement_brawny=37.4,item_enhancement_greedy=25.3,item_enhancement_tough=23.8},
+                [4]={item_enhancement_brawny=38.1,item_enhancement_quickened=28.2,item_enhancement_tough=22.2},
+                [5]={item_enhancement_evolved=39.0,item_enhancement_hulking=24.4,item_enhancement_fleetfooted=19.5},
+            },
+        },
+        pos_4={tier5Profile='support',
+            neutral={
+                [1]={item_chipped_vest=20.0,item_ash_legion_shield=17.6,item_dormant_curio=11.5,item_kobold_cup=11.1,item_polliwog_charm=9.3,item_occult_bracelet=6.8,item_stonefeather_satchel=6.8},
+                [2]={item_mana_draught=17.6,item_searing_signet=16.5,item_essence_ring=14.6,item_pogo_stick=9.9,item_poor_mans_shield=9.7,item_crippling_crossbow=6.0},
+                [3]={item_cloak_of_flames=24.1,item_spellslinger=8.7,item_stormcrafter=8.5,item_jidi_pollen_bag=8.2,item_psychic_headband=5.8},
+                [4]={item_conjurers_catalyst=22.6,item_prophets_pendulum=20.8,item_dandelion_amulet=14.0,item_rattlecage=12.8,item_idol_of_screeauk=5.8,item_enchanters_bauble=5.4},
+                [5]={item_fallen_sky=31.6,item_spider_legs=15.8,item_demonicon=15.8,item_minotaur_horn=10.5,item_heavy_blade=10.5,item_dezun_bloodrite=5.3},
+            },
+            enhancement={
+                [1]={item_enhancement_brawny=61.4,item_enhancement_quickened=32.1,item_enhancement_vital=6.3},
+                [2]={item_enhancement_greedy=59.7,item_enhancement_brawny=26.7,item_enhancement_quickened=9.4},
+                [3]={item_enhancement_greedy=61.4,item_enhancement_brawny=24.3,item_enhancement_quickened=7.3},
+                [4]={item_enhancement_brawny=46.8,item_enhancement_quickened=33.6,item_enhancement_tough=11.2},
+                [5]={item_enhancement_fleetfooted=31.6,item_enhancement_evolved=31.6,item_enhancement_hulking=31.6},
+            },
+        },
+        pos_5={tier5Profile='support',
+            neutral={
+                [1]={item_ash_legion_shield=19.1,item_chipped_vest=17.4,item_kobold_cup=11.9,item_polliwog_charm=11.3,item_dormant_curio=10.7,item_stonefeather_satchel=7.2,item_foragers_kit=6.7},
+                [2]={item_essence_ring=17.6,item_searing_signet=16.7,item_mana_draught=16.4,item_pogo_stick=13.0,item_poor_mans_shield=7.3,item_medallion_of_courage=6.5,item_crippling_crossbow=6.3},
+                [3]={item_cloak_of_flames=23.9,item_psychic_headband=8.9,item_jidi_pollen_bag=8.8,item_spellslinger=7.9,item_stormcrafter=7.2},
+                [4]={item_prophets_pendulum=21.1,item_conjurers_catalyst=19.4,item_rattlecage=14.5,item_dandelion_amulet=13.9,item_enchanters_bauble=7.4,item_idol_of_screeauk=6.7},
+                [5]={item_demonicon=29.4,item_fallen_sky=25.0,item_minotaur_horn=13.2,item_spider_legs=11.8,item_dezun_bloodrite=7.4},
+            },
+            enhancement={
+                [1]={item_enhancement_brawny=63.0,item_enhancement_quickened=31.9,item_enhancement_vital=4.9},
+                [2]={item_enhancement_greedy=71.9,item_enhancement_brawny=18.6,item_enhancement_quickened=6.1},
+                [3]={item_enhancement_greedy=72.6,item_enhancement_brawny=17.3,item_enhancement_quickened=5.0},
+                [4]={item_enhancement_brawny=51.7,item_enhancement_quickened=31.5,item_enhancement_tough=9.9},
+                [5]={item_enhancement_evolved=60.3,item_enhancement_fleetfooted=17.6,item_enhancement_hulking=17.6},
+            },
+        },
+    },
+}

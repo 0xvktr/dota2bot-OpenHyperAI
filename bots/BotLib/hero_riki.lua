@@ -16,99 +16,51 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {0, 10},
-						['t20'] = {0, 10},
-						['t15'] = {0, 10},
-						['t10'] = {0, 10},
-}
-
-local tAllAbilityBuildList = {
-						{2,3,2,1,2,6,2,3,3,3,6,1,1,1,6},--pos1
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
+-- Updated to 7.41f from D2PT: carry and mid; forced other roles use carry.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/riki')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Smoke Screen, [2] Blink Strike, [3] Tricks, [6] Cloak and Dagger.
+local nAbilityBuildList = {2,3,2,1,2,6,2,3,3,3,6,1,1,1,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- +10% Cloak and Dagger movement speed
+    t15={0,10}, -- 15% base damage added to Tricks
+    t20={0,10}, -- +0.3 Backstab multiplier
+    t25={10,0}, -- +500 Blink Strike cast range
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
 local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_quelling_blade",
-	"item_slippers",
-	"item_circlet",
-
-	"item_magic_wand",
-	"item_wraith_band",
-	"item_power_treads",
-	"item_diffusal_blade",
-	"item_manta",--
-	"item_greater_crit",--
-	"item_aghanims_shard",
-	"item_basher",
-	"item_sphere",--
-	"item_ultimate_scepter",
-	"item_disperser",--
-	"item_abyssal_blade",--
-	"item_ultimate_scepter_2",
-	"item_moon_shard",
-	"item_monkey_king_bar",--
+sRoleItemsBuyList.pos_1 = {
+    'item_quelling_blade','item_slippers','item_double_branches','item_circlet','item_tango',
+    'item_wraith_band','item_magic_wand','item_power_treads','item_phylactery','item_diffusal_blade',
+    'item_yasha','item_manta','item_aghanims_shard','item_disperser','item_basher','item_butterfly',
+    -- Bot policy: natural Khanda/Abyssal upgrades, then consumed attack speed.
+    'item_angels_demise','item_abyssal_blade','item_moon_shard',
 }
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-	"item_ultimate_scepter",
-	"item_magic_wand",
-
-	"item_cyclone",
-	"item_magic_wand",
-
-	"item_shivas_guard",
-	'item_magic_wand',
-	
-	"item_power_treads",
-	"item_quelling_blade",
-
-	"item_lotus_orb",
-	"item_quelling_blade",
-
-	"item_assault",
-	"item_magic_wand",
-	
-	"item_travel_boots",
-	"item_magic_wand",
-
-	"item_assault",
-	"item_ancient_janggo",
-	
-	"item_vladmir",
-	"item_magic_wand",
+sRoleItemsBuyList.pos_2 = {
+    -- Observed starting ward omitted: core bots do not place it.
+    'item_double_branches','item_double_branches','item_tango','item_faerie_fire',
+    'item_bottle','item_magic_wand','item_power_treads','item_diffusal_blade','item_yasha','item_manta',
+    'item_aghanims_shard','item_disperser','item_basher',
+    -- Bot policy: consume Scepter before late dispel and protection slots.
+    'item_ultimate_scepter','item_ultimate_scepter_2','item_nullifier','item_sphere',
+    'item_abyssal_blade','item_moon_shard',
 }
+for role=3,5 do sRoleItemsBuyList['pos_'..role] = sRoleItemsBuyList.pos_1 end
+X.sBuyList = sRoleItemsBuyList[sRole]
+X.sSellList = {'item_manta','item_magic_wand','item_disperser','item_wraith_band','item_disperser','item_quelling_blade','item_disperser','item_bottle'}
 
-if J.Role.IsPvNMode() then X['sBuyList'], X['sSellList'] = { 'PvN_BH' }, {{"item_power_treads", 'item_quelling_blade'}, 'item_quelling_blade'} end
+if J.Role.IsPvNMode() then X.sBuyList, X.sSellList = {'PvN_BH'}, {'item_power_treads','item_quelling_blade'} end
 
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
+nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList = J.SetUserHeroInit(nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList)
+X.sSkillList = J.Skill.GetSkillList(sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList)
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
-X['bDeafaultAbility'] = false
-X['bDeafaultItem'] = false
+X.bDeafaultAbility = false
+X.bDeafaultItem = false
 
 function X.MinionThink(hMinionUnit)
 
@@ -119,41 +71,12 @@ function X.MinionThink(hMinionUnit)
 
 end
 
---[[
-
-npc_dota_hero_riki
-
-"Ability1"		"riki_smoke_screen"
-"Ability2"		"riki_blink_strike"
-"Ability3"		"riki_tricks_of_the_trade"
-"Ability4"		"generic_hidden"
-"Ability5"		"generic_hidden"
-"Ability6"		"riki_backstab"
-"Ability10"		"special_bonus_hp_regen_6"
-"Ability11"		"special_bonus_attack_speed_20"
-"Ability12"		"special_bonus_attack_damage_20"
-"Ability13"		"special_bonus_unique_riki_2"
-"Ability14"		"special_bonus_unique_riki_1"
-"Ability15"		"special_bonus_unique_riki_3"
-"Ability16"		"special_bonus_unique_riki_6"
-"Ability17"		"special_bonus_unique_riki_7"
-
-modifier_riki_smoke_screen_thinker
-modifier_riki_smoke_screen
-modifier_riki_blinkstrike
-modifier_riki_permanent_invisibility
-modifier_riki_tricks_of_the_trade_phase
-
---]]
 
 local abilityQ = bot:GetAbilityByName( sAbilityList[1] )
 local abilityW = bot:GetAbilityByName( sAbilityList[2] )
 local abilityE = bot:GetAbilityByName( sAbilityList[3] )
 local abilityAS = bot:GetAbilityByName( sAbilityList[4] )
-local abilityR = bot:GetAbilityByName( sAbilityList[6] )
-local talent5 = bot:GetAbilityByName( sTalentList[5] )
-local talent6 = bot:GetAbilityByName( sTalentList[6] )
-local talent8 = bot:GetAbilityByName( sTalentList[8] )
+local Backstab = bot:GetAbilityByName( 'riki_innate_backstab' )
 
 local castQDesire, castQTarget
 local castWDesire, castWTarget
@@ -240,7 +163,6 @@ function X.ConsiderQ()
 	local nInRangeEnemyList = J.GetAroundEnemyHeroList( nCastRange )
 
 	local nRadius = abilityQ:GetSpecialValueInt( "radius" )
-	if talent8:IsTrained() then nRadius = nRadius + talent8:GetSpecialValueInt( "value" ) end
 	local nCastTarget = nil
 
 	--打断
@@ -344,16 +266,14 @@ function X.ConsiderW()
 	local nSkillLV = abilityW:GetLevel()
 	local nCastRange = abilityW:GetCastRange() + aetherRange
 
-	if talent6:IsTrained() then nCastRange = nCastRange + talent6:GetSpecialValueInt( "value" )	end
 
 	local nCastPoint = abilityW:GetCastPoint()
 	local nManaCost = abilityW:GetManaCost()
 
 	local nPhysicalDamge = bot:GetAttackDamage()
-	if abilityR:IsTrained()
+	if Backstab ~= nil
 	then
-		local nBonusRate = abilityR:GetSpecialValueFloat( "damage_multiplier" )
-		if talent5:IsTrained() then nBonusRate = nBonusRate + talent5:GetSpecialValueFloat( "value" ) end
+		local nBonusRate = Backstab:GetSpecialValueFloat( "damage_multiplier" )
 		nPhysicalDamge = nPhysicalDamge + bot:GetAttributeValue( ATTRIBUTE_AGILITY ) * nBonusRate
 	end
 
@@ -373,8 +293,8 @@ function X.ConsiderW()
 			and J.CanCastOnNonMagicImmune( npcEnemy )
 			and J.CanCastOnTargetAdvanced( npcEnemy )
 			and J.IsInRange( bot, npcEnemy, nCastRange + 100 )
-			and ( J.WillMixedDamageKillTarget( npcEnemy, nPhysicalDamge, nDamage, 0, nCastPoint )
-				or ( npcEnemy:IsChanneling() and J.WillMixedDamageKillTarget( npcEnemy, nPhysicalDamge * 3, nDamage, 0, nCastPoint * 3 ) ) )
+			and ( J.WillMixedDamageKillTarget( npcEnemy, nPhysicalDamge + nDamage, 0, 0, nCastPoint )
+				or ( npcEnemy:IsChanneling() and J.WillMixedDamageKillTarget( npcEnemy, nPhysicalDamge * 3 + nDamage, 0, 0, nCastPoint * 3 ) ) )
 		then
 			nCastTarget = npcEnemy
 			bot:SetTarget( nCastTarget )
@@ -498,7 +418,7 @@ function X.ConsiderW()
 			if J.IsValid( creep )
 				and J.IsKeyWordUnit( keyWord, creep )
 				and not creep:HasModifier( "modifier_fountain_glyph" )
-				and J.WillMixedDamageKillTarget( creep, nPhysicalDamge, nDamage, 0, nCastPoint )
+				and J.WillMixedDamageKillTarget( creep, nPhysicalDamge + nDamage, 0, 0, nCastPoint )
 				and not J.CanKillTarget( creep, bot:GetAttackDamage() * 1.3, DAMAGE_TYPE_PHYSICAL )
 			then
 				nCastTarget = creep
@@ -582,7 +502,7 @@ function X.ConsiderE()
 	local nDamageType = DAMAGE_TYPE_MAGICAL
 	local nInRangeEnemyList = J.GetAroundEnemyHeroList( nCastRange )
 
-	local nRadius = abilityE:GetSpecialValueInt( "range" )
+	local nRadius = abilityE:GetSpecialValueInt( "radius" )
 	local vEscapeLoc = J.GetLocationTowardDistanceLocation( bot, J.GetTeamFountain(), nCastRange )
 	local nCastTarget = nil
 

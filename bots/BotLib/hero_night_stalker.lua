@@ -7,106 +7,40 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {10, 0},
-						['t20'] = {10, 0},
-						['t15'] = {0, 10},
-						['t10'] = {10, 0},
+-- D2PT 7.41f: offlane; forced other roles use offlane.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/night_stalker')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Void, [2] Crippling Fear, [3] Midnight Feast, [6] Dark Ascension.
+local nAbilityBuildList = {1,3,1,2,1,6,1,3,3,3,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- -1s Void cooldown
+    t15={10,0}, -- Hunter status resistance
+    t20={10,0}, -- +15 Strength
+    t25={10,0}, -- -35s Dark Ascension cooldown
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    'item_quelling_blade','item_gauntlets','item_double_branches','item_circlet','item_tango',
+    'item_double_bracer','item_magic_wand','item_phase_boots','item_echo_sabre','item_blink',
+    'item_black_king_bar','item_aghanims_shard','item_harpoon','item_nullifier',
+    -- Bot policy: consumed Scepter, lockdown and mobility within six slots.
+    'item_ultimate_scepter','item_ultimate_scepter_2','item_basher','item_abyssal_blade',
+    'item_overwhelming_blink','item_moon_shard',
+}
+X.sSellList = {
+    'item_blink','item_quelling_blade',
+    'item_black_king_bar','item_bracer',
+    'item_harpoon','item_magic_wand',
 }
 
-local tAllAbilityBuildList = {
-						{1,2,1,3,1,6,1,3,3,3,6,2,2,2,6},--pos3
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sUtility = {"item_pipe", "item_lotus_orb", "item_heavens_halberd", "item_crimson_guard"}
-local nUtility = sUtility[RandomInt(1, #sUtility)]
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_3'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_quelling_blade",
-    "item_double_gauntlets",
-
-    "item_magic_wand",
-    "item_double_bracer",
-    "item_phase_boots",
-    "item_echo_sabre",
-    "item_blink",
-    "item_aghanims_shard",
-    "item_black_king_bar",--
-    nUtility,--
-    "item_basher",
-    "item_assault",--
-    "item_abyssal_blade",--
-    "item_travel_boots",
-    "item_overwhelming_blink",--
-    "item_travel_boots_2",--
-    "item_moon_shard",
-    "item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_4'] = {
-	'item_priest_outfit',
-	"item_hand_of_midas",
-	"item_mekansm",
-	"item_glimmer_cape",
-	"item_aghanims_shard",
-	"item_guardian_greaves",
-	"item_spirit_vessel",
-	"item_lotus_orb",
-	"item_mjollnir",--
-	--"item_holy_locket",
-	"item_ultimate_scepter",
-	"item_sheepstick",
-	"item_mystic_staff",
-	"item_ultimate_scepter_2",
-	"item_shivas_guard",
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-	'item_mage_outfit',
-	"item_hand_of_midas",
-	"item_glimmer_cape",
-
-    "item_pavise",
-	"item_pipe",--
-    "item_solar_crest",--
-	"item_lotus_orb",--
-	"item_aghanims_shard",
-	"item_spirit_vessel",--
-	"item_ultimate_scepter",
-	"item_shivas_guard",--
-	"item_mystic_staff",
-	"item_ultimate_scepter_2",
-    "item_moon_shard",
-	"item_sheepstick",--
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-}
-
-if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_mid' }, {} end
-
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X.sBuyList, X.sSellList = {'PvN_mid'}, {} end
+nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList = J.SetUserHeroInit(nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList)
+X.sSkillList = J.Skill.GetSkillList(sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList)
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
@@ -117,12 +51,12 @@ end
 
 local Void              = bot:GetAbilityByName('night_stalker_void')
 local CripplingFear     = bot:GetAbilityByName('night_stalker_crippling_fear')
-local HunterInTheNight  = bot:GetAbilityByName('night_stalker_hunter_in_the_night')
+local MidnightFeast  = bot:GetAbilityByName('night_stalker_midnight_feast')
 local DarkAscension     = bot:GetAbilityByName('night_stalker_darkness')
 
 local VoidDesire, VoidTarget
 local CripplingFearDesire
-local HunterInTheNightDesire, HunterInTheNightTarget
+local MidnightFeastDesire, MidnightFeastTarget
 local DarkAscensionDesire
 
 function X.SkillsComplement()
@@ -145,20 +79,15 @@ function X.SkillsComplement()
     VoidDesire, VoidTarget = X.ConsiderVoid()
     if VoidDesire > 0
     then
-        if bot:HasScepter()
-        then
-            bot:Action_UseAbilityOnLocation(Void, VoidTarget)
-        else
-            bot:Action_UseAbilityOnEntity(Void, VoidTarget)
-        end
+        bot:Action_UseAbilityOnEntity(Void, VoidTarget)
 
         return
     end
 
-    HunterInTheNightDesire, HunterInTheNightTarget = X.ConsiderHunterInTheNight()
-    if HunterInTheNightDesire > 0
+    MidnightFeastDesire, MidnightFeastTarget = X.ConsiderMidnightFeast()
+    if MidnightFeastDesire > 0
     then
-        bot:Action_UseAbilityOnEntity(HunterInTheNight, HunterInTheNightTarget)
+        bot:Action_UseAbilityOnEntity(MidnightFeast, MidnightFeastTarget)
         return
     end
 end
@@ -170,8 +99,6 @@ function X.ConsiderVoid()
     end
 
     local nCastRange = Void:GetCastRange()
-    local nCastPoint = Void:GetCastPoint()
-    local nRadius = 450
     local nDamage = Void:GetSpecialValueInt('damage')
     local nDuration = Void:GetSpecialValueFloat('duration_day')
     local timeOfDay = J.CheckTimeOfDay()
@@ -189,15 +116,10 @@ function X.ConsiderVoid()
         and J.CanCastOnNonMagicImmune(enemyHero)
         and not J.IsSuspiciousIllusion(enemyHero)
         then
-            if enemyHero:IsChanneling() or J.IsCastingUltimateAbility(enemyHero)
+            if (enemyHero:IsChanneling() or J.IsCastingUltimateAbility(enemyHero))
             and timeOfDay == 'night'
             then
-                if bot:HasScepter()
-                then
-                    return BOT_ACTION_DESIRE_HIGH, enemyHero:GetLocation()
-                else
-                    return BOT_ACTION_DESIRE_HIGH, enemyHero
-                end
+                return BOT_ACTION_DESIRE_HIGH, enemyHero
             end
 
             if J.CanKillTarget(enemyHero, nDamage, DAMAGE_TYPE_MAGICAL)
@@ -206,12 +128,7 @@ function X.ConsiderVoid()
             and not enemyHero:HasModifier('modifier_oracle_false_promise_timer')
             and not enemyHero:HasModifier('modifier_templar_assassin_refraction_absorb')
             then
-                if bot:HasScepter()
-                then
-                    return BOT_ACTION_DESIRE_HIGH, enemyHero:GetExtrapolatedLocation(nCastPoint)
-                else
-                    return BOT_ACTION_DESIRE_HIGH, enemyHero
-                end
+                return BOT_ACTION_DESIRE_HIGH, enemyHero
             end
         end
     end
@@ -220,30 +137,19 @@ function X.ConsiderVoid()
 	then
         local strongestTarget = J.GetStrongestUnit(nCastRange, bot, true, false, nDuration)
 
-        if bot:HasScepter()
+        if strongestTarget == nil
         then
-            local nLocationAoE = bot:FindAoELocation(true, true, bot:GetLocation(), nCastRange, nRadius, nCastPoint, 0)
-            local realEnemyCount = J.GetEnemiesNearLoc(nLocationAoE.targetloc, nRadius)
+            strongestTarget = J.GetStrongestUnit(nCastRange, bot, true, true, nDuration)
+        end
 
-            if realEnemyCount ~= nil and #realEnemyCount >= 2
-            then
-                return BOT_ACTION_DESIRE_HIGH, nLocationAoE.targetloc
-            end
-        else
-            if strongestTarget == nil
-            then
-                strongestTarget = J.GetStrongestUnit(nCastRange, bot, true, true, nDuration)
-            end
-
-            if J.IsValidTarget(strongestTarget)
-            and J.CanCastOnNonMagicImmune(strongestTarget)
-            and not J.IsSuspiciousIllusion(strongestTarget)
-            and not J.IsDisabled(strongestTarget)
-            and not J.IsTaunted(strongestTarget)
-            and not strongestTarget:HasModifier('modifier_necrolyte_reapers_scythe')
-            then
-                return BOT_ACTION_DESIRE_HIGH, strongestTarget
-            end
+        if J.IsValidTarget(strongestTarget)
+        and J.CanCastOnNonMagicImmune(strongestTarget)
+        and not J.IsSuspiciousIllusion(strongestTarget)
+        and not J.IsDisabled(strongestTarget)
+        and not J.IsTaunted(strongestTarget)
+        and not strongestTarget:HasModifier('modifier_necrolyte_reapers_scythe')
+        then
+            return BOT_ACTION_DESIRE_HIGH, strongestTarget
         end
 	end
 
@@ -267,16 +173,7 @@ function X.ConsiderVoid()
             if nInRangeAlly ~= nil and nTargetInRangeAlly ~= nil
             and #nInRangeAlly >= #nTargetInRangeAlly
             then
-                if bot:HasScepter()
-                and not botTarget:HasModifier('modifier_enigma_black_hole_pull')
-                and not botTarget:HasModifier('modifier_faceless_void_chronosphere_freeze')
-                and not botTarget:HasModifier('modifier_legion_commander_duel')
-                and not botTarget:HasModifier('modifier_necrolyte_reapers_scythe')
-                then
-                    return BOT_ACTION_DESIRE_HIGH, botTarget:GetExtrapolatedLocation(nCastPoint)
-                else
-                    return BOT_ACTION_DESIRE_HIGH, botTarget
-                end
+                return BOT_ACTION_DESIRE_HIGH, botTarget
             end
         end
 	end
@@ -299,12 +196,7 @@ function X.ConsiderVoid()
             and ((#nTargetInRangeAlly > #nInRangeAlly)
                 or (J.GetHP(bot) < 0.52 and bot:WasRecentlyDamagedByAnyHero(2)))
             then
-                if bot:HasScepter()
-                then
-                    return BOT_ACTION_DESIRE_HIGH, nInRangeEnemy[1]:GetExtrapolatedLocation(nCastPoint)
-                else
-                    return BOT_ACTION_DESIRE_HIGH, nInRangeEnemy[1]
-                end
+                return BOT_ACTION_DESIRE_HIGH, nInRangeEnemy[1]
             end
         end
     end
@@ -337,12 +229,7 @@ function X.ConsiderVoid()
         and J.IsInRange(bot, botTarget, 500)
         and J.IsAttacking(bot)
         then
-            if bot:HasScepter()
-            then
-                return BOT_ACTION_DESIRE_HIGH, botTarget:GetLocation()
-            else
-                return BOT_ACTION_DESIRE_HIGH, botTarget
-            end
+            return BOT_ACTION_DESIRE_HIGH, botTarget
         end
     end
 
@@ -352,12 +239,7 @@ function X.ConsiderVoid()
         and J.IsInRange(bot, botTarget, 400)
         and J.IsAttacking(bot)
         then
-            if bot:HasScepter()
-            then
-                return BOT_ACTION_DESIRE_HIGH, botTarget:GetLocation()
-            else
-                return BOT_ACTION_DESIRE_HIGH, botTarget
-            end
+            return BOT_ACTION_DESIRE_HIGH, botTarget
         end
     end
 
@@ -384,12 +266,7 @@ function X.ConsiderVoid()
             and not nAllyInRangeEnemy[1]:HasModifier('modifier_enigma_black_hole_pull')
             and not nAllyInRangeEnemy[1]:HasModifier('modifier_faceless_void_chronosphere_freeze')
             then
-                if bot:HasScepter()
-                then
-                    return BOT_ACTION_DESIRE_HIGH, nAllyInRangeEnemy[1]:GetLocation()
-                else
-                    return BOT_ACTION_DESIRE_HIGH, botTarget
-                end
+                return BOT_ACTION_DESIRE_HIGH, nAllyInRangeEnemy[1]
             end
         end
     end
@@ -493,14 +370,14 @@ function X.ConsiderCripplingFear()
     return BOT_ACTION_DESIRE_NONE
 end
 
-function X.ConsiderHunterInTheNight()
-    if HunterInTheNight:IsPassive()
-    or not HunterInTheNight:IsFullyCastable()
+function X.ConsiderMidnightFeast()
+    if MidnightFeast:IsPassive()
+    or not MidnightFeast:IsFullyCastable()
     then
         return BOT_ACTION_DESIRE_NONE, nil
     end
 
-    local nCastRange = HunterInTheNight:GetSpecialValueInt('shard_cast_range')
+    local nCastRange = MidnightFeast:GetCastRange()
     local timeOfDay = J.CheckTimeOfDay()
 
     if J.IsFarming(bot)

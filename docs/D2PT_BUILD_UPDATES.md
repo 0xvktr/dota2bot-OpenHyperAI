@@ -102,6 +102,16 @@ Huskar, Jakiro, Juggernaut, Keeper of the Light, Kunkka and Largo were refreshed
 Legion Commander, Leshrac, Lich, Lifestealer, Lina, Lion, Luna, Lycan and Magnus were also refreshed on 2026-09-30.
 Kez, Marci, Mars, Medusa and Mirana were refreshed on 2026-09-30.
 Meepo, Monkey King, Morphling, Muerta and Naga Siren were refreshed on 2026-09-30.
+Necrophos, Shadow Fiend, Night Stalker, Nyx Assassin, Ringmaster, Outworld Destroyer,
+Ogre Magi, Omniknight, Oracle and Pangolier were refreshed on 2026-09-30.
+Phantom Assassin, Phantom Lancer, Phoenix, Primal Beast, Puck, Pudge, Pugna,
+Queen of Pain, Clockwerk and Razor were refreshed on 2026-09-30.
+Riki, Sand King, Shadow Demon, Shadow Shaman, Timbersaw, Silencer, Wraith King,
+Skywrath Mage, Slardar and Slark were refreshed on 2026-09-30. Rubick remains deferred.
+Snapfire, Sniper, Spectre, Spirit Breaker, Storm Spirit, Sven, Techies,
+Templar Assassin, Terrorblade and Tidehunter were refreshed on 2026-09-30.
+Tinker, Tiny, Treant Protector, Troll Warlord, Tusk, Undying, Ursa,
+Vengeful Spirit, Venomancer and Viper were refreshed on 2026-09-30.
 Unmarked heroes retain their older lists and can be refreshed as their builds are updated.
 Source pages are `https://dota2protracker.com/hero/<hero>?section=matchups`. Both the builds and matchups
 sections take `&role=carry|mid|offlane|support|hard-support` (hyphen); an unrecognised value such as
@@ -116,7 +126,17 @@ hard support for Grimstroke/Jakiro, mid for Keeper of the Light, and offlane for
 The following batch uses offlane for Legion Commander/Lycan/Magnus, mid for Huskar/Leshrac/Lina,
 hard support for Lich/Lion, and carry for Lifestealer/Luna. Kez/Medusa use carry,
 Marci uses mid, Mars uses offlane, and Mirana uses support. Meepo uses mid;
-Monkey King/Morphling/Muerta/Naga Siren use carry. Select **All** opponent/ally
+Monkey King/Morphling/Muerta/Naga Siren use carry. The current batch uses offlane for Necrophos/Night Stalker,
+carry for Shadow Fiend, support for Nyx Assassin, hard support for Ringmaster/Ogre Magi/Omniknight/Oracle,
+and mid for Outworld Destroyer/Pangolier. Phantom Assassin/Phantom Lancer use carry;
+Phoenix/Pudge use support, Primal Beast/Razor use offlane, Puck/Queen of Pain use mid,
+and Pugna/Clockwerk use hard support. Riki/Slark use carry; Sand King/Timbersaw/Wraith King/Slardar
+use offlane, Shadow Demon/Shadow Shaman/Silencer use hard support, and Skywrath Mage uses support.
+Snapfire/Sniper/Storm Spirit use mid; Spectre/Sven/Templar Assassin/Terrorblade use carry,
+Spirit Breaker/Techies use support, and Tidehunter uses offlane.
+Tinker/Viper use mid, Tiny/Troll Warlord/Ursa use carry, and
+Treant Protector/Tusk/Undying/Vengeful Spirit/Venomancer use hard support.
+Select **All** opponent/ally
 roles and enable **Normalized** for both tables. Collapse the displayed role rows
 by hero using a match-count-weighted mean of their normalized values; this is an
 approximation from rounded UI values, not an independently calculated all-role
@@ -165,7 +185,8 @@ stubs at load time should get them there. A hero whose real `GetAbilityList` ord
 leveled ultimate outside index 6 (Dark Willow's Bedlam is index 4) gets an `ABILITY_LAYOUTS`
 entry there instead of a build bent to fit the default layout. The other suites cover behavior rather than
 data: `neutral_consumers_spec.lua` (both distributors delegate to the preferences),
-`alchemist_scepter_spec.lua`, `axe_culling_blade_spec.lua`, plus draft scoring and gift
+`alchemist_scepter_spec.lua`, `axe_culling_blade_spec.lua`, `creep_deny_spec.cjs`
+(Tidehunter fish exclusion), `mask_disassembly_spec.cjs` (current recipe), plus draft scoring and gift
 purchase checks inline in the runner. The suite cannot verify that a build matches D2PT
 or that a talent name maps to the intended slot; that still relies on reviewing the
 source page. Engine recipes, actual purchases, and item actives require a Dota lobby test.

@@ -16,156 +16,40 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {0, 10},
-						['t20'] = {10, 0},
-						['t15'] = {0, 10},
-						['t10'] = {0, 10},
+-- D2PT 7.41f: offlane; forced other roles use offlane.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/tidehunter')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Gush, [2] Kraken Shell, [3] Anchor Smash, [6] Ravage.
+local nAbilityBuildList = {1,3,3,2,3,6,3,2,2,2,6,1,1,1,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- +20% Gush slow
+    t15={0,10}, -- +90 Gush damage
+    t20={10,0}, -- +4 Gush armor reduction
+    t25={0,10}, -- +1s Ravage stun duration
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    'item_double_gauntlets','item_double_branches','item_magic_stick',
+    'item_bracer','item_bracer','item_magic_wand','item_soul_ring','item_phase_boots',
+    -- Bot policy: the popular optional Vladmir aura supports the team.
+    'item_vladmir','item_blink','item_aghanims_shard','item_ultimate_scepter','item_shivas_guard',
+    -- Bot policy: consume Scepter before Refresher/BKB; retain six persistent slots.
+    'item_ultimate_scepter_2','item_refresher','item_black_king_bar','item_overwhelming_blink',
 }
-
-local tAllAbilityBuildList = {
-						{3,1,2,3,3,6,3,2,2,2,6,1,1,1,6},--pos3
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sLotusHalberd = RandomInt( 1, 2 ) == 1 and "item_lotus_orb" or "item_heavens_halberd"
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_3'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_quelling_blade",
-	"item_gauntlets",
-
-	"item_magic_wand",
-	"item_boots",
-	"item_soul_ring",
-	"item_phase_boots",
-	"item_vladmir",--
-	"item_consecrated_wraps",--
-	"item_blink",
-	"item_aghanims_shard",
-	"item_shivas_guard",--
-	sLotusHalberd,--
-	"item_ultimate_scepter",
-	"item_refresher",--
-	"item_overwhelming_blink",--
-	"item_ultimate_scepter_2",
-	"item_moon_shard",
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_quelling_blade",
-	"item_gauntlets",
-
-	"item_magic_wand",
-	"item_boots",
-	"item_soul_ring",
-	"item_phase_boots",
-	"item_echo_sabre",
-	"item_vladmir",--
-	"item_harpoon",--
-	"item_aghanims_shard",
-	"item_assault",--
-	"item_great_scepter",--
-	"item_ultimate_scepter",
-	"item_overwhelming_blink",--
-	"item_ultimate_scepter_2",
-	"item_moon_shard",
-	"item_satanic",--
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_2'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_quelling_blade",
-	"item_gauntlets",
-
-	"item_magic_wand",
-	"item_boots",
-	"item_soul_ring",
-	"item_phase_boots",
-	"item_echo_sabre",
-	"item_vladmir",--
-	"item_harpoon",--
-	"item_aghanims_shard",
-	"item_ultimate_scepter",
-	"item_assault",--
-	"item_monkey_king_bar",--
-	"item_overwhelming_blink",--
-	"item_ultimate_scepter_2",
-	"item_moon_shard",
-	"item_satanic",--
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_4'] = {
-    "item_double_tango",
-    "item_faerie_fire",
-    "item_wind_lace",
-
-    "item_magic_wand",
-    "item_arcane_boots",
-    "item_guardian_greaves",--
-    "item_blink",
-    "item_ultimate_scepter",
-    "item_aghanims_shard",
-    "item_black_king_bar",--
-    "item_lotus_orb",--
-	"item_gungir",--
-    "item_wind_waker",--
-    "item_overwhelming_blink",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_5'] = {
-    "item_double_tango",
-    "item_faerie_fire",
-    "item_wind_lace",
-
-    "item_magic_wand",
-    "item_arcane_boots",
-    "item_pipe",--
-    "item_blink",
-    "item_ultimate_scepter",
-    "item_aghanims_shard",
-    "item_black_king_bar",--
-    "item_lotus_orb",--
-	"item_gungir",--
-    "item_wind_waker",--
-    "item_overwhelming_blink",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-	"item_travel_boots_2",--
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-	"item_satanic",
-	"item_vladmir",
-}
-
+X.sSellList = {'item_blink','item_bracer','item_blink','item_bracer',
+    'item_ultimate_scepter','item_magic_wand','item_shivas_guard','item_soul_ring'}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_tank' }, {"item_heavens_halberd", 'item_quelling_blade'} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
@@ -213,7 +97,6 @@ abilityW = bot:GetAbilityByName('tidehunter_kraken_shell')
 local abilityE = bot:GetAbilityByName( sAbilityList[3] )
 local abilityR = bot:GetAbilityByName( sAbilityList[6] )
 local DeadInTheWater = bot:GetAbilityByName( 'tidehunter_dead_in_the_water' )
-local talent3 = bot:GetAbilityByName( sTalentList[3] )
 
 
 local castQDesire, castQTarget
@@ -368,7 +251,6 @@ function X.ConsiderQ()
 	local nManaCost = abilityQ:GetManaCost()
 	
 	local nDamage = abilityQ:GetSpecialValueInt( 'gush_damage' )
-	if talent3:IsTrained() then nDamage = nDamage + talent3:GetSpecialValueInt( 'value' ) end
 	
 	local nDamageType = DAMAGE_TYPE_MAGICAL 
 	local nInRangeEnemyList = J.GetAroundEnemyHeroList( nCastRange )

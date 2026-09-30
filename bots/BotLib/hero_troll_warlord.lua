@@ -8,66 +8,31 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {10, 0},
-						['t20'] = {0, 10},
-						['t15'] = {0, 10},
-						['t10'] = {10, 0},
+-- D2PT 7.41f: carry only; forced roles use carry.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/troll_warlord')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [2] linked Axes, [4] Fervor, [5] Berserker's Rage, [6] Battle Trance.
+local nAbilityBuildList = {2,5,2,4,2,6,2,4,4,4,6,5,5,5,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({t10={10,0},t15={0,10},t20={10,0},t25={10,0}})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    'item_quelling_blade','item_double_branches','item_magic_stick','item_tango','item_faerie_fire',
+    -- Sange and Yasha is more picked (52.3%) than the displayed Manta (36.2%).
+    'item_magic_wand','item_power_treads','item_bfury','item_yasha','item_sange_and_yasha',
+    'item_black_king_bar','item_ultimate_scepter','item_ultimate_scepter_2','item_aghanims_shard',
+    -- Bot policy: common late inventory, natural Blink upgrade and consumed attack speed.
+    'item_blink','item_monkey_king_bar','item_swift_blink','item_moon_shard',
 }
+X.sSellList = {'item_bfury','item_quelling_blade','item_blink','item_magic_wand'}
 
-local tAllAbilityBuildList = {
-						-- {2,1,4,2,2,6,2,1,1,1,6,4,4,4,6},--pos1, errored in 7.37
-						{2,5,4,2,2,6,2,5,5,5,6,4,4,4,6},--pos1
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_quelling_blade",
-
-    "item_magic_wand",
-    "item_wraith_band",
-    "item_phase_boots",
-    "item_bfury",--
-    "item_yasha",
-    "item_black_king_bar",--
-    "item_sange_and_yasha",--
-    "item_aghanims_shard",
-    "item_satanic",--
-    "item_moon_shard",
-    "item_abyssal_blade",--
-    "item_travel_boots_2",--
-    "item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-    
-}
-
-if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
-
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X.sBuyList, X.sSellList = {'PvN_antimage'}, {} end
+nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList = J.SetUserHeroInit(nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList)
+X.sSkillList = J.Skill.GetSkillList(sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList)
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
@@ -76,7 +41,7 @@ function X.MinionThink(hMinionUnit)
     Minion.MinionThink(hMinionUnit)
 end
 
-local BattleStance          = bot:GetAbilityInSlot(0)
+local BattleStance          = bot:GetAbilityByName('troll_warlord_switch_stance')
 local BerserkersRage        = bot:GetAbilityByName('troll_warlord_berserkers_rage')
 local WhirlingAxesRanged    = bot:GetAbilityByName('troll_warlord_whirling_axes_ranged')
 local WhirlingAxesMelee     = bot:GetAbilityByName('troll_warlord_whirling_axes_melee')
@@ -105,14 +70,10 @@ function X.SkillsComplement()
         return
     end
 
-    if BattleStance:IsFullyCastable() and BattleStance:IsTrained() then
-        BerserkersRage = BattleStance
-    end
-
-    BerserkersRageDesire = X.ConsiderBerserkersRage(BerserkersRage)
+    BerserkersRageDesire = X.ConsiderBerserkersRage(BattleStance)
     if BerserkersRageDesire > 0
     then
-        bot:Action_UseAbility(BerserkersRage)
+        bot:Action_UseAbility(BattleStance)
         return
     end
 
@@ -131,13 +92,12 @@ function X.SkillsComplement()
     end
 end
 
-function X.ConsiderBerserkersRage(BerserkersRage)
-    if not BerserkersRage:IsFullyCastable()
+function X.ConsiderBerserkersRage(stance)
+    if not stance:IsFullyCastable()
     then
         return BOT_ACTION_DESIRE_NONE
     end
 
-    local nBonusRange = BerserkersRage:GetSpecialValueInt('bonus_range')
     local nBonusMS = BerserkersRage:GetSpecialValueInt('bonus_move_speed')
 	local nEnemyHeroes = J.GetNearbyHeroes(bot,1200, true, BOT_MODE_NONE)
 
@@ -149,7 +109,7 @@ function X.ConsiderBerserkersRage(BerserkersRage)
             if J.IsChasingTarget(bot, botTarget)
             and not J.IsLocationInChrono(botTarget:GetLocation())
             then
-                if BerserkersRage:GetToggleState() == false
+                if stance:GetToggleState() == false
                 then
                     return BOT_ACTION_DESIRE_HIGH
                 else
@@ -158,10 +118,10 @@ function X.ConsiderBerserkersRage(BerserkersRage)
             else
                 if J.IsAttacking(bot)
                 and J.IsInRange(bot, botTarget, 150)
-                and BerserkersRage:GetToggleState() == false
+                and stance:GetToggleState() == false
                 and not J.IsChasingTarget(bot, botTarget)
                 then
-                    if BerserkersRage:GetToggleState() == false
+                    if stance:GetToggleState() == false
                     then
                         return BOT_ACTION_DESIRE_HIGH
                     else
@@ -192,7 +152,7 @@ function X.ConsiderBerserkersRage(BerserkersRage)
                 if nInRangeEnemy[1]:GetCurrentMovementSpeed() > bot:GetCurrentMovementSpeed()
                 and nInRangeEnemy[1]:GetCurrentMovementSpeed() < bot:GetCurrentMovementSpeed() + nBonusMS
                 then
-                    if BerserkersRage:GetToggleState() == false
+                    if stance:GetToggleState() == false
                     then
                         return BOT_ACTION_DESIRE_HIGH
                     else
@@ -208,14 +168,14 @@ function X.ConsiderBerserkersRage(BerserkersRage)
 	then
 		if nEnemyHeroes ~= nil and #nEnemyHeroes == 0
         then
-            if BerserkersRage:GetToggleState() == false
+            if stance:GetToggleState() == false
             then
                 return BOT_ACTION_DESIRE_HIGH
             else
                 return BOT_ACTION_DESIRE_NONE
             end
         else
-            if BerserkersRage:GetToggleState() == true
+            if stance:GetToggleState() == true
             then
                 return BOT_ACTION_DESIRE_HIGH
             else
@@ -226,7 +186,7 @@ function X.ConsiderBerserkersRage(BerserkersRage)
 
     if J.IsFarming(bot)
 	then
-        if BerserkersRage:GetToggleState() == false
+        if stance:GetToggleState() == false
         then
             return BOT_ACTION_DESIRE_HIGH
         else
@@ -250,7 +210,7 @@ function X.ConsiderBerserkersRage(BerserkersRage)
 
 		if enemyRange < 324
         then
-            if BerserkersRage:GetToggleState() == false
+            if stance:GetToggleState() == false
             then
                 return BOT_ACTION_DESIRE_HIGH
             else
@@ -260,7 +220,7 @@ function X.ConsiderBerserkersRage(BerserkersRage)
 
 		if enemyRange > 324
         then
-            if BerserkersRage:GetToggleState() == true
+            if stance:GetToggleState() == true
             then
                 return BOT_ACTION_DESIRE_HIGH
             else
@@ -269,7 +229,7 @@ function X.ConsiderBerserkersRage(BerserkersRage)
 		end
 	end
 
-    if BerserkersRage:GetToggleState() == false
+    if stance:GetToggleState() == false
     then
         return BOT_ACTION_DESIRE_HIGH
     end
@@ -499,8 +459,8 @@ function X.ConsiderWhirlingAxesMelee()
         return BOT_ACTION_DESIRE_NONE
     end
 
-    local nRadius = WhirlingAxesRanged:GetSpecialValueInt('max_range')
-    local nDamage = WhirlingAxesRanged:GetSpecialValueInt('damage')
+    local nRadius = WhirlingAxesMelee:GetSpecialValueInt('max_range')
+    local nDamage = WhirlingAxesMelee:GetSpecialValueInt('damage')
 
     local nEnemyHeroes = J.GetNearbyHeroes(bot,nRadius, true, BOT_MODE_NONE)
     for _, enemyHero in pairs(nEnemyHeroes)
@@ -695,7 +655,7 @@ function X.ConsiderBattleTrance()
         end
 	end
 
-    local nDuration = BattleTrance:GetSpecialValueInt('trance_duration')
+    local nDuration = BattleTrance:GetSpecialValueFloat('trance_duration')
 
     if J.IsGoingOnSomeone(bot)
 	then

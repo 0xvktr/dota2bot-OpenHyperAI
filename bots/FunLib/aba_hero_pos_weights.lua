@@ -83,153 +83,27 @@ local HeroPositions = {
     [HeroName.Morphling] = {61, 0, 0, 0, 0}, -- D2PT 7.41f
     [HeroName.Muerta] = {55, 0, 0, 0, 0}, -- D2PT 7.41f
     [HeroName.NagaSiren] = {57, 0, 0, 0, 0}, -- D2PT 7.41f
-    [HeroName.Necrophos] = {
-        5,
-        60,
-        30,
-        5,
-        0
-    },
-    [HeroName.ShadowFiend] = {
-        45,
-        80,
-        5,
-        0,
-        0
-    },
-    [HeroName.NightStalker] = {
-        25,
-        35,
-        55,
-        25,
-        0
-    },
-    [HeroName.NyxAssassin] = {
-        0,
-        5,
-        40,
-        65,
-        20
-    },
-    [HeroName.Ringmaster] = {
-        5,
-        20,
-        5,
-        50,
-        20
-    },
-    [HeroName.OutworldDestroyer] = {
-        5,
-        90,
-        5,
-        0,
-        0
-    },
-    [HeroName.OgreMagi] = {
-        20,
-        55,
-        40,
-        40,
-        45
-    },
-    [HeroName.Omniknight] = {
-        40,
-        5,
-        50,
-        30,
-        55
-    },
-    [HeroName.Oracle] = {
-        0,
-        35,
-        10,
-        30,
-        45
-    },
-    [HeroName.Pangolier] = {
-        5,
-        25,
-        15,
-        5,
-        0
-    },
-    [HeroName.PhantomAssassin] = {
-        70,
-        25,
-        5,
-        0,
-        0
-    },
-    [HeroName.PhantomLancer] = {
-        50,
-        45,
-        5,
-        0,
-        0
-    },
-    [HeroName.Phoenix] = {
-        0,
-        35,
-        30,
-        65,
-        20
-    },
-    [HeroName.PrimalBeast] = {
-        5,
-        5,
-        25,
-        5,
-        0
-    },
-    [HeroName.Puck] = {
-        5,
-        70,
-        25,
-        10,
-        10
-    },
-    [HeroName.Pudge] = {
-        5,
-        35,
-        50,
-        25,
-        5
-    },
-    [HeroName.Pugna] = {
-        0,
-        35,
-        20,
-        65,
-        20
-    },
-    [HeroName.QueenOfPain] = {
-        25,
-        50,
-        25,
-        20,
-        0
-    },
-    [HeroName.Clockwerk] = {
-        5,
-        5,
-        55,
-        35,
-        10
-    },
-    [HeroName.Razor] = {
-        5,
-        85,
-        5,
-        5,
-        0
-    },
-    [HeroName.Riki] = {
-        55,
-        10,
-        20,
-        15,
-        10
-    },
+    [HeroName.Necrophos] = {85, 60, 59, 0, 0}, -- D2PT 7.41f
+    [HeroName.ShadowFiend] = {37, 37, 0, 0, 0}, -- D2PT 7.41f
+    [HeroName.NightStalker] = {0, 0, 100, 0, 0}, -- D2PT 7.41f
+    [HeroName.NyxAssassin] = {0, 49, 0, 92, 50}, -- D2PT 7.41f
+    [HeroName.Ringmaster] = {0, 0, 0, 75, 98}, -- D2PT 7.41f
+    [HeroName.OutworldDestroyer] = {0, 100, 0, 0, 0}, -- D2PT 7.41f
+    [HeroName.OgreMagi] = {0, 0, 45, 37, 61}, -- D2PT 7.41f
+    [HeroName.Omniknight] = {0, 0, 46, 0, 53}, -- D2PT 7.41f
+    [HeroName.Oracle] = {0, 0, 0, 43, 100}, -- D2PT 7.41f
+    [HeroName.Pangolier] = {0, 64, 40, 0, 0}, -- D2PT 7.41f
+    [HeroName.PhantomAssassin] = {66, 0, 0, 0, 0}, -- D2PT 7.41f
+    [HeroName.PhantomLancer] = {100, 0, 0, 0, 0}, -- D2PT 7.41f
+    [HeroName.Phoenix] = {0, 60, 64, 46, 62}, -- D2PT 7.41f
+    [HeroName.PrimalBeast] = {0, 60, 71, 0, 0}, -- D2PT 7.41f
+    [HeroName.Puck] = {0, 90, 0, 0, 0}, -- D2PT 7.41f
+    [HeroName.Pudge] = {42, 52, 99, 65, 87}, -- D2PT 7.41f
+    [HeroName.Pugna] = {0, 41, 0, 49, 51}, -- D2PT 7.41f
+    [HeroName.QueenOfPain] = {0, 68, 0, 0, 0}, -- D2PT 7.41f
+    [HeroName.Clockwerk] = {0, 0, 0, 61, 71}, -- D2PT 7.41f
+    [HeroName.Razor] = {51, 40, 63, 0, 0}, -- D2PT 7.41f
+    [HeroName.Riki] = {52, 51, 0, 0, 0}, -- D2PT 7.41f
     [HeroName.Rubick] = {
         0,
         35,
@@ -237,209 +111,35 @@ local HeroPositions = {
         40,
         45
     },
-    [HeroName.SandKing] = {
-        5,
-        35,
-        65,
-        25,
-        0
-    },
-    [HeroName.ShadowDeamon] = {
-        0,
-        15,
-        10,
-        30,
-        55
-    },
-    [HeroName.ShadowShaman] = {
-        0,
-        20,
-        20,
-        45,
-        55
-    },
-    [HeroName.Timbersaw] = {
-        5,
-        25,
-        65,
-        5,
-        0
-    },
-    [HeroName.Silencer] = {
-        10,
-        55,
-        10,
-        30,
-        35
-    },
-    [HeroName.WraithKing] = {
-        50,
-        5,
-        45,
-        0,
-        0
-    },
-    [HeroName.SkywrathMage] = {
-        0,
-        45,
-        10,
-        65,
-        20
-    },
-    [HeroName.Slardar] = {
-        35,
-        5,
-        55,
-        5,
-        0
-    },
-    [HeroName.Slark] = {
-        90,
-        5,
-        5,
-        0,
-        0
-    },
-    [HeroName.Snapfire] = {
-        20,
-        35,
-        30,
-        60,
-        15
-    },
-    [HeroName.Sniper] = {
-        70,
-        65,
-        5,
-        0,
-        0
-    },
-    [HeroName.Spectre] = {
-        70,
-        5,
-        5,
-        0,
-        0
-    },
-    [HeroName.SpiritBreaker] = {
-        0,
-        5,
-        20,
-        20,
-        15
-    },
-    [HeroName.StormSpirit] = {
-        25,
-        30,
-        5,
-        0,
-        0
-    },
-    [HeroName.Sven] = {
-        60,
-        5,
-        35,
-        0,
-        0
-    },
-    [HeroName.Techies] = {
-        10,
-        35,
-        20,
-        40,
-        15
-    },
-    [HeroName.TemplarAssassin] = {
-        5,
-        90,
-        5,
-        0,
-        0
-    },
-    [HeroName.Terrorblade] = {
-        90,
-        5,
-        5,
-        0,
-        0
-    },
-    [HeroName.Tidehunter] = {
-        25,
-        25,
-        45,
-        5,
-        0
-    },
-    [HeroName.Tinker] = {
-        5,
-        15,
-        5,
-        20,
-        0
-    },
-    [HeroName.Tiny] = {
-        5,
-        25,
-        65,
-        5,
-        0
-    },
-    [HeroName.TreantProtector] = {
-        0,
-        5,
-        10,
-        30,
-        55
-    },
-    [HeroName.TrollWarlord] = {
-        90,
-        5,
-        25,
-        0,
-        0
-    },
-    [HeroName.Tusk] = {
-        0,
-        20,
-        35,
-        40,
-        15
-    },
-    [HeroName.Undying] = {
-        0,
-        5,
-        30,
-        30,
-        55
-    },
-    [HeroName.Ursa] = {
-        50,
-        25,
-        25,
-        0,
-        0
-    },
-    [HeroName.VengefulSpirit] = {
-        0,
-        5,
-        10,
-        30,
-        55
-    },
-    [HeroName.Venomancer] = {
-        35,
-        55,
-        45,
-        35,
-        30
-    },
-    [HeroName.Viper] = {
-        45,
-        65,
-        45,
-        5,
-        0
-    },
+    [HeroName.SandKing] = {0, 43, 46, 0, 0}, -- D2PT 7.41f
+    [HeroName.ShadowDeamon] = {0, 0, 0, 46, 38}, -- D2PT 7.41f
+    [HeroName.ShadowShaman] = {0, 0, 0, 57, 83}, -- D2PT 7.41f
+    [HeroName.Timbersaw] = {0, 43, 44, 0, 0}, -- D2PT 7.41f
+    [HeroName.Silencer] = {0, 0, 0, 37, 58}, -- D2PT 7.41f
+    [HeroName.WraithKing] = {68, 0, 61, 0, 0}, -- D2PT 7.41f
+    [HeroName.SkywrathMage] = {0, 49, 0, 64, 50}, -- D2PT 7.41f
+    [HeroName.Slardar] = {0, 43, 45, 0, 0}, -- D2PT 7.41f
+    [HeroName.Slark] = {87, 62, 46, 0, 0}, -- D2PT 7.41f
+    [HeroName.Snapfire] = {0, 73, 53, 37, 50}, -- D2PT 7.41f
+    [HeroName.Sniper] = {0, 58, 0, 0, 0}, -- D2PT 7.41f
+    [HeroName.Spectre] = {100, 0, 0, 0, 0}, -- D2PT 7.41f
+    [HeroName.SpiritBreaker] = {0, 0, 48, 100, 65}, -- D2PT 7.41f
+    [HeroName.StormSpirit] = {0, 66, 0, 0, 0}, -- D2PT 7.41f
+    [HeroName.Sven] = {100, 0, 0, 0, 0}, -- D2PT 7.41f
+    [HeroName.Techies] = {0, 0, 0, 83, 87}, -- D2PT 7.41f
+    [HeroName.TemplarAssassin] = {61, 38, 0, 0, 0}, -- D2PT 7.41f
+    [HeroName.Terrorblade] = {70, 0, 0, 0, 0}, -- D2PT 7.41f
+    [HeroName.Tidehunter] = {0, 0, 64, 0, 0}, -- D2PT 7.41f
+    [HeroName.Tinker] = {0, 95, 0, 0, 0}, -- D2PT 7.41f
+    [HeroName.Tiny] = {54, 43, 0, 44, 0}, -- D2PT 7.41f
+    [HeroName.TreantProtector] = {0, 0, 0, 39, 43}, -- D2PT 7.41f
+    [HeroName.TrollWarlord] = {58, 0, 0, 0, 0}, -- D2PT 7.41f
+    [HeroName.Tusk] = {0, 0, 0, 57, 73}, -- D2PT 7.41f
+    [HeroName.Undying] = {0, 0, 45, 40, 77}, -- D2PT 7.41f
+    [HeroName.Ursa] = {88, 0, 0, 0, 0}, -- D2PT 7.41f
+    [HeroName.VengefulSpirit] = {53, 0, 44, 48, 59}, -- D2PT 7.41f
+    [HeroName.Venomancer] = {0, 0, 0, 33, 54}, -- D2PT 7.41f
+    [HeroName.Viper] = {0, 60, 46, 0, 0}, -- D2PT 7.41f
     [HeroName.Visage] = {
         5,
         15,

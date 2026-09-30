@@ -7,113 +7,56 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {--pos4,5
-                        ['t25'] = {10, 0},
-                        ['t20'] = {10, 0},
-                        ['t15'] = {10, 0},
-                        ['t10'] = {0, 10},
+-- D2PT 7.41f: mid/support; forced carry/offlane use pos 4.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/nyx_assassin')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Impale, [2] Mind Flare, [3] Spiked Carapace, [6] Vendetta.
+local nAbilityBuildList = {1,3,1,2,1,6,1,2,2,2,6,3,3,3,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10=sRole == 'pos_2' and {0,10} or {10,0}, -- reflect / Impale stun
+    t15={10,0}, -- Mind Flare cooldown
+    t20={0,10}, -- Carapace stun; mid picks tied, retain defensive choice.
+    t25={0,10}, -- Mind Flare radius
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+local supportItems = {
+    'item_boots','item_ward_observer','item_ward_sentry','item_blood_grenade',
+    -- Bot policy: lane sustain alongside the observed boots opening.
+    'item_tango','item_magic_wand','item_arcane_boots','item_blink','item_cyclone',
+    'item_aghanims_shard','item_ultimate_scepter','item_aether_lens',
+    -- Bot policy: consume Scepter, upgrade Eul's and add cooldown reduction.
+    'item_ultimate_scepter_2','item_wind_waker','item_octarine_core','item_sheepstick',
 }
-
-local tAllAbilityBuildList = {
-						{1,3,1,2,1,6,1,2,2,2,6,3,3,3,6},--pos4,5
+local hardSupportItems = {
+    -- Highest nonempty opening; the 35-match first row has no items.
+    'item_boots','item_ward_sentry','item_blood_grenade','item_tango',
+    'item_magic_wand','item_arcane_boots','item_cyclone','item_aghanims_shard',
+    'item_blink','item_ultimate_scepter','item_aether_lens',
+    -- Bot policy: consumed Scepter and natural Eul's upgrade, then disables.
+    'item_ultimate_scepter_2','item_wind_waker','item_octarine_core','item_sheepstick',
 }
-
-local nAbilityBuildList = J.Skill.GetRandomBuild(tAllAbilityBuildList)
-
-local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList)
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_4'] = {
-    "item_double_tango",
-    "item_double_branches",
-    "item_blood_grenade",
-
-    "item_magic_wand",
-    "item_tranquil_boots",
-    "item_dagon_2",
-    "item_aghanims_shard",
-    "item_guardian_greaves",--
-    "item_blink",
-    "item_force_staff",--
-    "item_boots_of_bearing",--
-    "item_octarine_core",--
-    "item_ultimate_scepter",
-    "item_dagon_5",--
-    "item_swift_blink",--
-    "item_ultimate_scepter_2",
-    "item_wind_waker",--
-    "item_moon_shard",
+local midItems = {
+    -- Observed opening wards omitted: core bots do not place them.
+    'item_four_branches','item_tango','item_faerie_fire',
+    'item_bottle','item_magic_wand','item_arcane_boots','item_dagon','item_dagon_2',
+    'item_aghanims_shard','item_dagon_3','item_kaya','item_dagon_4','item_dagon_5',
+    'item_yasha_and_kaya',
+    -- Bot policy: mobility, consumed Scepter and late spell utility.
+    'item_blink','item_ultimate_scepter','item_ultimate_scepter_2','item_octarine_core','item_ethereal_blade',
 }
+X.sBuyList = sRole == 'pos_2' and midItems or (sRole == 'pos_5' and hardSupportItems or supportItems)
+X.sSellList = sRole == 'pos_2' and {
+    'item_dagon','item_faerie_fire','item_blink','item_bottle','item_ultimate_scepter','item_magic_wand',
+} or {'item_ultimate_scepter','item_magic_wand'}
 
-sRoleItemsBuyList['pos_5'] = {
-    "item_double_tango",
-    "item_double_branches",
-
-    "item_magic_wand",
-    "item_arcane_boots",
-    "item_dagon_2",
-    "item_pipe",
-    "item_aghanims_shard",
-    "item_blink",
-    "item_force_staff",--
-    "item_octarine_core",--
-    "item_ultimate_scepter",
-    "item_dagon_5",--
-    "item_swift_blink",--
-    "item_ultimate_scepter_2",
-    "item_wind_waker",--
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_3'] = {
-    "item_double_tango",
-    "item_double_branches",
-
-    "item_magic_wand",
-    "item_tranquil_boots",
-    "item_dagon_2",
-    "item_aghanims_shard",
-    "item_blink",
-    "item_force_staff",--
-    "item_boots_of_bearing",--
-    "item_octarine_core",--
-    "item_ultimate_scepter",
-    "item_dagon_5",--
-    "item_swift_blink",--
-    "item_ultimate_scepter_2",
-    "item_wind_waker",--
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_3']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-Pos4SellList = {
-	"item_magic_wand",
-}
-
-Pos5SellList = {
-    "item_magic_wand",
-}
-
-X['sSellList'] = {}
-
-if sRole == "pos_4"
-then
-    X['sSellList'] = Pos4SellList
-else
-    X['sSellList'] = Pos5SellList
+if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X.sBuyList, X.sSellList = {'PvN_antimage'}, {} end
+nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList = J.SetUserHeroInit(nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList)
+X.sSkillList = J.Skill.GetSkillList(sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList)
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
 end
-
-if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
-
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

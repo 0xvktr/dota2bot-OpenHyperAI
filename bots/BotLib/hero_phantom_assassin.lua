@@ -16,66 +16,42 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {10, 0},
-						['t20'] = {10, 0},
-						['t15'] = {10, 0},
-						['t10'] = {0, 10},
-}
-
-local tAllAbilityBuildList = {
-	{1,2,1,5,1,6,2,2,2,1,6,5,5,5,6},--pos1
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
+-- Updated to 7.41f from D2PT: carry; forced roles use carry.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/phantom_assassin')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Dagger, [2] Phantom Strike, [5] Immaterial, [6] Coup de Grace.
+local nAbilityBuildList = {1,2,1,2,1,6,1,2,2,5,6,5,5,5,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- +0.8s Phantom Strike duration
+    t15={0,10}, -- +20% Immaterial evasion
+    t20={10,0}, -- +60 Phantom Strike attack speed
+    t25={10,0}, -- Triple Strike Stifling Dagger
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
 local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_quelling_blade",
-	"item_blight_stone",
-
-	"item_orb_of_corrosion",
-	"item_magic_wand",
-	"item_power_treads",
-	"item_bfury",--
-	"item_black_king_bar",--
-	"item_desolator",--
-	"item_aghanims_shard",
-	"item_basher",
-	"item_satanic",--
-	"item_monkey_king_bar",--
-	"item_abyssal_blade",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
+sRoleItemsBuyList.pos_1 = {
+    'item_quelling_blade','item_double_branches','item_magic_stick','item_tango','item_faerie_fire',
+    'item_magic_wand','item_power_treads','item_bfury','item_desolator','item_black_king_bar',
+    'item_basher','item_lifesteal','item_aghanims_shard','item_satanic','item_abyssal_blade',
+    -- Bot policy: consumed attack speed after the observed six-slot inventory.
+    'item_moon_shard',
 }
+for role=2,5 do sRoleItemsBuyList['pos_'..role] = sRoleItemsBuyList.pos_1 end
+X.sBuyList = sRoleItemsBuyList[sRole]
+X.sSellList = {'item_bfury','item_magic_wand','item_desolator','item_quelling_blade'}
 
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
+if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X.sBuyList, X.sSellList = {'PvN_PA'}, {'item_power_treads','item_quelling_blade'} end
 
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_1']
+nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList = J.SetUserHeroInit(nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList)
+X.sSkillList = J.Skill.GetSkillList(sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList)
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-}
-
-if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_PA' }, {"item_power_treads", 'item_quelling_blade'} end
-
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
-X['bDeafaultAbility'] = false
-X['bDeafaultItem'] = false
+X.bDeafaultAbility = false
+X.bDeafaultItem = false
 
 function X.MinionThink(hMinionUnit)
 
@@ -86,33 +62,6 @@ function X.MinionThink(hMinionUnit)
 
 end
 
---[[
-
-npc_dota_hero_phantom_assassin
-
-"Ability1"		"phantom_assassin_stifling_dagger"
-"Ability2"		"phantom_assassin_phantom_strike"
-"Ability3"		"phantom_assassin_blur"
-"Ability4"		"generic_hidden"
-"Ability5"		"generic_hidden"
-"Ability6"		"phantom_assassin_coup_de_grace"
-"Ability10"		"special_bonus_hp_150"
-"Ability11"		"special_bonus_attack_damage_15"
-"Ability12"		"special_bonus_lifesteal_15"
-"Ability13"		"special_bonus_cleave_25"
-"Ability14"		"special_bonus_corruption_4"
-"Ability15"		"special_bonus_unique_phantom_assassin_3"
-"Ability16"		"special_bonus_unique_phantom_assassin_2"
-"Ability17"		"special_bonus_unique_phantom_assassin"
-
-modifier_phantom_assassin_stiflingdagger_caster
-modifier_phantom_assassin_stiflingdagger
-modifier_phantom_assassin_phantom_strike
-modifier_phantom_assassin_blur
-modifier_phantom_assassin_blur_active
-modifier_phantom_assassin_coupdegrace
-
---]]
 
 
 local abilityQ = bot:GetAbilityByName( sAbilityList[1] )
@@ -203,8 +152,8 @@ function X.ConsiderQ()
 	local nCastPoint = abilityQ:GetCastPoint()
 	local nManaCost = abilityQ:GetManaCost()
 	local nSkillLV = abilityQ:GetLevel()
-	local nBonusPer = 0.1 + 0.15 * nSkillLV
-	local nDamage = 65 + nAttackDamage * nBonusPer
+	local nBonusPer = abilityQ:GetSpecialValueInt( 'attack_factor_tooltip' ) / 100
+	local nDamage = abilityQ:GetSpecialValueInt( 'base_damage' ) + nAttackDamage * nBonusPer
 	local nBonusDamage= 8 * nBonusPer
 
 	local nDamageType = DAMAGE_TYPE_PHYSICAL

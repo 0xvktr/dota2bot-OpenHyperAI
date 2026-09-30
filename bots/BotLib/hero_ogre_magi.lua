@@ -16,151 +16,61 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						{--pos2
-							['t25'] = {10, 0},
-							['t20'] = {0, 10},
-							['t15'] = {0, 10},
-							['t10'] = {0, 10},
-						},
-						{--pos3
-							['t25'] = {10, 0},
-							['t20'] = {10, 0},
-							['t15'] = {0, 10},
-							['t10'] = {0, 10},
-						}
+-- D2PT 7.41f: supports/offlane; forced carry/mid use offlane.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/ogre_magi')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+local core = sRole ~= 'pos_4' and sRole ~= 'pos_5'
+-- [1] Fireblast, [2] Ignite, [3] Bloodlust, [6] Multicast.
+local nAbilityBuildList = core and {2,3,2,1,2,6,2,1,1,1,6,3,3,3,6}
+    or {2,1,2,3,2,6,2,3,3,3,6,1,1,1,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- Ignite damage
+    t15=core and {0,10} or {10,0}, -- attack damage / Bloodlust speed
+    t20=core and {10,0} or {0,10}, -- Fireblast damage / Strength
+    t25={10,0}, -- Multicast chance
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+local roleItems = {
+    pos_3={
+        'item_quelling_blade','item_double_gauntlets','item_double_branches','item_tango',
+        'item_magic_wand','item_soul_ring','item_phase_boots','item_hand_of_midas',
+        'item_blink','item_ultimate_scepter','item_black_king_bar','item_aghanims_shard','item_sheepstick',
+        -- Bot policy: consume Scepter, then durable spellcasting and late mobility.
+        'item_ultimate_scepter_2','item_octarine_core','item_heart','item_overwhelming_blink','item_travel_boots',
+    },
+    pos_4={
+        'item_boots','item_ward_observer','item_ward_sentry','item_blood_grenade',
+        -- Bot policy: lane sustain alongside the observed boots opening.
+        'item_tango','item_magic_wand','item_arcane_boots','item_hand_of_midas',
+        'item_blink','item_glimmer_cape','item_aghanims_shard','item_ultimate_scepter','item_aether_lens',
+        -- Bot policy: consume Scepter and replace late Midas with spell utility.
+        'item_ultimate_scepter_2','item_sheepstick','item_octarine_core','item_overwhelming_blink',
+    },
+    pos_5={
+        'item_branches','item_magic_stick','item_ward_sentry','item_double_tango','item_enchanted_mango','item_blood_grenade',
+        'item_magic_wand','item_arcane_boots','item_hand_of_midas','item_glimmer_cape',
+        'item_blink','item_aghanims_shard','item_lotus_orb','item_sheepstick',
+        -- Bot policy: replace late Midas, consume Scepter and add cooldown reduction.
+        'item_ultimate_scepter','item_ultimate_scepter_2','item_octarine_core','item_overwhelming_blink',
+    },
+}
+X.sBuyList = roleItems[core and 'pos_3' or sRole]
+X.sSellList = core and {
+    'item_hand_of_midas','item_quelling_blade','item_ultimate_scepter','item_soul_ring',
+    'item_black_king_bar','item_magic_wand','item_heart','item_hand_of_midas','item_travel_boots','item_phase_boots',
+} or {
+    sRole == 'pos_5' and 'item_lotus_orb' or 'item_ultimate_scepter','item_magic_wand',
+    sRole == 'pos_5' and 'item_ultimate_scepter' or 'item_sheepstick','item_hand_of_midas',
 }
 
-local tAllAbilityBuildList = {
-						{3,2,2,1,2,6,2,1,1,1,6,3,3,3,6},--pos2
-						{2,1,2,3,2,6,3,1,1,1,6,3,3,2,6},--pos3
-}
-
-local nAbilityBuildList
-local nTalentBuildList
-
-if sRole == "pos_2"
-then
-    nAbilityBuildList   = tAllAbilityBuildList[1]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[1])
-else
-    nAbilityBuildList   = tAllAbilityBuildList[2]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[2])
+if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X.sBuyList, X.sSellList = {'PvN_OM'}, {'item_power_treads','item_quelling_blade'} end
+nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList = J.SetUserHeroInit(nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList)
+X.sSkillList = J.Skill.GetSkillList(sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList)
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
 end
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_3'] = {
-	"item_tank_outfit",
-    "item_hand_of_midas",
-	"item_crimson_guard",--
-	"item_aghanims_shard",
-	"item_ultimate_scepter",
-	"item_heavens_halberd",--
-	"item_travel_boots",
-	"item_assault",--
-	"item_sheepstick",--
-	"item_moon_shard",
-	"item_travel_boots_2",--
-	"item_ultimate_scepter_2",
-	"item_octarine_core",--
-}
-
-sRoleItemsBuyList['pos_1'] = {
-	
-	"item_bristleback_outfit",
-	"item_hand_of_midas",
-	"item_aghanims_shard",
-	"item_ultimate_scepter",
-	"item_dagon_5",
-	"item_travel_boots",
-	"item_sheepstick", --
-	"item_octarine_core",
-	"item_moon_shard",
-	"item_travel_boots_2",
-	"item_ultimate_scepter_2",
-	"item_bloodthorn",
-}
-
-sRoleItemsBuyList['pos_2'] = {
-	"item_tango",
-	"item_double_branches",
-
-	"item_bracer",
-	"item_bottle",
-	"item_phase_boots",
-	"item_soul_ring",
-	"item_magic_wand",
-	"item_hand_of_midas",
-	"item_blade_mail",
-	"item_heart",--
-	"item_black_king_bar",--
-	"item_shivas_guard",--
-	"item_ultimate_scepter",
-	"item_octarine_core",--
-	"item_travel_boots",
-	"item_ultimate_scepter_2",
-	"item_sheepstick",--
-	"item_travel_boots_2",--
-	"item_moon_shard",
-	"item_aghanims_shard",
-}
-
-sRoleItemsBuyList['pos_4'] = {
-	'item_priest_outfit',
-	"item_hand_of_midas",
-	"item_mekansm",
-	"item_glimmer_cape",
-	"item_aghanims_shard",
-	"item_guardian_greaves",
-	"item_spirit_vessel",
-	"item_lotus_orb",
-	"item_gungir",--
-	--"item_holy_locket",
-	"item_ultimate_scepter",
-	"item_sheepstick",
-	"item_mystic_staff",
-	"item_ultimate_scepter_2",
-	"item_shivas_guard",
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-	'item_mage_outfit',
-	"item_hand_of_midas",
-	"item_glimmer_cape",
-
-    "item_pavise",
-	"item_pipe",--
-    "item_solar_crest",--
-	"item_lotus_orb",--
-	"item_aghanims_shard",
-	"item_spirit_vessel",--
-	"item_ultimate_scepter",
-	"item_shivas_guard",--
-	"item_mystic_staff",
-	"item_ultimate_scepter_2",
-    "item_moon_shard",
-	"item_sheepstick",--
-}
-
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-	"item_sheepstick",
-	"item_hand_of_midas",
-}
-
-if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_OM' }, {"item_power_treads", 'item_quelling_blade'} end
-
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
@@ -174,42 +84,13 @@ function X.MinionThink(hMinionUnit)
 
 end
 
---[[
 
-npc_dota_hero_ogre_magi
-
-ogre_magi_fireblast
-ogre_magi_ignite
-ogre_magi_bloodlust
-ogre_magi_unrefined_fireblast
-ogre_magi_multicast
-special_bonus_gold_income_10
-special_bonus_cast_range_100
-special_bonus_attack_damage_50
-special_bonus_magic_resistance_8
-special_bonus_hp_250
-special_bonus_movement_speed_25
-special_bonus_spell_amplify_15
-special_bonus_unique_ogre_magi
-
-
-modifier_ogre_magi_frost_armor
-modifier_ogre_magi_frost_armor_slow
-modifier_ogre_magi_fireblast_multicast
-modifier_ogre_magi_ignite
-modifier_ogre_magi_ignite_multicast
-modifier_ogre_magi_bloodlust_autocast
-modifier_ogre_magi_bloodlust
-
-]]
 
 local abilityQ = bot:GetAbilityByName( sAbilityList[1] )
 local abilityW = bot:GetAbilityByName( sAbilityList[2] )
 local abilityE = bot:GetAbilityByName( sAbilityList[3] )
 local abilityD = bot:GetAbilityByName( sAbilityList[4] )
-local FireShield = bot:GetAbilityByName( sAbilityList[5] )
-local talent2 = bot:GetAbilityByName( sTalentList[2] )
-local talent8 = bot:GetAbilityByName( sTalentList[8] )
+local FireShield = bot:GetAbilityByName('ogre_magi_smash')
 
 local castQDesire, castQTarget
 local castWDesire, castWTarget
@@ -220,7 +101,6 @@ local FireShieldDesire, FireShieldTarget
 
 local nKeepMana, nMP, nHP, nLV, hEnemyList, hAllyList, botTarget, sMotive
 local aetherRange = 0
-local talent8Damage = 0
 
 
 function X.SkillsComplement()
@@ -231,7 +111,6 @@ function X.SkillsComplement()
 
 	nKeepMana = 300
 	aetherRange = 0
-	talent8Damage = 0
 	nLV = bot:GetLevel()
 	nMP = bot:GetMana()/bot:GetMaxMana()
 	nHP = bot:GetHealth()/bot:GetMaxHealth()
@@ -242,8 +121,6 @@ function X.SkillsComplement()
 
 	local aether = J.IsItemAvailable( "item_aether_lens" )
 	if aether ~= nil then aetherRange = 250 end
---	if talent2:IsTrained() then aetherRange = aetherRange + talent2:GetSpecialValueInt( "value" ) end
-	if talent8:IsTrained() then talent8Damage = talent8Damage + talent8:GetSpecialValueInt( "value" ) end
 
 
 	castQDesire, castQTarget, sMotive = X.ConsiderQ()
@@ -318,7 +195,7 @@ function X.ConsiderQ()
 
 	local nCastPoint = abilityQ:GetCastPoint()
 	local nManaCost = abilityQ:GetManaCost()
-	local nDamage = abilityQ:GetSpecialValueInt( "fireblast_damage" ) + talent8Damage
+	local nDamage = abilityQ:GetSpecialValueInt("fireblast_damage")
 	local nDamageType = DAMAGE_TYPE_MAGICAL
 
 	local nInRangeEnemyList = J.GetNearbyHeroes(bot, nCastRange + 50, true, BOT_MODE_NONE )
@@ -1119,16 +996,14 @@ end
 
 function X.ConsiderFireShield()
 
-	if not FireShield:IsTrained()
+	if FireShield:IsHidden()
+	or not FireShield:IsTrained()
 	or not FireShield:IsFullyCastable()
 	then
 		return BOT_ACTION_DESIRE_NONE, 0
 	end
 
-	local nRadius = 600
 	local nCastRange = FireShield:GetCastRange() + aetherRange
-	local nCastPoint = FireShield:GetCastPoint()
-	local nManaCost = FireShield:GetManaCost()
 
 	for _, npcEnemy in pairs( hEnemyList )
 	do
@@ -1138,6 +1013,7 @@ function X.ConsiderFireShield()
 			local enemyTarget = npcEnemy:GetAttackTarget()
 
 			if enemyTarget ~= nil
+			and enemyTarget:GetTeam() == bot:GetTeam()
 			and J.IsInRange( bot, enemyTarget, nCastRange )
 			and not enemyTarget:HasModifier( 'modifier_fountain_glyph' )
 			and not enemyTarget:HasModifier( 'modifier_ogre_magi_smash_buff' )

@@ -7,95 +7,67 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {--pos4,5
-                        ['t25'] = {0, 10},
-                        ['t20'] = {0, 10},
-                        ['t15'] = {10, 0},
-                        ['t10'] = {0, 10},
-}
-
-local tAllAbilityBuildList = {
-						{2,1,2,3,2,6,2,3,3,3,6,1,1,1,6},--pos4,5
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild(tAllAbilityBuildList)
-
-local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList)
-
+-- Updated to 7.41f from D2PT: mid, offlane and both supports; forced carry uses support.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/phoenix')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Icarus Dive, [2] Fire Spirits, [3] Sun Ray, [6] Supernova.
+local nAbilityBuildList = {2,1,2,1,2,6,2,1,1,3,6,3,3,3,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- +25% Icarus Dive slow
+    t15={0,10}, -- +20 Fire Spirits damage per second
+    t20={0,10}, -- +1.25% max health Sun Ray damage
+    t25={0,10}, -- +2 Supernova hit count
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
 local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_4'] = {
-    "item_double_tango",
-    "item_double_branches",
-    "item_blood_grenade",
-
-    "item_boots",
-    "item_magic_wand",
-    "item_tranquil_boots",
-    "item_veil_of_discord",
-    "item_aghanims_shard",
-    "item_shivas_guard",--
-    "item_force_staff",--
-    "item_boots_of_bearing",--
-    "item_cyclone",
-    "item_refresher",--
-    "item_sheepstick",--
-    "item_wind_waker",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
+sRoleItemsBuyList.pos_4 = {
+    'item_branches','item_circlet','item_magic_stick','item_ward_sentry','item_tango','item_blood_grenade',
+    'item_urn_of_shadows','item_tranquil_boots','item_magic_wand','item_spirit_vessel',
+    'item_aghanims_shard','item_shivas_guard','item_aeon_disk',
+    -- Bot policy: late Refresher and consumed Scepter, then defensive Eul's upgrade.
+    'item_refresher','item_ultimate_scepter','item_ultimate_scepter_2','item_cyclone','item_wind_waker',
 }
-
-sRoleItemsBuyList['pos_5'] = {
-    "item_blood_grenade",
-	"item_mage_outfit",
-	"item_ancient_janggo",
-	"item_glimmer_cape",
-	"item_boots_of_bearing",
-	"item_pipe",
-    "item_ultimate_scepter",
-	"item_cyclone",
-	"item_shivas_guard",--
---	"item_wraith_pact",
-    "item_refresher",--
-	"item_sheepstick",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
+sRoleItemsBuyList.pos_5 = {
+    'item_branches','item_circlet','item_magic_stick','item_ward_sentry','item_tango','item_blood_grenade',
+    'item_urn_of_shadows','item_tranquil_boots','item_magic_wand','item_spirit_vessel',
+    'item_aghanims_shard','item_shivas_guard','item_aeon_disk','item_refresher',
+    -- Bot policy: consumed Scepter and defensive Eul's upgrade.
+    'item_ultimate_scepter','item_ultimate_scepter_2','item_cyclone','item_wind_waker',
 }
-
-
-sRoleItemsBuyList['pos_2'] = {
-	"item_bristleback_outfit",
-    "item_hand_of_midas",
-    "item_radiance",--
-	"item_kaya_and_sange",--
-    "item_aghanims_shard",
-	"item_shivas_guard",--
-	"item_heart",--
-    "item_ultimate_scepter_2",
-    "item_refresher",--
-    "item_travel_boots_2",--
-    "item_moon_shard",
+sRoleItemsBuyList.pos_2 = {
+    -- Observed starting ward omitted: core bots do not place it.
+    'item_gauntlets','item_double_branches','item_circlet','item_tango','item_faerie_fire',
+    'item_bracer','item_bracer','item_urn_of_shadows','item_tranquil_boots','item_spirit_vessel',
+    'item_shivas_guard','item_aghanims_shard','item_refresher','item_ultimate_scepter',
+    -- Bot policy: consume Scepter, then protection and late disable.
+    'item_ultimate_scepter_2','item_black_king_bar','item_sheepstick',
 }
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_2']
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_2']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_heart",--
-    "item_hand_of_midas",
+sRoleItemsBuyList.pos_3 = {
+    'item_gauntlets','item_double_branches','item_circlet','item_tango','item_faerie_fire',
+    'item_bracer','item_bracer','item_urn_of_shadows','item_tranquil_boots','item_spirit_vessel',
+    'item_shivas_guard','item_aghanims_shard','item_refresher',
+    -- Bot policy: consumed Scepter, late disable and protection.
+    'item_ultimate_scepter','item_ultimate_scepter_2','item_sheepstick','item_black_king_bar',
 }
+sRoleItemsBuyList.pos_1 = {}
+for _,item in ipairs(sRoleItemsBuyList.pos_4) do
+    if item ~= 'item_ward_sentry' then table.insert(sRoleItemsBuyList.pos_1,item) end
+end
+X.sBuyList = sRoleItemsBuyList[sRole]
+X.sSellList = {'item_shivas_guard','item_magic_wand','item_shivas_guard','item_bracer','item_shivas_guard','item_bracer'}
 
-if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
+if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X.sBuyList, X.sSellList = {'PvN_antimage'}, {} end
 
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
+nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList = J.SetUserHeroInit(nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList)
+X.sSkillList = J.Skill.GetSkillList(sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList)
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
-X['bDeafaultAbility'] = false
-X['bDeafaultItem'] = false
+X.bDeafaultAbility = false
+X.bDeafaultItem = false
 
 function X.MinionThink(hMinionUnit)
     Minion.MinionThink(hMinionUnit)

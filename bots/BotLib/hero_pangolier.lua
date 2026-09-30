@@ -7,114 +7,46 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						{--pos2
-                            ['t25'] = {10, 0},
-                            ['t20'] = {0, 10},
-                            ['t15'] = {0, 10},
-                            ['t10'] = {10, 0},
-                        },--pos3
-                        {
-                            ['t25'] = {10, 0},
-                            ['t20'] = {10, 0},
-                            ['t15'] = {0, 10},
-                            ['t10'] = {10, 0},
-                        }
+-- Updated to 7.41f from D2PT: mid/offlane; forced picks use offlane.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/pangolier')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Swashbuckle, [2] Shield Crash, [3] Lucky Shot, [6] Rolling Thunder.
+local nAbilityBuildList = {1,2,1,2,1,6,1,2,2,3,6,3,3,3,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, t15={0,10}, t20={10,0}, t25={10,0},
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+local isMid = sRole == 'pos_2'
+X.sBuyList = isMid and {
+    'item_double_branches','item_double_branches','item_branches','item_tango',
+    'item_bottle','item_magic_wand','item_diffusal_blade','item_power_treads',
+} or {
+    'item_double_branches','item_branches','item_circlet','item_circlet','item_tango',
+    'item_bracer','item_magic_wand','item_null_talisman','item_power_treads','item_diffusal_blade',
 }
-
-local tAllAbilityBuildList = {
-						{2,1,2,1,1,6,1,2,2,3,6,3,3,3,6},--pos2
-                        {2,1,3,2,2,6,2,1,1,1,6,3,3,3,6},--pos3
+local progression = {
+    'item_blink','item_aghanims_shard','item_ultimate_scepter','item_basher','item_octarine_core',
+    -- Bot policy: consume Scepter, then upgrade existing items and add late armor.
+    'item_ultimate_scepter_2','item_disperser','item_abyssal_blade',
+    'item_overwhelming_blink','item_shivas_guard','item_moon_shard',
 }
-
-local nAbilityBuildList
-local nTalentBuildList
-
-if sRole == "pos_2"
-then
-    nAbilityBuildList   = tAllAbilityBuildList[1]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[1])
+for _,item in ipairs(progression) do table.insert(X.sBuyList,item) end
+X.sSellList = {'item_ultimate_scepter','item_magic_wand'}
+if isMid then
+    table.insert(X.sSellList,'item_basher'); table.insert(X.sSellList,'item_bottle')
 else
-    nAbilityBuildList   = tAllAbilityBuildList[2]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[2])
+    table.insert(X.sSellList,'item_blink'); table.insert(X.sSellList,'item_bracer')
+    table.insert(X.sSellList,'item_ultimate_scepter'); table.insert(X.sSellList,'item_null_talisman')
 end
-
-local sUtility = {"item_pipe", "item_lotus_orb", "item_heavens_halberd", "item_crimson_guard"}
-local nUtility = sUtility[RandomInt(1, #sUtility)]
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_2'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_quelling_blade",
-    "item_faerie_fire",
-
-    "item_bottle",
-    "item_magic_wand",
-    "item_arcane_boots",
-    "item_diffusal_blade",
-    "item_mage_slayer",--
-    "item_blink",
-    "item_ultimate_scepter",
-    "item_aghanims_shard",
-    "item_basher",
-    "item_disperser",--
-    "item_octarine_core",--
-    "item_abyssal_blade",--
-    "item_ultimate_scepter_2",
-    "item_travel_boots",
-    "item_moon_shard",
-    "item_overwhelming_blink",--
-    "item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_3'] = {
-    "item_quelling_blade",
-    "item_tango",
-    "item_double_branches",
-
-    "item_bracer",
-    "item_arcane_boots",
-    "item_magic_wand",
-    "item_diffusal_blade",
-    "item_blink",
-    nUtility,--
-    "item_mage_slayer",--
-    "item_ultimate_scepter",
-    "item_aghanims_shard",
-    "item_octarine_core",--
-    "item_disperser",--
-    "item_ultimate_scepter_2",
-    "item_travel_boots",
-    "item_moon_shard",
-    "item_overwhelming_blink",--
-    "item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_3']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-}
-
-if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_mid' }, {} end
-
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
-X['bDeafaultAbility'] = false
-X['bDeafaultItem'] = false
+if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X.sBuyList, X.sSellList = {'PvN_mid'}, {} end
+nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList = J.SetUserHeroInit(nAbilityBuildList,nTalentBuildList,X.sBuyList,X.sSellList)
+X.sSkillList = J.Skill.GetSkillList(sAbilityList,nAbilityBuildList,sTalentList,nTalentBuildList)
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
+X.bDeafaultAbility = false
+X.bDeafaultItem = false
 
 function X.MinionThink(hMinionUnit)
 

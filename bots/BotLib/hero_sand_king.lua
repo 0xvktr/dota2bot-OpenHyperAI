@@ -16,104 +16,56 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {10, 0},
-						['t20'] = {0, 10},
-						['t15'] = {0, 10},
-						['t10'] = {10, 0},
-}
-
-local tAllAbilityBuildList = {
-						{1,3,2,2,2,6,2,1,1,1,6,3,3,3,6},--pos3
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sCrimsonPipe = RandomInt( 1, 2 ) == 1 and "item_crimson_guard" or "item_pipe"
-
+-- Updated to 7.41f from D2PT: offlane and mid; forced other roles use offlane.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/sand_king')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Burrowstrike, [2] Sand Storm, [3] Stinger, [6] Epicenter.
+local nAbilityBuildList = sRole=='pos_2'
+    and {2,3,2,1,2,6,2,1,1,1,6,3,3,3,6}
+    or {2,1,2,3,2,6,2,1,1,1,6,3,3,3,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- +12% Stinger slow
+    t15=sRole=='pos_2' and {10,0} or {0,10}, -- Burrowstrike range / Sand Storm damage
+    t20={10,0}, -- +6 Epicenter pulses
+    t25={0,10}, -- +125 Stinger damage
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
 local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_3'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_circlet",
-	"item_circlet",
-	"item_quelling_blade",
-
-	"item_magic_wand",
-	"item_bracer",
-	"item_boots",
-	"item_veil_of_discord",
-	"item_blink",
-	"item_cyclone",
-	"item_shivas_guard",--
-	"item_travel_boots",
-	"item_aghanims_shard",
-	"item_ultimate_scepter",
-	"item_black_king_bar",--
-	sCrimsonPipe,--
-	"item_overwhelming_blink",--
-	"item_ultimate_scepter_2",
-	"item_wind_waker",--
-	"item_travel_boots_2",--
-	"item_moon_shard",
+sRoleItemsBuyList.pos_3 = {
+    'item_quelling_blade','item_gauntlets','item_double_branches','item_circlet','item_tango',
+    'item_bracer','item_magic_wand','item_phase_boots','item_blink','item_ultimate_scepter',
+    'item_aghanims_shard','item_cyclone',
+    -- Bot policy: protection and armor, then consumed Scepter and natural upgrades.
+    'item_black_king_bar','item_shivas_guard','item_ultimate_scepter_2',
+    'item_wind_waker','item_overwhelming_blink',
 }
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_4'] = {
-	"item_priest_outfit",
-	"item_mekansm",
-	"item_glimmer_cape",
-	"item_aghanims_shard",
-	"item_guardian_greaves",
-	"item_spirit_vessel",
---	"item_wraith_pact",
-	"item_ultimate_scepter",
-	"item_shivas_guard",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-	"item_sheepstick",
+sRoleItemsBuyList.pos_2 = {
+    -- Observed starting ward omitted: core bots do not place it.
+    'item_double_branches','item_double_branches','item_branches','item_tango',
+    'item_bottle','item_magic_wand','item_phase_boots','item_blink','item_ultimate_scepter',
+    'item_aghanims_shard','item_black_king_bar','item_shivas_guard',
+    -- Bot policy: omit optional Veil; Shiva does not consume it. Consume Scepter for late slots.
+    'item_ultimate_scepter_2','item_lesser_crit','item_greater_crit','item_cyclone',
+    'item_wind_waker','item_overwhelming_blink',
 }
+sRoleItemsBuyList.pos_1 = sRoleItemsBuyList.pos_3
+sRoleItemsBuyList.pos_4 = sRoleItemsBuyList.pos_3
+sRoleItemsBuyList.pos_5 = sRoleItemsBuyList.pos_3
+X.sBuyList = sRoleItemsBuyList[sRole]
+X.sSellList = {'item_ultimate_scepter','item_magic_wand','item_black_king_bar','item_bracer','item_shivas_guard','item_bottle','item_blink','item_quelling_blade'}
 
-sRoleItemsBuyList['pos_5'] = {
-    "item_blood_grenade",
-	"item_mage_outfit",
-	"item_ancient_janggo",
-	-- "item_glimmer_cape",
-	"item_boots_of_bearing",--
-	"item_pipe",--
-    "item_ultimate_scepter",
-	"item_cyclone",
---	"item_wraith_pact",
-    -- "item_lotus_orb",
-	-- "item_gungir",--
-	"item_shivas_guard",--
-	"item_sheepstick",--
-	"item_moon_shard",
-    "item_wind_waker",--
-	"item_ultimate_scepter_2",
-}
+if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X.sBuyList, X.sSellList = {'PvN_tank'}, {'item_power_treads','item_quelling_blade'} end
 
-X['sBuyList'] = sRoleItemsBuyList[sRole]
+nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList = J.SetUserHeroInit(nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList)
+X.sSkillList = J.Skill.GetSkillList(sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList)
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-}
-if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_tank' }, {"item_power_treads", 'item_quelling_blade'} end
-
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
-X['bDeafaultAbility'] = true
-X['bDeafaultItem'] = false
+X.bDeafaultAbility = false
+X.bDeafaultItem = false
 
 function X.MinionThink(hMinionUnit)
 
@@ -124,37 +76,6 @@ function X.MinionThink(hMinionUnit)
 
 end
 
---[[
-
-npc_dota_hero_sand_king
-
-"Ability1"		"sandking_burrowstrike"
-"Ability2"		"sandking_sand_storm"
-"Ability3"		"sandking_caustic_finale"
-"Ability4"		"generic_hidden"
-"Ability5"		"generic_hidden"
-"Ability6"		"sandking_epicenter"
-"Ability10"		"special_bonus_movement_speed_20"
-"Ability11"		"special_bonus_hp_200"
-"Ability12"		"special_bonus_unique_sand_king_2"
-"Ability13"		"special_bonus_unique_sand_king_3"
-"Ability14"		"special_bonus_armor_10"
-"Ability15"		"special_bonus_unique_sand_king"
-"Ability16"		"special_bonus_hp_regen_50"
-"Ability17"		"special_bonus_unique_sand_king_4"
-
-modifier_sand_king_caustic_finale
-modifier_sand_king_caustic_finale_orb
-modifier_sand_king_caustic_finale_slow
-modifier_sandking_impale
-modifier_sandking_burrowstrike
-modifier_sandking_sand_storm
-modifier_sandking_sand_storm_slow
-modifier_sand_king_epicenter
-modifier_sand_king_epicenter_slow
-
-
---]]
 
 local abilityQ = bot:GetAbilityByName( sAbilityList[1] )
 local abilityW = bot:GetAbilityByName( sAbilityList[2] )
@@ -650,9 +571,9 @@ function X.ConsiderR()
 	local nDamageType = DAMAGE_TYPE_MAGICAL
 	local nInRangeEnemyList = J.GetNearbyHeroes(bot, nCastRange, true, BOT_MODE_NONE )
 
-	local nRadius = abilityR:GetSpecialValueInt( "epicenter_radius" )
+	local nRadius = abilityR:GetSpecialValueInt( "epicenter_radius_base" )
 	local nPulses = abilityR:GetSpecialValueInt( "epicenter_pulses" )
-	local nMaxRadius = nRadius + nPulses * 50
+	local nMaxRadius = nRadius + (nPulses - 1) * abilityR:GetSpecialValueInt( "epicenter_radius_increment" )
 
 	--两机会或两个控后Aoe
 	if J.IsInTeamFight( bot, 1600 )

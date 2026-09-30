@@ -21,11 +21,16 @@ const lua = [
     'bots/FunLib/hero_build_preferences.lua', 'bots/FunLib/alchemist_scepter.lua', 'bots/FunLib/inventory_upkeep.lua', 'bots/FunLib/debug_dumps.lua', 'bots/FunLib/aba_ward_utility.lua', 'bots/mode_ward_generic.lua', 'bots/FunLib/aba_item.lua',
     'bots/FunLib/aba_hero_pos_weights.lua', 'bots/FretBots/BonusTimers.lua', 'bots/Buff/NeutralItems.lua',
     'bots/FretBots/NeutralItems.lua', 'bots/hero_selection.lua', 'bots/item_purchase_generic.lua',
-    'bots/ability_item_usage_generic.lua',
+    'bots/ability_item_usage_generic.lua', 'bots/FunLib/jmz_func.lua',
     ...fs.readdirSync('tests').filter(f => f.endsWith('.lua')).map(f => 'tests/' + f),
 ];
 for (const file of lua) parser.parse(read(file), {luaVersion: '5.2'});
 console.log(`Lua syntax passed for ${lua.length} files`);
+
+for (const file of ['creep_deny_spec.cjs', 'mask_disassembly_spec.cjs']) {
+    const result = cp.spawnSync(process.execPath, [path.join('tests', file)], {stdio: 'inherit'});
+    assert.strictEqual(result.status, 0, `${file} failed`);
+}
 
 // 2. Position weights: the TypeScript source and generated Lua must agree for every hero.
 const stripComments = text => text.replace(/--[^\n]*|\/\/[^\n]*/g, '');

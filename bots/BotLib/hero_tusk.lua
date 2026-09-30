@@ -7,102 +7,46 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {--pos4,5
-                        ['t25'] = {10, 0},
-                        ['t20'] = {0, 10},
-                        ['t15'] = {10, 0},
-                        ['t10'] = {10, 0},
+-- D2PT 7.41f: support roles; skipped roles use pos 5 without core wards.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/tusk')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+local buildRole = BuildData.roles[sRole].skipped and 'pos_5' or sRole
+-- [1] Ice Shards, [2] Snowball, [3] Tag Team, [6] Walrus Punch.
+local nAbilityBuildList = {3,1,2,3,3,6,3,2,2,2,6,1,1,1,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({t10={10,0},t15={10,0},t20={0,10},t25={0,10}})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+local sRoleItemsBuyList = {
+    pos_4={
+        'item_boots','item_ward_sentry','item_blood_grenade',
+        'item_tranquil_boots','item_magic_wand','item_blink','item_cyclone','item_aghanims_shard',
+        'item_ultimate_scepter','item_black_king_bar',
+        -- Bot policy: consume Scepter, then defensive utility within six major slots.
+        'item_ultimate_scepter_2','item_lotus_orb','item_wind_waker','item_sheepstick','item_overwhelming_blink',
+    },
+    pos_5={
+        'item_boots','item_ward_sentry','item_blood_grenade',
+        'item_tranquil_boots','item_magic_wand','item_blink','item_cyclone','item_ultimate_scepter','item_lotus_orb',
+        -- Bot policy: Shard, consumed Scepter and late defensive/control upgrades.
+        'item_aghanims_shard','item_ultimate_scepter_2','item_black_king_bar','item_wind_waker','item_sheepstick','item_overwhelming_blink',
+    },
 }
+X.sBuyList = sRoleItemsBuyList[buildRole]
+if sRole == 'pos_1' or sRole == 'pos_2' or sRole == 'pos_3' then
+    X.sBuyList = {}
+    for _,item in ipairs(sRoleItemsBuyList[buildRole]) do
+        if item ~= 'item_ward_sentry' then table.insert(X.sBuyList,item) end
+    end
+end
+X.sSellList = {'item_ultimate_scepter','item_magic_wand'}
 
-local tAllAbilityBuildList = {
-						{3,1,2,3,3,6,3,2,2,2,6,1,1,1,6},--pos4,5
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild(tAllAbilityBuildList)
-
-local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList)
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_4'] = {
-    "item_double_tango",
-    "item_faerie_fire",
-    "item_wind_lace",
-
-    "item_magic_wand",
-    "item_arcane_boots",
-    "item_blink",
-    "item_guardian_greaves",--
-    "item_cyclone",
-    "item_ultimate_scepter",
-    "item_aghanims_shard",
-    "item_black_king_bar",--
-    "item_lotus_orb",--
-	"item_gungir",--
-    "item_wind_waker",--
-    -- "item_ultimate_scepter_2",
-    "item_overwhelming_blink",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-    "item_double_tango",
-    "item_faerie_fire",
-    "item_wind_lace",
-
-    "item_magic_wand",
-    "item_tranquil_boots",
-    "item_boots_of_bearing",--
-    "item_pipe",--
-    "item_ultimate_scepter",
-    "item_aghanims_shard",
-    "item_pavise",
-    "item_blink",
-    "item_solar_crest",--
-	"item_heavens_halberd",--
-    "item_lotus_orb",--
-	"item_gungir",--
-    -- "item_ultimate_scepter_2",
-    "item_overwhelming_blink",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_tank_outfit",
-	"item_echo_sabre",
-	"item_crimson_guard",--
-	"item_ultimate_scepter",
-	"item_heavens_halberd",--
-	"item_assault",--
-	"item_travel_boots",
-	"item_aghanims_shard",
-	"item_satanic",--
-	"item_ultimate_scepter_2",
-	"item_moon_shard",
-	"item_heart",--
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-}
-
-if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
-
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X.sBuyList, X.sSellList = {'PvN_antimage'}, {} end
+nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList = J.SetUserHeroInit(nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList)
+X.sSkillList = J.Skill.GetSkillList(sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList)
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

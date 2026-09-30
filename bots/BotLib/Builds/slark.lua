@@ -1,0 +1,64 @@
+-- Header 6776; role rows 6763. Offlane included at 6% with its Mage Slayer build. Supports below 5%; forced picks use carry.
+return {
+    patch='7.41f', updated='2026-09-30', defaultRole='pos_1',
+    source='https://dota2protracker.com/hero/Slark?section=builds',
+    overviewWindow='last 8 days, 7000+', buildWindow='2026-09-16 to 2026-09-30', buildUpdated='2026-09-30',
+    roles={
+        pos_1={matches=5058,winRate=52.6,rating=57,weight=87,buildMatches=8227,buildWinRate=54.0,skillMatches=3102,openingMatches=2326,openingObserved=8223},
+        pos_2={matches=939,winRate=52.1,rating=46,weight=62,buildMatches=1720,buildWinRate=53.0,skillMatches=422,openingMatches=181,openingObserved=1717},
+        pos_3={matches=406,winRate=49.8,rating=36,weight=46,buildMatches=685,buildWinRate=52.0,skillMatches=150,openingMatches=86,openingObserved=684},
+        pos_4={matches=248,winRate=46.0,rating=26,skipped=true},
+        pos_5={matches=112,winRate=43.8,rating=30,skipped=true},
+    },
+    -- Current-tier pick frequencies; T5 uses reviewed suitability.
+    neutrals={
+        pos_1={tier5Profile='attack',
+            neutral={
+                [1]={item_duelist_gloves=22.9,item_occult_bracelet=15.3,item_chipped_vest=14.7,item_possessed_mask=12.1,item_weighted_dice=10.4,item_dormant_curio=9.4,item_stonefeather_satchel=3.9},
+                [2]={item_mana_draught=26.3,item_defiant_shell=17.9,item_crippling_crossbow=10.6,item_poor_mans_shield=10.3,item_essence_ring=6.5,item_pogo_stick=3.9},
+                [3]={item_serrated_shiv=35.3,item_gunpowder_gauntlets=22.4,item_cloak_of_flames=16.5,item_unrelenting_eye=4.0,item_stormcrafter=2.4},
+                [4]={item_giant_maul=26.4,item_flayers_bota=18.6,item_prophets_pendulum=16.0,item_enchanters_bauble=8.1,item_dandelion_amulet=4.6},
+                [5]={item_desolator_2=38.3,item_minotaur_horn=19.2,item_heavy_blade=10.8,item_fallen_sky=10.0,item_divine_regalia=9.2,item_spider_legs=5.8,item_demonicon=3.3},
+            },
+            enhancement={
+                [1]={item_enhancement_alert=65.1,item_enhancement_brawny=22.9,item_enhancement_quickened=10.9},
+                [2]={item_enhancement_alert=80.9,item_enhancement_brawny=9.7,item_enhancement_nimble=5.7},
+                [3]={item_enhancement_alert=85.7,item_enhancement_brawny=7.3,item_enhancement_nimble=5.0},
+                [4]={item_enhancement_alert=94.9,item_enhancement_brawny=2.2,item_enhancement_quickened=1.9},
+                [5]={item_enhancement_evolved=44.2,item_enhancement_audacious=35.0,item_enhancement_fleetfooted=14.2},
+            },
+        },
+        pos_2={tier5Profile='attack',
+            neutral={
+                [1]={item_duelist_gloves=25.5,item_occult_bracelet=14.0,item_possessed_mask=13.7,item_chipped_vest=11.3,item_dormant_curio=8.9,item_weighted_dice=8.5,item_stonefeather_satchel=5.4},
+                [2]={item_mana_draught=23.3,item_defiant_shell=16.2,item_crippling_crossbow=13.6,item_poor_mans_shield=9.6,item_essence_ring=9.4,item_pogo_stick=5.0},
+                [3]={item_serrated_shiv=33.2,item_gunpowder_gauntlets=25.1,item_cloak_of_flames=17.3,item_unrelenting_eye=4.3},
+                [4]={item_giant_maul=28.7,item_prophets_pendulum=15.7,item_flayers_bota=14.9,item_enchanters_bauble=8.2,item_dandelion_amulet=4.4},
+                [5]={item_desolator_2=50.0,item_spider_legs=20.0,item_minotaur_horn=10.0,item_heavy_blade=10.0,item_divine_regalia=10.0},
+            },
+            enhancement={
+                [1]={item_enhancement_alert=66.3,item_enhancement_brawny=20.6,item_enhancement_quickened=12.6},
+                [2]={item_enhancement_alert=78.0,item_enhancement_brawny=11.0,item_enhancement_nimble=5.9},
+                [3]={item_enhancement_alert=84.4,item_enhancement_brawny=7.9,item_enhancement_nimble=5.3},
+                [4]={item_enhancement_alert=95.4,item_enhancement_quickened=2.1,item_enhancement_brawny=1.9},
+                [5]={item_enhancement_audacious=40.0,item_enhancement_evolved=40.0,item_enhancement_fleetfooted=20.0},
+            },
+        },
+        pos_3={tier5Profile='attack',
+            neutral={
+                [1]={item_duelist_gloves=24.7,item_possessed_mask=16.4,item_occult_bracelet=14.7,item_chipped_vest=13.9,item_dormant_curio=8.2,item_weighted_dice=6.9,item_ash_legion_shield=4.8},
+                [2]={item_mana_draught=23.5,item_defiant_shell=19.3,item_poor_mans_shield=9.9,item_crippling_crossbow=9.3,item_essence_ring=8.6,item_pogo_stick=5.5},
+                [3]={item_serrated_shiv=31.1,item_gunpowder_gauntlets=24.2,item_cloak_of_flames=20.9,item_stormcrafter=3.8,item_unrelenting_eye=3.3},
+                [4]={item_giant_maul=26.1,item_prophets_pendulum=15.3,item_flayers_bota=12.8,item_enchanters_bauble=7.9,item_dandelion_amulet=5.4},
+                [5]={item_fallen_sky=42.9,item_desolator_2=14.3,item_heavy_blade=14.3,item_divine_regalia=14.3},
+            },
+            enhancement={
+                [1]={item_enhancement_alert=64.2,item_enhancement_brawny=23.6,item_enhancement_quickened=11.2},
+                [2]={item_enhancement_alert=77.8,item_enhancement_brawny=14.7,item_enhancement_nimble=4.7},
+                [3]={item_enhancement_alert=84.3,item_enhancement_brawny=9.2,item_enhancement_nimble=5.4},
+                [4]={item_enhancement_alert=96.6,item_enhancement_quickened=1.5,item_enhancement_brawny=1.5},
+                [5]={item_enhancement_audacious=85.7,item_enhancement_evolved=14.3},
+            },
+        },
+    },
+}

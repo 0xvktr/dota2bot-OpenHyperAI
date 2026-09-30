@@ -16,133 +16,39 @@ local sTalentList = J.Skill.GetTalentList(bot)
 local sAbilityList = J.Skill.GetAbilityList(bot)
 local sRole = J.Item.GetRoleItemsBuyList(bot)
 
-local tTalentTreeList = {
-						['t25'] = {0, 10},
-						['t20'] = {0, 10},
-						['t15'] = {10, 0},
-						['t10'] = {0, 10},
+-- Updated to 7.41f from D2PT: mid; forced other roles use the mid build.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/queenofpain')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Shadow Strike, [2] Blink, [3] Scream of Pain, [6] Sonic Wave.
+local nAbilityBuildList = {3,2,3,2,3,6,3,2,2,1,6,1,1,1,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- +7 strength
+    t15={0,10}, -- -1s Shadow Strike damage interval
+    t20={0,10}, -- +115 Scream of Pain damage
+    t25={0,10}, -- -2s Blink cooldown
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    'item_double_branches','item_double_branches','item_tango','item_faerie_fire',
+    'item_bottle','item_null_talisman','item_magic_wand','item_power_treads','item_kaya',
+    'item_kaya_and_sange','item_ultimate_scepter','item_aghanims_shard','item_black_king_bar',
+    -- Bot policy: consume Scepter; Shiva's, Octarine and Refresher complete six slots.
+    'item_ultimate_scepter_2','item_shivas_guard','item_octarine_core','item_refresher',
 }
-
-local tAllAbilityBuildList = {
-						{3,1,1,2,3,6,3,3,2,2,6,2,1,1,6},--pos2
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild(tAllAbilityBuildList)
-
-local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList)
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_2'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_faerie_fire",
-
-	'item_null_talisman',
-	"item_bottle",
-	"item_magic_wand",
-	'item_null_talisman',
-	"item_boots",
-	"item_power_treads",
-	"item_witch_blade",
-	"item_kaya_and_sange",--
-	"item_ultimate_scepter",
-	"item_black_king_bar",--
-	"item_shivas_guard",--
-	"item_aghanims_shard",
-	"item_travel_boots",
-	"item_devastator",--
-	"item_cyclone",
-	"item_ultimate_scepter_2",
-	"item_moon_shard",
-	"item_wind_waker",--
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_tango",
-	"item_double_branches",
-
-	"item_magic_wand",
-	"item_boots",
-	"item_power_treads",
-	"item_witch_blade",
-	"item_kaya_and_sange",--
-	"item_ultimate_scepter",
-	"item_black_king_bar",--
-	"item_shivas_guard",--
-	"item_aghanims_shard",
-	"item_travel_boots",
-	"item_devastator",--
-	"item_cyclone",
-	"item_ultimate_scepter_2",
-	"item_moon_shard",
-	"item_wind_waker",--
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_4'] = {
-	"item_tango",
-	"item_tango",
-	"item_double_branches",
-	"item_enchanted_mango",
-	"item_blood_grenade",
-
-	"item_magic_wand",
-	"item_boots",
-	"item_arcane_boots",
-	"item_glimmer_cape",--
-	"item_aether_lens",--
-	"item_aghanims_shard",
-	"item_force_staff",--
-	"item_guardian_greaves",--
-	"item_cyclone",
-    "item_lotus_orb",--
-	"item_gungir",--
-	"item_moon_shard",
-	"item_wind_waker",--
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-	"item_tango",
-	"item_tango",
-	"item_double_branches",
-	"item_enchanted_mango",
-	"item_blood_grenade",
-
-	"item_magic_wand",
-	"item_boots",
-	"item_tranquil_boots",
-	"item_glimmer_cape",--
-	"item_pipe",
-	"item_aether_lens",--
-	"item_aghanims_shard",
-	"item_force_staff",--
-	"item_boots_of_bearing",--
-	"item_cyclone",
-    -- "item_lotus_orb",--
-	"item_gungir",--
-	"item_moon_shard",
-	"item_wind_waker",--
-	"item_ultimate_scepter_2",
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	'item_null_talisman',
-}
+X.sSellList = {'item_kaya_and_sange','item_null_talisman','item_ultimate_scepter','item_magic_wand',
+    'item_black_king_bar','item_bottle'}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'],X['sSellList'] = { 'PvN_mage' }, {} end
 
 nAbilityBuildList,nTalentBuildList,X['sBuyList'],X['sSellList'] = J.SetUserHeroInit(nAbilityBuildList,nTalentBuildList,X['sBuyList'],X['sSellList']);
 
 X['sSkillList'] = J.Skill.GetSkillList(sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList)
+
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = true

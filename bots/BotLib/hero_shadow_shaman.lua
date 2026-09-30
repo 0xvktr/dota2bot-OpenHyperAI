@@ -17,99 +17,42 @@ local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
 
-local tTalentTreeList = {
-						['t25'] = {10, 0},
-						['t20'] = {0, 10},
-						['t15'] = {10, 0},
-						['t10'] = {10, 0},
+-- D2PT 7.41f: supports; forced core roles use hard support without wards.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/shadow_shaman')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+local pos4 = sRole == 'pos_4'
+-- [1] Ether Shock, [2] Hex, [3] Shackles, [6] Mass Serpent Ward.
+local nAbilityBuildList = {3,1,3,2,3,6,3,2,2,2,6,1,1,1,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- Shackles damage
+    t15={10,0}, -- Hex breaks
+    t20={0,10}, -- Shackles duration
+    t25={10,0}, -- Ward attack targets
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = pos4 and {
+    'item_boots','item_blood_grenade','item_magic_wand','item_arcane_boots','item_blink',
+    'item_aether_lens','item_aghanims_shard','item_black_king_bar','item_refresher',
+    -- Bot policy: channel protection and natural boots/Blink upgrades.
+    'item_glimmer_cape','item_guardian_greaves','item_arcane_blink',
+} or {
+    'item_double_branches','item_magic_stick','item_tango','item_faerie_fire','item_blood_grenade',
+    'item_magic_wand','item_arcane_boots','item_blink','item_aether_lens','item_glimmer_cape',
+    'item_aghanims_shard','item_black_king_bar','item_refresher',
+    -- Bot policy: natural boots/Blink upgrades retain the utility inventory.
+    'item_guardian_greaves','item_arcane_blink',
 }
+if sRole == 'pos_5' then table.insert(X.sBuyList,3,'item_ward_sentry') end
+X.sSellList = {'item_black_king_bar','item_magic_wand'}
 
-local tAllAbilityBuildList = {
-						{1,3,1,2,1,6,1,2,3,3,6,2,2,3,6},
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_4'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_faerie_fire",
-	"item_blood_grenade",
-
-	"item_magic_wand",
-	"item_arcane_boots",
-	"item_aghanims_shard",
-	"item_glimmer_cape",--
-	"item_ultimate_scepter",
-	"item_guardian_greaves",--
-	"item_aether_lens",--
-	"item_octarine_core",--
-	"item_black_king_bar",--
-	"item_refresher",--
-	"item_ultimate_scepter_2",
-	"item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_faerie_fire",
-	"item_blood_grenade",
-
-	"item_magic_wand",
-	"item_tranquil_boots",
-	"item_aghanims_shard",
-	"item_pipe",--
-	"item_glimmer_cape",--
-	"item_ultimate_scepter",
-	"item_boots_of_bearing",--
-	"item_aether_lens",--
-	"item_octarine_core",--
-	-- "item_black_king_bar",--
-	"item_refresher",--
-	"item_ultimate_scepter_2",
-	"item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_1'] = {
-	
-	"item_crystal_maiden_outfit",
-	"item_aghanims_shard",
-	"item_ultimate_scepter",
-	"item_glimmer_cape",
-	"item_force_staff",
-	"item_cyclone",
-	"item_sheepstick",
-	"item_wind_waker",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-	"item_refresher",
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-	"item_cyclone",
-	"item_magic_wand",
-
-	"item_ultimate_scepter",
-	"item_magic_wand",
-}
-
-
-if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_mage' }, {} end
-
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X.sBuyList, X.sSellList = {'PvN_mage'}, {} end
+nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList = J.SetUserHeroInit(nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList)
+X.sSkillList = J.Skill.GetSkillList(sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList)
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = true
@@ -118,38 +61,12 @@ function X.MinionThink(hMinionUnit)
     Minion.MinionThink(hMinionUnit)
 end
 
---[[
 
-npc_dota_hero_shadow_shaman
-
-"Ability1"		"shadow_shaman_ether_shock"
-"Ability2"		"shadow_shaman_voodoo"
-"Ability3"		"shadow_shaman_shackles"
-"Ability4"		"generic_hidden"
-"Ability5"		"generic_hidden"
-"Ability6"		"shadow_shaman_mass_serpent_ward"
-"Ability10"		"special_bonus_hp_200"
-"Ability11"		"special_bonus_exp_boost_20"
-"Ability12"		"special_bonus_cast_range_125"
-"Ability13"		"special_bonus_unique_shadow_shaman_5"
-"Ability14"		"special_bonus_unique_shadow_shaman_2"
-"Ability15"		"special_bonus_unique_shadow_shaman_1"
-"Ability16"		"special_bonus_unique_shadow_shaman_3"
-"Ability17"		"special_bonus_unique_shadow_shaman_4"
-
-modifier_shadow_shaman_ethershock
-modifier_shadow_shaman_voodoo
-modifier_shadow_shaman_shackles
-modifier_shadow_shaman_serpent_ward
-
---]]
 
 local abilityQ = bot:GetAbilityByName( sAbilityList[1] )
 local abilityW = bot:GetAbilityByName( sAbilityList[2] )
 local abilityE = bot:GetAbilityByName( sAbilityList[3] )
 local abilityR = bot:GetAbilityByName( sAbilityList[6] )
-local talent3 = bot:GetAbilityByName( sTalentList[3] )
-local talent7 = bot:GetAbilityByName( sTalentList[7] )
 
 local castQDesire, castQTarget
 local castWDesire, castWTarget
@@ -159,7 +76,6 @@ local castRDesire, castRLocation
 
 local nKeepMana, nMP, nHP, nLV, hEnemyList, hAllyList, botTarget, sMotive
 local aetherRange = 0
-local talent7Damage = 0
 
 
 
@@ -169,7 +85,6 @@ function X.SkillsComplement()
 
 	nKeepMana = 400
 	aetherRange = 0
-	talent7Damage = 0
 	nLV = bot:GetLevel()
 	nMP = bot:GetMana()/bot:GetMaxMana()
 	nHP = bot:GetHealth()/bot:GetMaxHealth()
@@ -180,8 +95,6 @@ function X.SkillsComplement()
 
 	local aether = J.IsItemAvailable( "item_aether_lens" )
 	if aether ~= nil then aetherRange = 250 end
---	if talent3:IsTrained() then aetherRange = aetherRange + talent3:GetSpecialValueInt( "value" ) end
-	if talent7:IsTrained() then talent7Damage = talent7:GetSpecialValueInt( "value" ) end
 
 
 	castWDesire, castWTarget, sMotive = X.ConsiderW()
@@ -245,7 +158,7 @@ function X.ConsiderQ()
 	local nCastRange = abilityQ:GetCastRange()
 	local nCastPoint = abilityQ:GetCastPoint()
 	local nManaCost = abilityQ:GetManaCost()
-	local nDamage = abilityQ:GetSpecialValueInt( "damage" ) + talent7Damage
+	local nDamage = abilityQ:GetSpecialValueInt( "damage" )
 	local nDamageType = DAMAGE_TYPE_MAGICAL
 	local nInRangeEnemyList = J.GetNearbyHeroes(bot, nCastRange, true, BOT_MODE_NONE )
 	local nInBonusEnemyList = J.GetNearbyHeroes(bot, nCastRange + 220, true, BOT_MODE_NONE )

@@ -16,105 +16,63 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						{--pos1,2
-							['t25'] = {0, 10},
-							['t20'] = {10, 0},
-							['t15'] = {0, 10},
-							['t10'] = {0, 10},
-						},
-						{--pos3
-							['t25'] = {10, 0},
-							['t20'] = {10, 0},
-							['t15'] = {10, 0},
-							['t10'] = {0, 10},
-						}
+-- Updated to 7.41f from D2PT: carry, mid and offlane; forced supports use offlane.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/razor')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Plasma Field, [2] Static Link, [3] Storm Surge, [6] Eye of the Storm.
+local nAbilityBuildList = (sRole=='pos_1' or sRole=='pos_2')
+    and {2,1,2,1,1,6,1,3,3,3,6,3,2,2,6}
+    or {1,2,1,2,1,6,1,3,3,3,6,3,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- +4 armor
+    t15={10,0}, -- +12 strength
+    t20={10,0}, -- -0.1s Eye of the Storm strike interval
+    t25={10,0}, -- Static Link steals attack speed
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+local sRoleItemsBuyList = {}
+sRoleItemsBuyList.pos_1 = {
+    'item_branches','item_magic_wand','item_faerie_fire',
+    'item_power_treads','item_falcon_blade','item_maelstrom','item_yasha','item_mjollnir',
+    'item_manta','item_black_king_bar','item_satanic',
+    -- Bot policy: consumed upgrades before the late Butterfly.
+    'item_aghanims_shard','item_ultimate_scepter','item_ultimate_scepter_2','item_butterfly','item_moon_shard',
+}
+sRoleItemsBuyList.pos_2 = {
+    -- Observed starting ward omitted: core bots do not place it.
+    'item_double_branches','item_double_branches','item_tango','item_faerie_fire',
+    'item_bottle','item_magic_wand','item_power_treads','item_yasha','item_manta',
+    'item_black_king_bar','item_aghanims_shard','item_satanic',
+    -- Bot policy: consume Scepter before late damage and protection.
+    'item_ultimate_scepter','item_ultimate_scepter_2','item_butterfly','item_sphere','item_moon_shard',
+}
+sRoleItemsBuyList.pos_3 = {
+    'item_slippers','item_double_branches','item_circlet','item_tango','item_faerie_fire',
+    'item_wraith_band','item_magic_wand','item_power_treads','item_falcon_blade',
+    'item_yasha','item_manta','item_black_king_bar','item_sphere','item_satanic',
+    -- Bot policy: consumed upgrades before the late Butterfly.
+    'item_aghanims_shard','item_ultimate_scepter','item_ultimate_scepter_2','item_butterfly','item_moon_shard',
+}
+sRoleItemsBuyList.pos_4 = sRoleItemsBuyList.pos_3
+sRoleItemsBuyList.pos_5 = sRoleItemsBuyList.pos_3
+X.sBuyList = sRoleItemsBuyList[sRole]
+X.sSellList = {
+    'item_black_king_bar','item_magic_wand','item_satanic','item_falcon_blade',
+    'item_sphere','item_wraith_band','item_satanic','item_bottle',
 }
 
-local tAllAbilityBuildList = {
-						{2,1,2,1,2,6,2,3,1,1,6,3,3,3,6},--pos1,2
-						{1,2,2,1,1,6,1,3,3,3,6,3,2,2,6},--pos3
-}
+if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X.sBuyList, X.sSellList = {'PvN_mid'}, {} end
 
-local nAbilityBuildList
-local nTalentBuildList
-
-if sRole == "pos_1" or sRole == "pos_2"
-then
-    nAbilityBuildList   = tAllAbilityBuildList[1]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[1])
-else
-    nAbilityBuildList   = tAllAbilityBuildList[2]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[2])
+nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList = J.SetUserHeroInit(nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList)
+X.sSkillList = J.Skill.GetSkillList(sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList)
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
 end
 
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_magic_stick",
-	"item_quelling_blade",
-
-	"item_magic_wand",
-	"item_power_treads",
-	"item_falcon_blade",
-	"item_manta",--
-	"item_black_king_bar",--
-	"item_aghanims_shard",
-	"item_butterfly",--
-	"item_satanic",--
-	"item_assault",--
-	"item_skadi",--
-	"item_moon_shard",
-	"item_refresher",--
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_3'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_slippers",
-	"item_circlet",
-
-	"item_magic_wand",
-	"item_wraith_band",
-	"item_boots",
-	"item_falcon_blade",
-	"item_power_treads",
-	"item_manta",--
-	"item_black_king_bar",--
-	"item_aghanims_shard",
-	"item_shivas_guard",--
-	"item_assault",--
-	"item_refresher",--
-	"item_moon_shard",
-	"item_satanic",--
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_3']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-}
-if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_mid' }, {} end
-
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
-X['bDeafaultAbility'] = false
-X['bDeafaultItem'] = false
+X.bDeafaultAbility = false
+X.bDeafaultItem = false
 
 function X.MinionThink(hMinionUnit)
 
@@ -125,35 +83,6 @@ function X.MinionThink(hMinionUnit)
 
 end
 
---[[
-
-npc_dota_hero_razor
-
-"Ability1"		"razor_plasma_field"
-"Ability2"		"razor_static_link"
-"Ability3"		"razor_unstable_current"
-"Ability4"		"generic_hidden"
-"Ability5"		"generic_hidden"
-"Ability6"		"razor_eye_of_the_storm"
-"Ability10"		"special_bonus_hp_200"
-"Ability11"		"special_bonus_agility_15"
-"Ability12"		"special_bonus_unique_razor"
-"Ability13"		"special_bonus_unique_razor_3"
-"Ability14"		"special_bonus_armor_10"
-"Ability15"		"special_bonus_unique_razor_2"
-"Ability16"		"special_bonus_attack_speed_100"
-"Ability17"		"special_bonus_unique_razor_4"
-
-modifier_razor_plasma_field_thinker
-modifier_razor_static_link
-modifier_razor_static_link_buff
-modifier_razor_static_link_debuff
-modifier_razor_link_vision
-modifier_razor_unstable_current
-modifier_razor_unstablecurrent_slow
-modifier_razor_eye_of_the_storm
-modifier_razor_eye_of_the_storm_armor
---]]
 
 
 local abilityQ = bot:GetAbilityByName( sAbilityList[1] )
@@ -237,7 +166,7 @@ function X.ConsiderQ()
 	if not abilityQ:IsFullyCastable() then return 0 end
 
 	local nSkillLV = abilityQ:GetLevel()
-	local nCastRange = 777
+	local nCastRange = abilityQ:GetSpecialValueInt( 'radius' )
 	local nCastPoint = abilityQ:GetCastPoint()
 	local nManaCost = abilityQ:GetManaCost()
 	local nDamage = abilityQ:GetAbilityDamage()

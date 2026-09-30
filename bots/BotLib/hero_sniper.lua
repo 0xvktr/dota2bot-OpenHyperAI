@@ -16,84 +16,40 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {0, 10},
-						['t20'] = {0, 10},
-						['t15'] = {0, 10},
-						['t10'] = {10, 0},
+-- D2PT 7.41f: mid only; forced other roles use mid.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/sniper')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Shrapnel, [2] Headshot, [3] Take Aim, [6] Assassinate.
+local nAbilityBuildList = {1,2,1,3,1,6,1,2,2,2,6,3,3,3,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- +30 Headshot damage
+    t15={0,10}, -- +45 attack speed during Take Aim
+    t20={0,10}, -- +2s Take Aim duration
+    t25={10,0}, -- +50 max Headshot knockback distance
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    -- Observed starting ward omitted: core bots do not place it.
+    'item_slippers','item_double_branches','item_circlet','item_tango','item_faerie_fire',
+    'item_wraith_band','item_wraith_band','item_power_treads','item_maelstrom','item_dragon_lance',
+    'item_mjollnir','item_force_staff','item_hurricane_pike','item_aghanims_shard',
+    -- Bot policy: observed critical strike/lifesteal, then protection within six slots.
+    'item_lesser_crit','item_greater_crit','item_lifesteal','item_satanic','item_black_king_bar',
+    'item_moon_shard',
 }
-
-local tAllAbilityBuildList = {
-						{2,3,2,3,1,6,1,1,1,2,2,3,6,3,6},--pos1,2
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_ranged_carry_outfit",
-	"item_dragon_lance",
-	"item_mask_of_madness",
-	"item_aghanims_shard",
-	"item_maelstrom",
-    "item_force_staff",
-	"item_hurricane_pike",--
-	"item_ultimate_scepter",
-	"item_travel_boots",
-	"item_monkey_king_bar",--
-	"item_mjollnir",--
-	"item_broken_satanic",--
-	"item_moon_shard",
-	"item_hydras_breath",--
-	"item_skadi",--
-	"item_travel_boots_2",--
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_2'] = {
-	"item_mid_outfit",
-	"item_dragon_lance",
-	"item_mask_of_madness",
-	"item_aghanims_shard",
-	"item_maelstrom",
-    "item_force_staff",
-	"item_hurricane_pike",--
-	"item_ultimate_scepter",
-	"item_travel_boots",
-	"item_monkey_king_bar",--
-	"item_mjollnir",--
-	"item_broken_satanic",--
-	"item_moon_shard",
-	"item_hydras_breath",--
-	"item_skadi",--
-	"item_travel_boots_2",--
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-	"item_mjollnir",
-	"item_magic_wand",
-
-	"item_greater_crit", 
-	"item_hand_of_midas",
-}
+X.sSellList = {'item_black_king_bar','item_wraith_band','item_black_king_bar','item_wraith_band'}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_mid' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
@@ -107,36 +63,7 @@ function X.MinionThink(hMinionUnit)
 
 end
 
---[[
 
-npc_dota_hero_sniper
-
-"Ability1"		"sniper_shrapnel"
-"Ability2"		"sniper_headshot"
-"Ability3"		"sniper_take_aim"
-"Ability4"		"generic_hidden"
-"Ability5"		"generic_hidden"
-"Ability6"		"sniper_assassinate"
-"Ability10"		"special_bonus_cooldown_reduction_25"
-"Ability11"		"special_bonus_attack_damage_20"
-"Ability12"		"special_bonus_attack_speed_40"
-"Ability13"		"special_bonus_unique_sniper_5"
-"Ability14"		"special_bonus_unique_sniper_3"
-"Ability15"		"special_bonus_unique_sniper_4"
-"Ability16"		"special_bonus_attack_range_125"
-"Ability17"		"special_bonus_unique_sniper_2"
-
-modifier_sniper_shrapnel_charge_counter
-modifier_sniper_shrapnel_thinker
-modifier_sniper_shrapnel_slow
-modifier_sniper_headshot
-modifier_sniper_headshot_slow
-modifier_sniper_take_aim
-modifier_sniper_take_aim_bonus
-modifier_sniper_assassinate_caster
-modifier_sniper_assassinate
-
---]]
 
 local abilityQ = bot:GetAbilityByName( sAbilityList[1] )
 local abilityE = bot:GetAbilityByName( sAbilityList[3] )
@@ -247,9 +174,8 @@ function X.ConsiderQ()
 		or DotaTime() - lastAbilityQTime < 1.5
 	then return 0 end
 
-	local nCastRange = 1600	--abilityQ:GetCastRange()
+	local nCastRange = J.GetProperCastRange(false, bot, abilityQ:GetCastRange())
 	local nSkillLV = abilityQ:GetLevel()
-	local nDamage = ( 15 + 20 * ( nSkillLV -1 ) ) * 11
 	local nRadius = abilityQ:GetAOERadius()
 	local nCastPoint = abilityQ:GetCastPoint()
 	local botLocation = bot:GetLocation()

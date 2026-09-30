@@ -16,165 +16,51 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						{--pos2
-							['t25'] = {10, 0},
-							['t20'] = {0, 10},
-							['t15'] = {0, 10},
-							['t10'] = {0, 10},
-						},
-						{--pos4,5
-							['t25'] = {10, 0},
-							['t20'] = {0, 10},
-							['t15'] = {0, 10},
-							['t10'] = {0, 10},
-						}
+-- D2PT 7.41f: supports; forced core roles use hard support without wards.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/silencer')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+local pos4 = sRole == 'pos_4'
+-- [1] Arcane Curse, [2] Glaives, [3] Last Word, [6] Global Silence.
+local nAbilityBuildList = {2,1,1,3,1,6,1,3,3,3,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- Silenced-target damage
+    t15={0,10}, -- Global cooldown
+    t20={10,0}, -- Last Word AoE
+    t25={10,0}, -- Global duration
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = pos4 and {
+    'item_branches','item_double_circlet','item_tango','item_faerie_fire','item_faerie_fire',
+    'item_null_talisman','item_magic_wand','item_power_treads','item_force_staff',
+    'item_dragon_lance','item_hurricane_pike','item_aghanims_shard',
+    -- Bot policy: stronger Globals, escape utility and a six-slot late continuation.
+    'item_ultimate_scepter','item_refresher','item_glimmer_cape','item_ultimate_scepter_2',
+    'item_octarine_core','item_sheepstick',
+} or {
+    'item_double_branches','item_magic_stick','item_tango','item_faerie_fire','item_blood_grenade',
+    'item_null_talisman','item_magic_wand','item_arcane_boots','item_force_staff',
+    'item_ultimate_scepter','item_aghanims_shard','item_refresher',
+    -- Bot policy: escape utility, consumed Scepter and supportive late upgrades.
+    'item_glimmer_cape','item_ultimate_scepter_2','item_octarine_core','item_sheepstick',
+    'item_guardian_greaves',
 }
-
-local tAllAbilityBuildList = {
-						{2,1,3,1,1,6,1,3,3,3,6,2,2,2,6},--pos2
-						{1,3,1,2,1,6,1,3,3,3,6,2,2,2,6},--pos4,5
+if sRole == 'pos_5' then table.insert(X.sBuyList,3,'item_ward_sentry') end
+X.sSellList = {
+    'item_force_staff','item_null_talisman',
+    'item_ultimate_scepter','item_magic_wand',
 }
+if pos4 then
+    table.insert(X.sSellList,'item_force_staff'); table.insert(X.sSellList,'item_circlet')
+end
 
-local nAbilityBuildList = tAllAbilityBuildList[1]
-if sRole == 'pos_2' then nAbilityBuildList = tAllAbilityBuildList[1] end
-if sRole == 'pos_4' then nAbilityBuildList = tAllAbilityBuildList[2] end
-if sRole == 'pos_5' then nAbilityBuildList = tAllAbilityBuildList[2] end
-
-local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[1])
-if sRole == 'pos_2' then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[1]) end
-if sRole == 'pos_4' then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[2]) end
-if sRole == 'pos_5' then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[2]) end
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_2'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_faerie_fire",
-	"item_enchanted_mango",
-
-	"item_bottle",
-	"item_magic_wand",
-	"item_power_treads",
-	"item_double_null_talisman",
-	"item_witch_blade",
-	"item_force_staff",
-	"item_black_king_bar",--
-	"item_aghanims_shard",
-	"item_hurricane_pike",--
-	"item_devastator",--
-	"item_sheepstick",--
-	"item_bloodthorn",--
-	"item_moon_shard",
-	"item_travel_boots_2",--
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_3'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_faerie_fire",
-	"item_enchanted_mango",
-
-	"item_power_treads",
-	"item_magic_wand",
-	"item_witch_blade",
-    "item_force_staff",
-	"item_hurricane_pike",--
-	"item_aghanims_shard",
-	"item_black_king_bar",--
-	"item_sheepstick",--
-	"item_devastator",--
-	"item_travel_boots",
-	"item_orchid",
-	"item_bloodthorn",--
-	"item_moon_shard",
-	"item_travel_boots_2",--
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_crystal_maiden_outfit",
-	"item_dragon_lance",
-	"item_witch_blade",
-	"item_hurricane_pike",--
-	"item_black_king_bar",--
-	"item_aghanims_shard",
-	"item_orchid",
-	"item_bloodthorn",--
-	"item_devastator",--
-	"item_sheepstick",--
-	"item_moon_shard",
-	"item_travel_boots",
-	"item_ultimate_scepter_2",
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_4'] = {
-	"item_tango",
-	"item_tango",
-	"item_double_branches",
-	"item_enchanted_mango",
-	"item_enchanted_mango",
-	"item_blood_grenade",
-
-	"item_arcane_boots",
-	"item_magic_wand",
-	"item_force_staff",
-	"item_glimmer_cape",--
-	"item_guardian_greaves",--
-	"item_aghanims_shard",
-	"item_hurricane_pike",--
-	"item_refresher",--
-	"item_orchid",
-	"item_bloodthorn",--
-	"item_sheepstick",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-	"item_tango",
-	"item_tango",
-	"item_double_branches",
-	"item_enchanted_mango",
-	"item_enchanted_mango",
-	"item_blood_grenade",
-
-	"item_tranquil_boots",
-	"item_magic_wand",
-	"item_force_staff",
-	"item_glimmer_cape",--
-	"item_pipe",
-	"item_boots_of_bearing",--
-    "item_pavise",
-    "item_solar_crest",--
-	"item_aghanims_shard",
-	"item_hurricane_pike",--
-	"item_sheepstick",--
-	"item_orchid",
-	"item_bloodthorn",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-	"item_shivas_guard",
-	"item_magic_wand",
-
-	"item_sheepstick",
-	"item_magic_wand",
-}
-
-if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_priest' }, {} end
-
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
+if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X.sBuyList, X.sSellList = {'PvN_priest'}, {} end
+nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList = J.SetUserHeroInit(nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList)
+X.sSkillList = J.Skill.GetSkillList(sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList)
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = true

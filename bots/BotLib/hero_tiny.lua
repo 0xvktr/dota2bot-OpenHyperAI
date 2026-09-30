@@ -7,129 +7,59 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-					{--pos1
-                        ['t25'] = {10, 0},
-						['t20'] = {0, 10},
-						['t15'] = {0, 10},
-						['t10'] = {10, 0},
-                    },
-                    {--pos2
-                        ['t25'] = {10, 0},
-                        ['t20'] = {0, 10},
-                        ['t15'] = {10, 0},
-                        ['t10'] = {10, 0},
-                    },
+-- D2PT 7.41f: carry, mid and support; forced picks use carry.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/tiny')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Avalanche, [2] Toss, [3] Tree Grab, [6] Grow.
+local nAbilityBuildList = sRole=='pos_2' and {3,1,1,2,1,6,1,2,2,2,6,3,3,3,6}
+    or sRole=='pos_4' and {1,2,2,1,2,6,2,1,1,3,6,3,3,3,6}
+    or {3,1,3,1,3,6,3,1,1,2,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10=(sRole=='pos_1' or sRole=='pos_3' or sRole=='pos_5') and {10,0} or {0,10},
+    t15=(sRole=='pos_1' or sRole=='pos_3' or sRole=='pos_5') and {0,10} or {10,0},
+    t20=sRole=='pos_4' and {10,0} or {0,10},
+    t25={10,0}, -- two Toss charges
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+local roleItems = {}
+roleItems.pos_1 = {
+    'item_double_gauntlets','item_double_branches','item_magic_stick',
+    'item_magic_wand','item_power_treads','item_echo_sabre','item_invis_sword','item_blink',
+    'item_silver_edge','item_black_king_bar','item_harpoon','item_lesser_crit','item_greater_crit',
+    -- Bot policy: natural Blink upgrade and observed Shard; six major items.
+    'item_swift_blink','item_aghanims_shard',
 }
-
-local tAllAbilityBuildList = {
-						{3,1,3,2,3,6,3,1,1,1,6,2,2,2,6},--pos1
-                        {3,1,1,2,1,6,1,2,2,2,6,3,3,3,6},--pos2
+roleItems.pos_2 = {
+    -- Observed starting ward omitted: core bots do not place it.
+    'item_double_branches','item_double_branches','item_tango','item_faerie_fire',
+    'item_bottle','item_magic_wand','item_soul_ring','item_power_treads','item_blink','item_echo_sabre',
+    -- Bot policy: observed optional burst progression and natural upgrades.
+    'item_invis_sword','item_black_king_bar','item_lesser_crit','item_silver_edge','item_harpoon',
+    'item_aghanims_shard','item_greater_crit','item_swift_blink',
 }
-
-local nAbilityBuildList
-local nTalentBuildList
-
-if sRole == "pos_1"
-then
-    nAbilityBuildList   = tAllAbilityBuildList[1]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[1])
-else
-    nAbilityBuildList   = tAllAbilityBuildList[2]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[2])
-end
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-    "item_tango",
-    "item_quelling_blade",
-    "item_slippers",
-    "item_circlet",
-    "item_double_branches",
-
-    "item_wraith_band",
-    "item_magic_wand",
-    "item_hand_of_midas",
-    "item_power_treads",
-    "item_echo_sabre",
-    "item_blink",
-    "item_black_king_bar",--
-    "item_aghanims_shard",
-    "item_greater_crit",--
-    "item_butterfly",--
-    "item_satanic",--
-    "item_moon_shard",
-    "item_swift_blink",--
-    "item_travel_boots_2",--
-    "item_ultimate_scepter_2",
+roleItems.pos_4 = {
+    -- Ward dispenser is ambiguous; use a sentry as support policy.
+    'item_boots','item_ward_sentry','item_blood_grenade',
+    'item_arcane_boots','item_magic_wand','item_blink','item_cyclone','item_force_staff','item_wind_waker',
+    -- Bot policy: observed late utility, capped at six major items.
+    'item_aghanims_shard','item_lotus_orb','item_sheepstick','item_overwhelming_blink',
 }
-
-sRoleItemsBuyList['pos_2'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_faerie_fire",
-    "item_quelling_blade",
-
-    "item_bottle",
-    "item_power_treads",
-    "item_magic_wand",
-    "item_blink",
-    "item_echo_sabre",
-    "item_aghanims_shard",
-    "item_black_king_bar",--
-    "item_greater_crit",--
-    "item_assault",--
-    "item_moon_shard",
-    "item_satanic",--
-    "item_swift_blink",--
-    "item_travel_boots_2",--
-
-    "item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_4'] = {
-    "item_tango",
-    "item_quelling_blade",
-    "item_slippers",
-    "item_circlet",
-    "item_double_branches",
-
-    "item_wraith_band",
-    "item_magic_wand",
-    "item_hand_of_midas",
-    "item_power_treads",
-    "item_echo_sabre",
-    "item_blink",
-    "item_black_king_bar",--
-    "item_aghanims_shard",
-    "item_greater_crit",--
-    "item_butterfly",--
-    "item_satanic",--
-    "item_moon_shard",
-    "item_swift_blink",--
-    "item_travel_boots_2",--
-    "item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_4']
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_4']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-}
+roleItems.pos_3, roleItems.pos_5 = roleItems.pos_1, roleItems.pos_1
+X.sBuyList = roleItems[sRole]
+X.sSellList = {'item_black_king_bar','item_magic_wand','item_black_king_bar','item_soul_ring',
+    'item_silver_edge','item_bottle','item_wind_waker','item_magic_wand'}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
@@ -219,7 +149,7 @@ function X.ConsiderAvalanche()
 
 	local nCastRange = J.GetProperCastRange(false, bot, Avalanche:GetCastRange())
 	local nRadius = Avalanche:GetSpecialValueInt('radius')
-	local nDamage = Avalanche:GetSpecialValueInt('value') * (1 + bot:GetSpellAmp())
+	local nDamage = Avalanche:GetSpecialValueInt('avalanche_damage') * (1 + bot:GetSpellAmp())
 	local nManaCost = Avalanche:GetManaCost()
 	local botTarget = J.GetProperTarget(bot)
 

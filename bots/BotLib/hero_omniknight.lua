@@ -16,125 +16,52 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						{-- Core (pos 1/2/3)
-                            ['t25'] = {10, 0},
-                            ['t20'] = {10, 0},
-                            ['t15'] = {0, 10},
-                            ['t10'] = {10, 0},
-                        },
-                        {-- Support (pos 4/5)
-                            ['t25'] = {0, 10},
-                            ['t20'] = {0, 10},
-                            ['t15'] = {10, 0},
-                            ['t10'] = {0, 10},
-                        }
-}
-
-local tAllAbilityBuildList = {
-						{3,1,3,1,3,1,1,3,2,6,6,2,2,2,6},--pos1/2/3 core: E-max
-						{3,1,1,2,1,6,1,2,2,2,6,3,3,3,6},--pos4/5 support: Q-max
-}
-
-local nAbilityBuildList = tAllAbilityBuildList[1]
-if sRole == 'pos_1' then nAbilityBuildList = tAllAbilityBuildList[1] end
-if sRole == 'pos_2' then nAbilityBuildList = tAllAbilityBuildList[1] end
-if sRole == 'pos_3' then nAbilityBuildList = tAllAbilityBuildList[1] end
-if sRole == 'pos_4' then nAbilityBuildList = tAllAbilityBuildList[2] end
-if sRole == 'pos_5' then nAbilityBuildList = tAllAbilityBuildList[2] end
-
-local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[1])
-if sRole == 'pos_1' then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[1]) end
-if sRole == 'pos_2' then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[1]) end
-if sRole == 'pos_3' then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[1]) end
-if sRole == 'pos_4' then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[2]) end
-if sRole == 'pos_5' then nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[2]) end
-
-local utilityItems = {"item_crimson_guard", "item_pipe", "item_heavens_halberd"}
-local sCrimsonPipeHalberd = utilityItems[RandomInt(1, #utilityItems)]
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_3'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_quelling_blade",
-	"item_gauntlets",
-	"item_circlet",
-
-	"item_magic_wand",
-	"item_bracer",
-	"item_phase_boots",
-	"item_soul_ring",
-	"item_echo_sabre",
-	"item_aghanims_shard",
-	"item_consecrated_wraps",--
-	"item_harpoon",--
-	"item_blink",
-	sCrimsonPipeHalberd,--
-	"item_black_king_bar",--
-	"item_shivas_guard",--
-	"item_assault",--
-	"item_overwhelming_blink",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_4'] = {
-	"item_priest_outfit",
-	"item_tranquil_boots",
-	"item_solar_crest",
-	"item_glimmer_cape",
-	"item_blink",
-	"item_boots_of_bearing",
-	"item_aghanims_shard",
-	"item_consecrated_wraps",--
-	"item_sheepstick",--
-	"item_ultimate_scepter",
-	"item_shivas_guard",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-    "item_blood_grenade",
-	"item_mage_outfit",
-	"item_ancient_janggo",
-	"item_glimmer_cape",
-	"item_consecrated_wraps",--
-	"item_boots_of_bearing",
-	"item_pipe",
-    "item_ultimate_scepter",
-	"item_cyclone",
---	"item_wraith_pact",
-	"item_shivas_guard",
-	"item_sheepstick",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-}
-
-
-if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_tank' }, {"item_power_treads", 'item_quelling_blade'} end
-
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
-X['bDeafaultAbility'] = false
-X['bDeafaultItem'] = false
+-- Updated to 7.41f from D2PT: pos 5/3; forced picks use the support build without wards.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/omniknight')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+local isCore = sRole == 'pos_3'
+-- [1] Purification, [2] Repel (Martyr), [3] Hammer of Purity, [6] Guardian Angel.
+local nAbilityBuildList = isCore and {3,1,3,1,3,1,3,1,2,6,6,2,2,2,6}
+    or {3,1,1,2,1,6,1,2,2,2,6,3,3,3,6}
+local nTalentBuildList = J.Skill.GetTalentBuild(isCore and {
+    t10={10,0}, t15={0,10}, t20={10,0}, t25={10,0},
+} or {
+    t10={0,10}, t15={10,0}, t20={10,0}, t25={0,10},
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+if isCore then
+    X.sBuyList = {
+        'item_double_gauntlets','item_double_branches','item_magic_stick',
+        'item_magic_wand','item_soul_ring','item_phase_boots','item_echo_sabre',
+        'item_harpoon','item_blink','item_aghanims_shard','item_black_king_bar',
+        -- Bot policy: consumed Scepter, armor and late dispel within six slots.
+        'item_ultimate_scepter','item_ultimate_scepter_2','item_assault',
+        'item_overwhelming_blink','item_nullifier','item_moon_shard',
+    }
+    X.sSellList = {'item_black_king_bar','item_magic_wand','item_ultimate_scepter','item_soul_ring'}
+else
+    X.sBuyList = {'item_boots','item_blood_grenade'}
+    if sRole == 'pos_4' or sRole == 'pos_5' then table.insert(X.sBuyList,'item_ward_sentry') end
+    local progression = {
+        'item_magic_wand','item_arcane_boots','item_mekansm','item_holy_locket',
+        'item_guardian_greaves','item_aghanims_shard','item_ultimate_scepter',
+        -- Bot policy: consume Scepter before late mobility, dispel and control.
+        'item_ultimate_scepter_2','item_blink','item_lotus_orb','item_sheepstick',
+        'item_overwhelming_blink','item_refresher','item_moon_shard',
+    }
+    for _,item in ipairs(progression) do table.insert(X.sBuyList,item) end
+    X.sSellList = {}
+end
+if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X.sBuyList, X.sSellList = {'PvN_tank'}, {} end
+nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList = J.SetUserHeroInit(nAbilityBuildList,nTalentBuildList,X.sBuyList,X.sSellList)
+X.sSkillList = J.Skill.GetSkillList(sAbilityList,nAbilityBuildList,sTalentList,nTalentBuildList)
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
+X.bDeafaultAbility = false
+X.bDeafaultItem = false
 
 function X.MinionThink(hMinionUnit)
 
@@ -145,45 +72,16 @@ function X.MinionThink(hMinionUnit)
 
 end
 
---[[
-
-npc_dota_hero_omniknight
-
-"Ability1"		"omniknight_purification"
-"Ability2"		"omniknight_repel"
-"Ability3"		"omniknight_degen_aura"
-"Ability4"		"generic_hidden"
-"Ability5"		"generic_hidden"
-"Ability6"		"omniknight_guardian_angel"
-"Ability10"		"special_bonus_unique_omniknight_5"
-"Ability11"		"special_bonus_movement_speed_20"
-"Ability12"		"special_bonus_unique_omniknight_6"
-"Ability13"		"special_bonus_attack_damage_70"
-"Ability14"		"special_bonus_unique_omniknight_2"
-"Ability15"		"special_bonus_mp_regen_3"
-"Ability16"		"special_bonus_unique_omniknight_1"
-"Ability17"		"special_bonus_unique_omniknight_3"
-
-modifier_omniknight_pacify
-modifier_omniknight_repel
-modifier_omniknight_degen_aura
-modifier_omniknight_degen_aura_effect
-
-
---]]
 
 local abilityQ = bot:GetAbilityByName( sAbilityList[1] )
 local abilityW = bot:GetAbilityByName( sAbilityList[2] )
 local abilityE = bot:GetAbilityByName( sAbilityList[3] )
 local abilityR = bot:GetAbilityByName( sAbilityList[6] )
-local abilityAS = bot:GetAbilityByName( sAbilityList[4] )
-local talent7 = bot:GetAbilityByName( sTalentList[7] )
 
 local castQDesire, castQTarget
 local castWDesire, castWTarget
 local castEDesire, castETarget
 local castRDesire, castRTarget
-local castASDesire, castASTarget
 
 local nKeepMana, nMP, nHP, nLV, hEnemyList, hAllyList, botTarget, sMotive
 local aetherRange = 0
@@ -222,7 +120,7 @@ function X.SkillsComplement()
 
 		J.SetQueuePtToINT( bot, true )
 
-		bot:ActionQueue_UseAbilityOnLocation( abilityR, castRTarget )
+		bot:ActionQueue_UseAbility( abilityR )
 		return
 	end
 
@@ -275,7 +173,6 @@ function X.ConsiderQ()
 	local nManaCost = abilityQ:GetManaCost()
 	local nDamage = abilityQ:GetSpecialValueInt( 'heal' )
 
-	if talent7:IsTrained() then nDamage = nDamage + talent7:GetSpecialValueInt( 'value' ) end
 
 	local nDamageType = DAMAGE_TYPE_PURE
 	local nInRangeEnemyList = J.GetAroundEnemyHeroList( nCastRange + nRadius )
@@ -542,101 +439,33 @@ function X.ConsiderQ()
 end
 
 function X.ConsiderW()
+    if not abilityW:IsFullyCastable() then return BOT_ACTION_DESIRE_NONE end
 
-
-	if not abilityW:IsFullyCastable() then return 0 end
-
-	local nSkillLV = abilityW:GetLevel()
-	local nCastRange = abilityW:GetCastRange() + aetherRange
-	local nRadius = 600
-	local nCastPoint = abilityW:GetCastPoint()
-	local nManaCost = abilityW:GetManaCost()
-	local nDamage = 0
-	local nDamageType = DAMAGE_TYPE_MAGICAL
-	local nDuration = abilityW:GetSpecialValueInt( "duration" )
-	local nHealHealth = abilityW:GetSpecialValueInt( "hp_regen" ) * nDuration
---	local nInRangeEnemyList = J.GetAroundEnemyHeroList( nCastRange )
---	local nInBonusEnemyList = J.GetAroundEnemyHeroList( nCastRange + 200 )
-	local hCastTarget = nil
-	local sCastMotive = nil
-
-	for _, npcAlly in pairs( hAllyList )
-	do
-		if J.IsValidHero( npcAlly )
-			and J.IsInRange( bot, npcAlly, nCastRange + 300 )
-			and not npcAlly:HasModifier( 'modifier_omniknight_repel' )
-			and not npcAlly:IsMagicImmune()
-			and not npcAlly:IsInvulnerable()
-			and not npcAlly:IsIllusion()
-		then
-
-
-			--为加状态抗性
-			if not npcAlly:IsBot()
-				and npcAlly:GetLevel() >= 6
-				and npcAlly:GetAttackTarget() ~= nil
-				and npcAlly:GetAttackTarget():IsHero()
-				and npcAlly:GetMaxHealth() - npcAlly:GetHealth() >= nHealHealth * 0.8
-			then
-				hCastTarget = npcAlly
-				sCastMotive = 'W-加状态抗性:'..J.Chat.GetNormName( hCastTarget )
-				return BOT_ACTION_DESIRE_HIGH, hCastTarget, sCastMotive
-			end
-
-			--为被控制队友解状态
-			if J.IsDisabled( npcAlly )
-			then
-				hCastTarget = npcAlly
-				sCastMotive = 'W-解状态:'..J.Chat.GetNormName( hCastTarget )
-				return BOT_ACTION_DESIRE_HIGH, hCastTarget, sCastMotive
-			end
-
-			--为撤退中的队友加血
-			if J.IsRetreating( npcAlly )
-				and not npcAlly:HasModifier( 'modifier_fountain_aura' )
-				and npcAlly:GetMaxHealth() - npcAlly:GetHealth() >= nHealHealth * 0.7
-				and npcAlly:WasRecentlyDamagedByAnyHero( 3.0 )
-			then
-				hCastTarget = npcAlly
-				sCastMotive = 'W-加撤退中的队友:'..J.Chat.GetNormName( hCastTarget )
-				return BOT_ACTION_DESIRE_HIGH, hCastTarget, sCastMotive
-			end
-
-
-			--为准备打架的力量队友辅助
-			if J.IsGoingOnSomeone( npcAlly )
-				and npcAlly:GetPrimaryAttribute() == ATTRIBUTE_STRENGTH
-			then
-				local allyTarget = J.GetProperTarget( npcAlly )
-				if J.IsValidHero( allyTarget )
-					and npcAlly:IsFacingLocation( allyTarget:GetLocation(), 20 )
-					and J.IsInRange( npcAlly, allyTarget, npcAlly:GetAttackRange() + 60 )
-				then
-					hCastTarget = npcAlly
-					sCastMotive = 'W-进攻辅助力量队友:'..J.Chat.GetNormName( hCastTarget )
-					return BOT_ACTION_DESIRE_HIGH, hCastTarget, sCastMotive
-				end
-			end
-
-			--为残血队友buff
-			if J.GetHP( npcAlly ) < 0.5
-				and ( npcAlly:WasRecentlyDamagedByAnyHero( 5.0 ) or J.GetHP( npcAlly ) < 0.25 )
-				and not npcAlly:HasModifier( 'modifier_fountain_aura' )
-			then
-				hCastTarget = npcAlly
-				sCastMotive = 'W-为队友回血:'..J.Chat.GetNormName( hCastTarget )
-				return BOT_ACTION_DESIRE_HIGH, hCastTarget, sCastMotive
-			end
-		end
-	end
-
-
-	return BOT_ACTION_DESIRE_NONE
-
-
+    local nCastRange = abilityW:GetCastRange() + aetherRange
+    local nHealHealth = abilityW:GetSpecialValueInt('base_hpregen') * abilityW:GetSpecialValueInt('duration')
+    for _, ally in pairs(hAllyList) do
+        if J.IsValidHero(ally)
+            and J.IsInRange(bot, ally, nCastRange)
+            and not ally:IsInvulnerable()
+            and not ally:IsIllusion()
+            and not ally:HasModifier('modifier_omniknight_martyr')
+            and not ally:HasModifier('modifier_fountain_aura')
+        then
+            if ally:WasRecentlyDamagedByAnyHero(3.0)
+                and (J.GetHP(ally) < 0.65 or ally:GetMaxHealth() - ally:GetHealth() >= nHealHealth)
+            then
+                return BOT_ACTION_DESIRE_HIGH, ally, 'W-Martyr protection'
+            end
+            if J.IsGoingOnSomeone(ally)
+                and J.IsValidHero(J.GetProperTarget(ally))
+                and #J.GetNearbyHeroes(ally, 700, true, BOT_MODE_NONE) >= 2
+            then
+                return BOT_ACTION_DESIRE_HIGH, ally, 'W-Martyr engage'
+            end
+        end
+    end
+    return BOT_ACTION_DESIRE_NONE
 end
-
-
 
 function X.ConsiderE()
 
@@ -647,7 +476,8 @@ function X.ConsiderE()
 	local nCastPoint = abilityE:GetCastPoint()
 	local nManaCost = abilityE:GetManaCost()
 	local nSkillLV = abilityE:GetLevel()
-	local nDamage = 25 * nSkillLV + 25 + bot:GetAttackDamage() * ( 0.5 + nSkillLV * 0.1 )
+	local nDamage = abilityE:GetSpecialValueInt('base_damage')
+        + bot:GetAttackDamage() * abilityE:GetSpecialValueInt('bonus_damage') / 100
 	local nDamageType = DAMAGE_TYPE_PURE
 
 	local allyList =  J.GetNearbyHeroes(bot, 1200, false, BOT_MODE_NONE )
@@ -809,102 +639,33 @@ function X.ConsiderE()
 end
 
 function X.ConsiderR()
+    if not abilityR:IsFullyCastable() then return BOT_ACTION_DESIRE_NONE end
 
-
-	if not abilityR:IsFullyCastable() then return 0 end
-
-	local nRadius = abilityR:GetSpecialValueInt( 'radius' )
-	local nCastRange = nRadius
-
-	if bot:HasScepter() then nCastRange = 1600 end
-
-	local hCastTarget = nil
-	local sCastMotive = nil
-
-
-	-- Teamfight check FIRST (highest priority -- save multiple allies)
-	for i = 1, #GetTeamPlayers( GetTeam() )
-	do
-		local npcAlly = GetTeamMember( i )
-		if npcAlly ~= nil
-			and npcAlly:IsAlive()
-			and ( bot:HasScepter() or J.IsInRange( bot, npcAlly, 700 ) )
-		then
-			if J.IsInTeamFight( npcAlly, 1300 )
-			then
-				local allyList = J.GetAlliesNearLoc( npcAlly:GetLocation(), nCastRange )
-				local enemyList = J.GetNearbyHeroes(npcAlly,  1400, true, BOT_MODE_NONE )
-				if #enemyList >= 2
-					and ( #enemyList >= #allyList or #enemyList >= 3 )
-				then
-					local guardianCount = 0
-					for _, allyHero in pairs(allyList)
-					do
-						if allyHero:WasRecentlyDamagedByAnyHero(3.0)
-							and J.GetHP( allyHero ) < 0.8
-						then
-
-							guardianCount = guardianCount + 1
-
-							if J.GetHP( allyHero ) < 0.4 then guardianCount = guardianCount + 1 end
-
-						end
-					end
-
-					if guardianCount >= 2
-					then
-						hCastTarget = npcAlly
-						sCastMotive = 'R-团战辅助防御:'..J.Chat.GetNormName( hCastTarget )
-						return BOT_ACTION_DESIRE_HIGH, hCastTarget:GetLocation(), sCastMotive
-					end
-				end
-			end
-		end
-	end
-
-	-- Ally retreat check SECOND
-	for i = 1, #GetTeamPlayers( GetTeam() )
-	do
-		local npcAlly = GetTeamMember( i )
-		if npcAlly ~= nil
-			and npcAlly:IsAlive()
-			and ( bot:HasScepter() or J.IsInRange( bot, npcAlly, 700 ) )
-		then
-			if J.IsRetreating( npcAlly )
-				and npcAlly:WasRecentlyDamagedByAnyHero( 5.0 )
-			then
-				local attackModeAlly = J.GetNearbyHeroes(npcAlly,  nRadius, false, BOT_MODE_ATTACK )
-				local retreatModeAlly = J.GetNearbyHeroes(npcAlly,  nRadius, false, BOT_MODE_RETREAT )
-				if ( #attackModeAlly >= 2 or ( #attackModeAlly >= 1 and #retreatModeAlly >= 2 ) )
-				then
-					hCastTarget = npcAlly
-					sCastMotive = 'R-逃跑时辅助:'..J.Chat.GetNormName( hCastTarget )
-					return BOT_ACTION_DESIRE_HIGH, hCastTarget:GetLocation(), sCastMotive
-				end
-			end
-		end
-	end
-
-	-- Self-defense while attacking LAST (lowest priority)
-	if J.IsGoingOnSomeone( bot )
-		and nHP < ( #hEnemyList >= 3 and 0.65 or 0.45 )
-		and bot:WasRecentlyDamagedByAnyHero( 4.0 )
-	then
-		if J.IsValidHero( botTarget )
-			and J.IsInRange( bot, botTarget, 500 )
-			and J.CanCastOnMagicImmune( botTarget )
-			and not J.IsSuspiciousIllusion( botTarget )
-			and not J.IsDisabled( botTarget )
-			and not botTarget:IsDisarmed()
-			and botTarget:GetAttackTarget() == bot
-		then
-			hCastTarget = bot
-			sCastMotive = 'R-辅助攻击:'..J.Chat.GetNormName( botTarget )
-			return BOT_ACTION_DESIRE_HIGH, hCastTarget:GetLocation(), sCastMotive
-		end
-	end
-
-	return BOT_ACTION_DESIRE_NONE
+    local radius = abilityR:GetSpecialValueInt('radius')
+    local global = bot:HasScepter()
+    local injured, threatened = 0, 0
+    for i = 1, #GetTeamPlayers(GetTeam()) do
+        local ally = GetTeamMember(i)
+        if J.IsValidHero(ally)
+            and ally:IsAlive()
+            and (global or J.IsInRange(bot, ally, radius))
+            and not ally:HasModifier('modifier_omniknight_guardian_angel')
+            and ally:WasRecentlyDamagedByAnyHero(3.0)
+        then
+            local enemies = J.GetNearbyHeroes(ally, 1000, true, BOT_MODE_NONE)
+            if #enemies > 0 and J.GetHP(ally) < 0.8 then
+                injured = injured + 1
+                threatened = math.max(threatened, #enemies)
+                if J.GetHP(ally) < 0.4 then
+                    return BOT_ACTION_DESIRE_HIGH, nil, 'R-Guardian Angel save'
+                end
+            end
+        end
+    end
+    if injured >= 2 and threatened >= 2 then
+        return BOT_ACTION_DESIRE_HIGH, nil, 'R-Guardian Angel teamfight'
+    end
+    return BOT_ACTION_DESIRE_NONE
 end
 
 return X

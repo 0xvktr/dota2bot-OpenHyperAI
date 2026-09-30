@@ -7,108 +7,56 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-                        {--pos4
-                            ['t25'] = {10, 0},
-                            ['t20'] = {10, 0},
-                            ['t15'] = {0, 10},
-                            ['t10'] = {10, 0},
-                        },
-                        {--pos5
-                            ['t25'] = {10, 0},
-                            ['t20'] = {0, 10},
-                            ['t15'] = {10, 0},
-                            ['t10'] = {0, 10},
-                        }
+-- Updated to 7.41f from D2PT: both supports; forced cores use hard support without wards.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/rattletrap')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Battery Assault, [2] Power Cogs, [3] Rocket Flare, [6] Hookshot.
+local nAbilityBuildList = {2,1,2,3,2,6,2,3,3,3,6,1,1,1,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- +1.5 mana regen
+    t15={0,10}, -- -8s Hookshot cooldown
+    t20={0,10}, -- Rocket Flare true sight
+    t25={0,10}, -- 3 Rocket Flare charges
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+local sRoleItemsBuyList = {}
+sRoleItemsBuyList.pos_5 = {
+    'item_boots','item_ward_sentry','item_blood_grenade',
+    'item_tranquil_boots','item_magic_wand','item_urn_of_shadows','item_essence_distiller',
+    'item_blink','item_cyclone','item_aghanims_shard',
+    -- Bot policy: team escape, consumed Scepter and late defensive upgrades.
+    'item_force_staff','item_ultimate_scepter','item_ultimate_scepter_2','item_wind_waker',
+    'item_glimmer_cape','item_overwhelming_blink',
 }
-
-local tAllAbilityBuildList = {
-                        {1,2,1,3,1,6,1,2,2,2,6,3,3,3,6},--pos4
-                        {1,2,1,3,1,6,1,3,3,3,6,2,2,2,6},--pos5
+sRoleItemsBuyList.pos_4 = {
+    'item_boots','item_ward_observer','item_ward_sentry','item_blood_grenade',
+    'item_tranquil_boots','item_magic_wand','item_urn_of_shadows','item_essence_distiller',
+    'item_cyclone','item_aghanims_shard','item_ultimate_scepter',
+    -- Bot policy: consume Scepter, then initiation and team escape.
+    'item_ultimate_scepter_2','item_blink','item_force_staff','item_glimmer_cape',
+    'item_wind_waker','item_overwhelming_blink',
 }
+for role=1,3 do
+    sRoleItemsBuyList['pos_'..role] = {}
+    for _,item in ipairs(sRoleItemsBuyList.pos_5) do
+        if item ~= 'item_ward_sentry' then table.insert(sRoleItemsBuyList['pos_'..role],item) end
+    end
+end
+X.sBuyList = sRoleItemsBuyList[sRole]
+X.sSellList = {'item_blink','item_magic_wand'}
 
-local nAbilityBuildList
-local nTalentBuildList
+if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X.sBuyList, X.sSellList = {'PvN_antimage'}, {} end
 
-if sRole == "pos_4"
-then
-    nAbilityBuildList   = tAllAbilityBuildList[1]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[1])
-else
-    nAbilityBuildList   = tAllAbilityBuildList[2]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[2])
+nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList = J.SetUserHeroInit(nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList)
+X.sSkillList = J.Skill.GetSkillList(sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList)
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
 end
 
-local sGlimmerSolarCrest = RandomInt(1, 2) == 2 and "item_glimmer_cape" or "item_solar_crest"
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_4'] = {
-    "item_double_tango",
-    "item_double_branches",
-    "item_blood_grenade",
-    "item_wind_lace",
-
-    "item_boots",
-    "item_magic_wand",
-    "item_arcane_boots",
-    "item_urn_of_shadows", -- Alternative: item_essence_distiller (if not going spirit_vessel)
-    "item_force_staff",--
-    "item_spirit_vessel",--
-    sGlimmerSolarCrest,--
-    "item_aghanims_shard",
-    "item_guardian_greaves",-- 
-    "item_shivas_guard",--
-    "item_heavens_halberd",--
-    "item_ultimate_scepter",
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-    "item_double_tango",
-    "item_double_branches",
-    "item_blood_grenade",
-    "item_wind_lace",
-
-    "item_boots",
-    "item_magic_wand",
-    "item_tranquil_boots",
-    "item_urn_of_shadows", -- Alternative: item_essence_distiller (if not going spirit_vessel)
-	"item_pipe",
-    "item_force_staff",--
-    "item_spirit_vessel",--
-    sGlimmerSolarCrest,--
-    "item_aghanims_shard",
-    "item_boots_of_bearing",-- 
-    "item_shivas_guard",--
-    -- "item_heavens_halberd",--
-    "item_ultimate_scepter",
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_4']
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_4']
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_4']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-}
-
-if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
-
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
-X['bDeafaultAbility'] = false
-X['bDeafaultItem'] = false
+X.bDeafaultAbility = false
+X.bDeafaultItem = false
 
 function X.MinionThink(hMinionUnit)
 	Minion.MinionThink(hMinionUnit)

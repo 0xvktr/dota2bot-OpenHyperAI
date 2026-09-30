@@ -7,158 +7,61 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {--pos4,5
-                        ['t25'] = {0, 10},
-                        ['t20'] = {0, 10},
-                        ['t15'] = {10, 0},
-                        ['t10'] = {10, 0},
-}
-
-local tAllAbilityBuildList = {
-						{1,2,2,3,2,6,2,3,3,3,6,1,1,1,6},--pos4,5
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild(tAllAbilityBuildList)
-
-local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList)
-
-local sUtility = {"item_pipe", "item_lotus_orb", "item_heavens_halberd"}
-local nUtility = sUtility[RandomInt(1, #sUtility)]
-
+-- D2PT 7.41f: pos 4/5; forced cores use ward-free pos 5.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/venomancer')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Gale, [2] Snakebite, [3] Plague Ward, [6] Noxious Plague.
+local nAbilityBuildList = {1,2,3,3,3,6,3,2,2,2,6,1,1,1,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({t10={10,0},t15={0,10},t20={10,0},t25={10,0}})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
 local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_4'] = {
-    "item_double_tango",
-    "item_double_branches",
-    "item_blood_grenade",
-
-    "item_boots",
-    "item_magic_wand",
-    "item_urn_of_shadows", -- Alternative: item_essence_distiller (if not going spirit_vessel)
-    "item_arcane_boots",
-    "item_pavise",
-    "item_guardian_greaves",--
-    "item_solar_crest",--
-    "item_spirit_vessel",--
-    "item_force_staff",--
-    "item_aghanims_shard",
-    nUtility,--
-    "item_ultimate_scepter",
-    "item_wind_waker",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
+sRoleItemsBuyList.pos_4 = {
+    'item_branches','item_circlet','item_magic_stick','item_ward_sentry','item_tango',
+    'item_blood_grenade','item_urn_of_shadows','item_magic_wand','item_arcane_boots',
+    'item_spirit_vessel',
+    -- Bot policy: observed Force/Glimmer, then Greaves/Shard and six-slot utility; consume Scepter.
+    'item_force_staff','item_glimmer_cape','item_mekansm','item_guardian_greaves','item_aghanims_shard',
+    'item_ultimate_scepter','item_ultimate_scepter_2','item_lotus_orb','item_sheepstick',
 }
-
-sRoleItemsBuyList['pos_5'] = {
-    "item_double_tango",
-    "item_double_branches",
-    "item_blood_grenade",
-
-    "item_boots",
-    "item_magic_wand",
-    "item_urn_of_shadows", -- Alternative: item_essence_distiller (if not going spirit_vessel)
-    "item_tranquil_boots",
-    "item_pavise",
-    'item_pipe',--
-    "item_solar_crest",--
-    "item_spirit_vessel",--
-    "item_force_staff",--
-    "item_boots_of_bearing",--
-    "item_aghanims_shard",
-    "item_ultimate_scepter",
-    "item_wind_waker",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
+sRoleItemsBuyList.pos_5 = {
+    'item_branches','item_circlet','item_magic_stick','item_ward_sentry','item_tango',
+    'item_blood_grenade','item_magic_wand','item_urn_of_shadows','item_arcane_boots',
+    -- Bot policy: observed optional Vessel/Greaves/Shard, then six-slot utility; consume Scepter.
+    'item_spirit_vessel','item_mekansm','item_guardian_greaves','item_aghanims_shard',
+    'item_glimmer_cape','item_force_staff','item_ultimate_scepter','item_ultimate_scepter_2',
+    'item_lotus_orb','item_sheepstick',
 }
+local coreFallback = {}
+for _, item in ipairs(sRoleItemsBuyList.pos_5) do
+    if item ~= 'item_ward_sentry' then coreFallback[#coreFallback+1] = item end
+end
+sRoleItemsBuyList.pos_1, sRoleItemsBuyList.pos_2, sRoleItemsBuyList.pos_3 = coreFallback, coreFallback, coreFallback
+X.sBuyList = sRoleItemsBuyList[sRole]
+X.sSellList = {'item_force_staff','item_magic_wand'}
 
-sRoleItemsBuyList['pos_3'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_faerie_fire",
-	"item_circlet",
-
-	"item_magic_wand",
-	"item_boots",
-	"item_ring_of_basilius",
-	"item_arcane_boots",
-	"item_shivas_guard",--
-	"item_cyclone",
-	"item_kaya_and_sange",--
-	"item_bloodstone",--
-	"item_black_king_bar",--
-	"item_aghanims_shard",
-	"item_octarine_core",--
-	"item_refresher",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_crystal_maiden_outfit",
-	"item_dragon_lance",
-	"item_witch_blade",
-	"item_hurricane_pike",--
-	"item_black_king_bar",--
-	"item_aghanims_shard",
-    "item_ultimate_scepter",
-	"item_sange_and_yasha",--
-	"item_devastator",--
-	"item_sheepstick",--
-	"item_moon_shard",
-	"item_travel_boots",
-	"item_ultimate_scepter_2",
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_2'] = {
-	"item_mid_outfit",
-	"item_dragon_lance",
-	"item_witch_blade",
-	"item_hurricane_pike",--
-	"item_black_king_bar",--
-	"item_aghanims_shard",
-    "item_ultimate_scepter",
-	"item_kaya_and_sange",--
-	"item_devastator",--
-	"item_sheepstick",--
-	"item_moon_shard",
-	"item_travel_boots",
-	"item_ultimate_scepter_2",
-	"item_travel_boots_2",--
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-}
-
-if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
-
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
-X['bDeafaultAbility'] = false
-X['bDeafaultItem'] = false
+if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X.sBuyList, X.sSellList = { 'PvN_antimage' }, {} end
+nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList = J.SetUserHeroInit(nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList)
+X.sSkillList = J.Skill.GetSkillList(sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList)
+-- Observed ability at 10, talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
+X.bDeafaultAbility = false
+X.bDeafaultItem = false
 
 function X.MinionThink(hMinionUnit)
     Minion.MinionThink(hMinionUnit)
 end
 
 local VenomousGale      = bot:GetAbilityByName('venomancer_venomous_gale')
--- local PoisonSting       = bot:GetAbilityByName('venomancer_poison_sting')
+local Snakebite         = bot:GetAbilityByName('venomancer_snakebite')
 local PlagueWard        = bot:GetAbilityByName('venomancer_plague_ward')
--- local LatentToxicity    = bot:GetAbilityByName('venomancer_latent_poison')
--- local PoisonNova        = bot:GetAbilityByName('venomancer_poison_nova')
 local NoxiousPlague     = bot:GetAbilityByName('venomancer_noxious_plague')
 
 local VenomousGaleDesire, VenomousGaleLocation
 local PlagueWardDesire, PlagueWardLocation, bTargetAlly
--- local LatentToxicityDesire, LatentToxicityTarget
+local SnakebiteDesire, SnakebiteTarget
 local NoxiousPlagueDesire, NoxiousPlagueTarget
 
 local botTarget
@@ -175,17 +78,16 @@ function X.SkillsComplement()
         return
     end
 
-    -- LatentToxicityDesire, LatentToxicityTarget = X.ConsiderLatentToxicity()
-    -- if LatentToxicityDesire > 0
-    -- then
-    --     bot:Action_UseAbilityOnEntity(LatentToxicity, LatentToxicityTarget)
-    --     return
-    -- end
-
     VenomousGaleDesire, VenomousGaleLocation = X.ConsiderVenomousGale()
     if VenomousGaleDesire > 0
     then
         bot:Action_UseAbilityOnLocation(VenomousGale, VenomousGaleLocation)
+        return
+    end
+
+    SnakebiteDesire, SnakebiteTarget = X.ConsiderSnakebite()
+    if SnakebiteDesire > 0 then
+        bot:Action_UseAbilityOnEntity(Snakebite, SnakebiteTarget)
         return
     end
 
@@ -211,6 +113,8 @@ function X.ConsiderVenomousGale()
 	local nRadius = VenomousGale:GetSpecialValueInt('radius')
     local nInitDamage = VenomousGale:GetSpecialValueInt('strike_damage')
     local nTickDamage = VenomousGale:GetSpecialValueInt('tick_damage')
+    local nTotalDamage = nInitDamage + nTickDamage * math.floor(
+        VenomousGale:GetSpecialValueFloat('duration') / VenomousGale:GetSpecialValueFloat('tick_interval'))
 
     local nEnemyHeroes = bot:GetNearbyHeroes(nCastRange, true, BOT_MODE_NONE)
     for _, enemyHero in pairs(nEnemyHeroes)
@@ -218,7 +122,7 @@ function X.ConsiderVenomousGale()
         if J.IsValidHero(enemyHero)
         and J.CanCastOnNonMagicImmune(enemyHero)
         and (J.CanKillTarget(enemyHero, nInitDamage, DAMAGE_TYPE_MAGICAL)
-            or J.CanKillTarget(enemyHero, nInitDamage * nTickDamage, DAMAGE_TYPE_MAGICAL))
+            or J.CanKillTarget(enemyHero, nTotalDamage, DAMAGE_TYPE_MAGICAL))
         and not J.IsSuspiciousIllusion(enemyHero)
         and not enemyHero:HasModifier('modifier_abaddon_borrowed_time')
         and not enemyHero:HasModifier('modifier_dazzle_shallow_grave')
@@ -540,6 +444,28 @@ function X.ConsiderPlagueWard()
     end
 
     return BOT_ACTION_DESIRE_NONE, 0, false
+end
+
+function X.ConsiderSnakebite()
+    if not J.CanCastAbility(Snakebite) then return BOT_ACTION_DESIRE_NONE, nil end
+    local nCastRange = J.GetProperCastRange(false, bot, Snakebite:GetCastRange())
+    for _, enemy in pairs(J.GetNearbyHeroes(bot, nCastRange, true, BOT_MODE_NONE)) do
+        if J.IsValidHero(enemy)
+        and J.IsInRange(bot, enemy, nCastRange)
+        and J.CanCastOnNonMagicImmune(enemy)
+        and J.CanCastOnTargetAdvanced(enemy)
+        and not J.IsSuspiciousIllusion(enemy)
+        then
+            if J.IsGoingOnSomeone(bot) and enemy == botTarget
+            or J.IsRetreating(bot) and J.IsChasingTarget(enemy, bot)
+            or J.IsInLaningPhase() and J.GetMP(bot) > 0.55 and J.GetHP(bot) > 0.4
+                and #bot:GetNearbyTowers(800, true) == 0
+            then
+                return BOT_ACTION_DESIRE_HIGH, enemy
+            end
+        end
+    end
+    return BOT_ACTION_DESIRE_NONE, nil
 end
 
 function X.ConsiderNoxiousPlague()

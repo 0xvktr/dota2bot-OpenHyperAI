@@ -16,74 +16,42 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-							['t25'] = {10, 0},
-							['t20'] = {10, 0},
-							['t15'] = {10, 0},
-							['t10'] = {0, 10},
-}
-
-local tAllAbilityBuildList = {
-							{1,3,2,3,3,6,3,1,1,1,6,2,2,2,6},--pos1
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRandomItem_1 = RandomInt( 1, 9 ) > 5 and "item_monkey_king_bar" or "item_abyssal_blade"
-local sAbyssalBloodthorn = RandomInt( 1, 9 ) > 4 and "item_bloodthorn" or "item_butterfly"
-
+-- Updated to 7.41f from D2PT: carry; forced roles use carry.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/phantom_lancer')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Spirit Lance, [2] Doppelganger, [3] Phantom Rush, [6] Juxtapose.
+local nAbilityBuildList = {1,2,1,3,1,6,1,3,3,3,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- +3% Juxtapose illusion trigger chance
+    t15={0,10}, -- 50% illusion Spirit Lance damage
+    t20={0,10}, -- +100 Spirit Lance damage
+    t25={0,10}, -- -4s Doppelganger cooldown
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
 local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_quelling_blade",
-	"item_slippers",
-	"item_circlet",
-
-	"item_magic_wand",
-	"item_wraith_band",
-	"item_power_treads",
-	"item_diffusal_blade",
-	"item_manta",--
-	"item_heart",--
-	"item_skadi",--
-	"item_ultimate_scepter",
-	"item_disperser",--
-	"item_ultimate_scepter_2",
-	"item_moon_shard",
-	sRandomItem_1,--
-	sAbyssalBloodthorn,--
-	"item_aghanims_shard",
+sRoleItemsBuyList.pos_1 = {
+    'item_quelling_blade','item_double_branches','item_magic_stick','item_tango','item_faerie_fire',
+    'item_magic_wand','item_power_treads','item_yasha','item_manta','item_ultimate_scepter',
+    'item_skadi','item_orchid','item_aghanims_shard','item_bloodthorn',
+    -- Bot policy: consume Scepter before the observed late Heart and Butterfly.
+    'item_ultimate_scepter_2','item_heart','item_butterfly','item_moon_shard',
 }
+for role=2,5 do sRoleItemsBuyList['pos_'..role] = sRoleItemsBuyList.pos_1 end
+X.sBuyList = sRoleItemsBuyList[sRole]
+X.sSellList = {'item_manta','item_magic_wand','item_skadi','item_quelling_blade'}
 
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
+if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X.sBuyList, X.sSellList = {'PvN_PL'}, {'item_power_treads','item_quelling_blade'} end
 
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_1']
+nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList = J.SetUserHeroInit(nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList)
+X.sSkillList = J.Skill.GetSkillList(sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList)
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-}
-
-if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_PL' }, {"item_power_treads", 'item_quelling_blade'} end
-
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
-X['bDeafaultAbility'] = false
-X['bDeafaultItem'] = false
+X.bDeafaultAbility = false
+X.bDeafaultItem = false
 
 function X.MinionThink(hMinionUnit)
 
@@ -97,41 +65,12 @@ function X.MinionThink(hMinionUnit)
 
 end
 
---[[
-
-npc_dota_hero_phantom_lancer
-
-phantom_lancer_spirit_lance
-phantom_lancer_doppelwalk
-phantom_lancer_phantom_edge
-phantom_lancer_juxtapose
-special_bonus_unique_phantom_lancer_2
-special_bonus_attack_speed_20
-special_bonus_all_stats_8
-special_bonus_cooldown_reduction_15
-special_bonus_magic_resistance_15
-special_bonus_evasion_15
-special_bonus_strength_20
-special_bonus_unique_phantom_lancer
-
-modifier_phantom_lancer_spirit_lance
-modifier_phantomlancer_dopplewalk_phase
-modifier_phantom_lancer_doppelwalk_illusion
-modifier_phantom_lancer_juxtapose
-modifier_phantom_lancer_phantom_edge
-modifier_phantom_lancer_phantom_edge_boost
-modifier_phantom_lancer_phantom_edge_agility
-modifier_phantom_lancer_juxtapose_illusion
-
---]]
 
 
 local abilityQ = bot:GetAbilityByName( sAbilityList[1] )
 local abilityW = bot:GetAbilityByName( sAbilityList[2] )
 local abilityE = bot:GetAbilityByName( sAbilityList[3] )
 local abilityR = bot:GetAbilityByName( sAbilityList[6] )
-local talent4 = bot:GetAbilityByName( sTalentList[4] )
-local talent5 = bot:GetAbilityByName( sTalentList[5] )
 
 
 local castQDesire, castQTarget
@@ -140,7 +79,6 @@ local castRDesire
 
 
 local nKeepMana, nMP, nHP, nLV, hEnemyList, hAllyList, botTarget, sMotive
-local talent4Damage = 0
 local aetherRange = 0
 
 local boostRange = 0
@@ -156,7 +94,6 @@ function X.SkillsComplement()
 
 
 	nKeepMana = 400
-	talent4Damage = 0
 	aetherRange = 0
 	nLV = bot:GetLevel()
 	nMP = bot:GetMana()/bot:GetMaxMana()
@@ -167,8 +104,6 @@ function X.SkillsComplement()
 
 
 	if abilityE:IsTrained() then boostRange = abilityE:GetSpecialValueInt( "max_distance" ) end
---	if talent4:IsTrained() then talent4Damage = talent4:GetSpecialValueInt( "value" ) end
-	if talent5:IsTrained() then boostRange = boostRange + talent5:GetSpecialValueInt( "value" ) end
 	local aether = J.IsItemAvailable( "item_aether_lens" )
 	if aether ~= nil then aetherRange = 250 end
 
@@ -572,7 +507,6 @@ end
 
 return X
 -- dota2jmz@163.com QQ:2462331592..
-
 
 
 

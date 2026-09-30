@@ -7,67 +7,39 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {10, 0},
-						['t20'] = {0, 10},
-						['t15'] = {0, 10},
-						['t10'] = {0, 10},
+-- D2PT 7.41f: carry only; forced other roles use carry.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/spectre')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Spectral Dagger, [2] Shadow Step, [3] Dispersion, [6] Haunt.
+local nAbilityBuildList = {1,2,1,3,1,6,1,3,3,3,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- +12 Desolate damage
+    t15={0,10}, -- +1s Shadow Step duration
+    t20={0,10}, -- +300 health
+    t25={0,10}, -- +12% all Spectre illusion damage
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    'item_quelling_blade','item_branches','item_circlet','item_magic_stick','item_tango',
+    'item_urn_of_shadows','item_magic_wand','item_power_treads','item_radiance','item_yasha',
+    'item_manta','item_skadi',
+    -- Bot policy: observed bash/evasion, consume Scepter before the sixth major slot.
+    'item_basher','item_aghanims_shard','item_ultimate_scepter','item_ultimate_scepter_2',
+    'item_abyssal_blade','item_butterfly','item_moon_shard',
 }
-
-local tAllAbilityBuildList = {
-						{1,3,1,2,1,6,1,3,3,3,6,2,2,2,6},--pos1
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_quelling_blade",
-
-    "item_wraith_band",
-    "item_power_treads",
-    "item_blade_mail",
-    "item_magic_wand",
-    "item_radiance",--
-    "item_manta",--
-    "item_ultimate_scepter",
-    "item_orchid",
-    "item_skadi",--
-    "item_basher",
-    "item_aghanims_shard",
-    "item_bloodthorn",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-    "item_abyssal_blade",--
-    "item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-}
+X.sSellList = {'item_skadi','item_magic_wand','item_skadi','item_urn_of_shadows','item_radiance','item_quelling_blade'}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
@@ -557,19 +529,20 @@ end
 
 function X.ConsiderShadowStep()
     if not ShadowStep:IsFullyCastable()
-    or J.IsInLaningPhase()
     then
         return BOT_ACTION_DESIRE_NONE, nil
     end
 
     ShadowStepDuration = ShadowStep:GetSpecialValueFloat('duration')
+    local nCastRange = J.GetProperCastRange(false, bot, ShadowStep:GetCastRange())
     local nTeamFightLocation = J.GetTeamFightLocation(bot)
 
     if J.IsGoingOnSomeone(bot)
     then
-        local weakestTarget = J.GetVulnerableWeakestUnit(bot, true, true, 1600)
+        local weakestTarget = J.GetVulnerableWeakestUnit(bot, true, true, nCastRange)
 
         if J.IsValidTarget(weakestTarget)
+        and J.IsInRange(bot, weakestTarget, nCastRange)
         and GetUnitToUnitDistance(bot, weakestTarget) > 600
         and not J.IsSuspiciousIllusion(weakestTarget)
         and not J.IsLocationInChrono(weakestTarget:GetLocation())
@@ -589,7 +562,7 @@ function X.ConsiderShadowStep()
     end
 
     if nTeamFightLocation ~= nil
-    and GetUnitToLocationDistance(bot, nTeamFightLocation) > 1600
+    and GetUnitToLocationDistance(bot, nTeamFightLocation) <= nCastRange + 1200
     and bot:GetLevel() >= 6
     and bot:GetNetWorth() > 5000
     and not J.IsRetreating(bot)
@@ -602,6 +575,7 @@ function X.ConsiderShadowStep()
         for _, enemyHero in pairs(nEnemyHeroes)
         do
             if J.IsValidHero(enemyHero)
+            and J.IsInRange(bot, enemyHero, nCastRange)
             and not J.IsSuspiciousIllusion(enemyHero)
             and not J.IsLocationInChrono(enemyHero:GetLocation())
             and not J.IsLocationInBlackHole(enemyHero:GetLocation())
@@ -633,7 +607,6 @@ function X.ConsiderHaunt()
     if not Haunt:IsTrained()
     or not Haunt:IsFullyCastable()
     or Haunt:IsHidden()
-    or ShadowStep:IsFullyCastable()
     or J.IsInLaningPhase()
     then
         return BOT_ACTION_DESIRE_NONE

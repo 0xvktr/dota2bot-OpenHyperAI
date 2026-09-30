@@ -16,76 +16,42 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {0, 10},
-						['t20'] = {10, 0},
-						['t15'] = {0, 10},
-						['t10'] = {10, 0},
+-- D2PT 7.41f: carry only; forced other roles use carry.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/sven')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Storm Hammer, [2] Great Cleave, [3] Warcry, [6] God's Strength.
+local nAbilityBuildList = {1,3,2,2,2,6,2,1,1,1,6,3,3,3,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- Warcry duration
+    t15={0,10}, -- God's Strength cooldown
+    t20={10,0}, -- Warcry armor
+    t25={0,10}, -- God's Strength damage
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    'item_quelling_blade','item_double_branches','item_magic_stick','item_tango','item_faerie_fire',
+    'item_bracer','item_magic_wand','item_power_treads','item_lifesteal','item_mask_of_madness',
+    'item_echo_sabre','item_blink','item_black_king_bar','item_lesser_crit','item_greater_crit',
+    'item_harpoon','item_swift_blink','item_satanic','item_aghanims_shard',
+    -- Bot policy: consumed attack speed; retain the six-item carry inventory.
+    'item_moon_shard',
+}
+X.sSellList = {
+    'item_echo_sabre','item_quelling_blade',
+    'item_greater_crit','item_magic_wand',
+    'item_harpoon','item_bracer',
+    'item_satanic','item_mask_of_madness',
+    'item_satanic','item_broadsword',
 }
 
-local tAllAbilityBuildList = {
-						{1,3,2,2,2,6,2,3,3,3,6,1,1,1,6},--pos1
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_faerie_fire",
-	"item_quelling_blade",
-
-	"item_magic_wand",
-	"item_power_treads",
-	"item_mask_of_madness",
-	"item_echo_sabre",
-	"item_blink",
-	"item_black_king_bar",--
-	"item_greater_crit",--
-	"item_harpoon",--
-	"item_satanic",--
-	"item_moon_shard",
-	"item_swift_blink",--
-	"item_orchid",
-	"item_bloodthorn",--
-	"item_ultimate_scepter_2",
-	"item_aghanims_shard",
-
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-	"item_echo_sabre",
-	"item_quelling_blade",
-
-	"item_travel_boots",
-	"item_magic_wand",
-
-	"item_greater_crit",
-	"item_hand_of_midas",
-
-	"item_overwhelming_blink",
-	"item_echo_sabre",
-}
-
-if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_str_carry' }, {"item_power_treads", 'item_quelling_blade'} end
-
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X.sBuyList, X.sSellList = {'PvN_str_carry'}, {'item_power_treads','item_quelling_blade'} end
+nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList = J.SetUserHeroInit(nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList)
+X.sSkillList = J.Skill.GetSkillList(sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList)
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
@@ -99,31 +65,7 @@ function X.MinionThink(hMinionUnit)
 
 end
 
---[[
 
-npc_dota_hero_sven
-
-"Ability1"		"sven_storm_bolt"
-"Ability2"		"sven_great_cleave"
-"Ability3"		"sven_warcry"
-"Ability4"		"generic_hidden"
-"Ability5"		"generic_hidden"
-"Ability6"		"sven_gods_strength"
-"Ability10"		"special_bonus_strength_8"
-"Ability11"		"special_bonus_mp_regen_3"
-"Ability12"		"special_bonus_movement_speed_30"
-"Ability13"		"special_bonus_unique_sven_3"
-"Ability14"		"special_bonus_lifesteal_25"
-"Ability15"		"special_bonus_unique_sven"
-"Ability16"		"special_bonus_unique_sven_2"
-"Ability17"		"special_bonus_unique_sven_4"
-
-modifier_sven_great_cleave
-modifier_sven_warcry
-modifier_sven_gods_strength
-modifier_sven_gods_strength_child
-
---]]
 
 
 local abilityQ = bot:GetAbilityByName( sAbilityList[1] )
@@ -202,7 +144,7 @@ function X.ConsiderQ()
 	local nManaCost = abilityQ:GetManaCost()
 	local nSkillLV = abilityQ:GetLevel()
 	local nDamage = 80 * nSkillLV
-	local nRadius = 255
+	local nRadius = abilityQ:GetSpecialValueInt('bolt_aoe')
 	local nDamageType = DAMAGE_TYPE_MAGICAL
 
 	local nAllies =  J.GetNearbyHeroes(bot, 1200, false, BOT_MODE_NONE )

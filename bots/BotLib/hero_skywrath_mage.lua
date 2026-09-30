@@ -16,131 +16,64 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {10, 0},
-						['t20'] = {10, 0},
-						['t15'] = {0, 10},
-						['t10'] = {0, 10},
+-- D2PT 7.41f: mid and both supports; forced other roles use support without wards.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/skywrath_mage')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+local mid = sRole == 'pos_2'
+-- [1] Arcane Bolt, [2] Concussive Shot, [3] Ancient Seal, [6] Mystic Flare.
+local nAbilityBuildList = mid and {2,1,1,2,1,6,1,3,2,2,6,3,3,3,6}
+    or {2,1,1,3,1,6,1,3,3,3,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- +125 Arcane Bolt cast range
+    t15={0,10}, -- -6s Ancient Seal cooldown
+    t20={10,0}, -- +10% Ancient Seal magic damage amplification
+    t25=mid and {0,10} or {10,0}, -- Arcane Bolt INT multiplier / Mystic Flare damage
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+local roleItems = {}
+roleItems.pos_2 = {
+    'item_double_mantle','item_mantle','item_circlet',
+    'item_null_talisman','item_null_talisman','item_null_talisman',
+    'item_rod_of_atos','item_kaya','item_aghanims_shard','item_travel_boots','item_blink',
+    'item_kaya_and_sange','item_sheepstick',
+    -- Bot policy: consume Scepter before the observed late Ethereal Blade; six final slots.
+    'item_ultimate_scepter','item_ultimate_scepter_2','item_ethereal_blade',
 }
-
-local tAllAbilityBuildList = {
-						{2,1,1,3,2,6,1,1,3,3,6,3,2,2,6},
+roleItems.pos_4 = {
+    'item_mantle','item_double_branches','item_circlet','item_ward_sentry','item_tango','item_blood_grenade',
+    'item_null_talisman','item_null_talisman','item_null_talisman','item_magic_wand','item_arcane_boots',
+    'item_aghanims_shard','item_kaya','item_rod_of_atos','item_blink','item_ultimate_scepter',
+    -- Bot policy: upgrade Kaya, consume Scepter, then late control and team escape.
+    'item_kaya_and_sange','item_ultimate_scepter_2','item_sheepstick','item_glimmer_cape',
 }
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_4'] = {
-	"item_tango",
-	"item_tango",
-	"item_double_branches",
-	"item_faerie_fire",
-	"item_blood_grenade",
-
-	"item_magic_wand",
-	"item_arcane_boots",
-	"item_rod_of_atos",
-	"item_glimmer_cape",--
-	"item_aether_lens",--
-	"item_aghanims_shard",
-	"item_guardian_greaves",--
-	"item_ultimate_scepter",
-	"item_octarine_core",--
-	"item_gungir",--
-	"item_shivas_guard",--
-	"item_ultimate_scepter_2",
-	"item_moon_shard",
+roleItems.pos_5 = {
+    'item_mantle','item_double_branches','item_circlet','item_ward_sentry','item_tango','item_blood_grenade',
+    'item_null_talisman','item_null_talisman','item_magic_wand','item_arcane_boots',
+    'item_rod_of_atos','item_aghanims_shard','item_kaya','item_blink','item_ultimate_scepter',
+    -- Bot policy: consume Scepter and upgrade Kaya before late control/team escape.
+    'item_ultimate_scepter_2','item_kaya_and_sange','item_sheepstick','item_glimmer_cape',
 }
-
-sRoleItemsBuyList['pos_5'] = {
-	"item_tango",
-	"item_tango",
-	"item_double_branches",
-	"item_faerie_fire",
-	"item_blood_grenade",
-
-	"item_magic_wand",
-	"item_tranquil_boots",
-	"item_glimmer_cape",--
-	"item_pipe",
-	"item_rod_of_atos",
-	-- "item_aether_lens",--
-	"item_aghanims_shard",
-	"item_boots_of_bearing",--
-	"item_ultimate_scepter",
-	"item_octarine_core",--
-	"item_gungir",--
-	"item_sheepstick",--
-	"item_ultimate_scepter_2",
-	"item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_crystal_maiden_outfit",
-	"item_rod_of_atos",
---	"item_glimmer_cape",
-    "item_kaya",
-	"item_ultimate_scepter",
-    "item_kaya_and_sange",--
-	"item_aghanims_shard",
-	"item_octarine_core",--
-	"item_gungir",--
-	"item_cyclone",
-	"item_sheepstick",--
-	"item_wind_waker",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-    "item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_2'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_double_circlet",
-
-	"item_bottle",
-	'item_null_talisman',
-	"item_magic_wand",
-	'item_null_talisman',
-	"item_arcane_boots",
-	"item_rod_of_atos",
---	"item_glimmer_cape",
-    "item_kaya",
-	"item_ultimate_scepter",
-    "item_kaya_and_sange",--
-	"item_aghanims_shard",
-	"item_dagon_2",
-	"item_octarine_core",--
-	"item_gungir",--
-	-- "item_cyclone",
-	"item_sheepstick",--
-    "item_dagon_5",--
-	-- "item_wind_waker",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-    "item_travel_boots_2",--
-}
-
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-}
+for _,r in ipairs({'pos_1','pos_3'}) do
+    roleItems[r] = {}
+    for _,item in ipairs(roleItems.pos_4) do
+        if item ~= 'item_ward_sentry' then table.insert(roleItems[r],item) end
+    end
+end
+X.sBuyList = roleItems[sRole]
+X.sSellList = {'item_blink','item_null_talisman','item_blink','item_null_talisman',
+    'item_blink','item_null_talisman','item_sheepstick','item_magic_wand'}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_mage' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = true
@@ -273,7 +206,7 @@ function X.ConsiderQ()
 	local nCastRange = abilityQ:GetCastRange() + aetherRange
 	local nCastPoint = abilityQ:GetCastPoint()
 	local nManaCost = abilityQ:GetManaCost()
-	local nDamage = abilityQ:GetSpecialValueInt( "bolt_damage" ) + bot:GetAttributeValue( ATTRIBUTE_INTELLECT ) * 1.6
+	local nDamage = abilityQ:GetSpecialValueInt( "bolt_damage" ) + bot:GetAttributeValue( ATTRIBUTE_INTELLECT ) * abilityQ:GetSpecialValueFloat( "int_multiplier" )
 	local nDamageType = DAMAGE_TYPE_MAGICAL
 	local nInRangeEnemyHeroList = J.GetNearbyHeroes(bot, math.min(nCastRange + 50, 1600), true, BOT_MODE_NONE )
 	local nAttackDamage = bot:GetAttackDamage()

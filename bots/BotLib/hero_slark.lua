@@ -16,93 +16,59 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {0, 10}, -- 7.41a: Essence Shift agi/stack swapped from L20 to L25
-						['t20'] = {10, 0}, -- 7.41a: Essence Shift duration swapped from L25 to L20
-						['t15'] = {0, 10},
-						['t10'] = {0, 10},
+-- D2PT 7.41f: carry/mid/offlane; forced supports use carry.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/slark')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+local mid = sRole == 'pos_2'
+-- [1] Dark Pact, [2] Pounce, [3] Saltwater Shiv, [6] Shadow Dance.
+local nAbilityBuildList = mid and {3,2,3,1,1,6,1,1,2,2,6,2,3,3,6}
+    or {2,3,1,1,1,6,1,2,2,2,6,3,3,3,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- +0.5s Pounce leash
+    t15={0,10}, -- +70 Dark Pact damage
+    t20={10,0}, -- +100 Shadow Dance attack speed
+    t25={10,0}, -- +1 agility per Essence Shift stack
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+local roleItems = {}
+roleItems.pos_1 = {
+    'item_quelling_blade','item_double_branches','item_magic_stick','item_tango','item_faerie_fire',
+    'item_magic_wand','item_power_treads','item_diffusal_blade','item_ultimate_scepter','item_aghanims_shard',
+    'item_black_king_bar','item_disperser','item_skadi',
+    -- Bot policy: consume Scepter before late attack lockdown and mobility.
+    'item_ultimate_scepter_2','item_basher','item_abyssal_blade','item_blink','item_swift_blink',
 }
-
-local tAllAbilityBuildList = {
-						{3,2,1,1,1,6,1,2,2,2,6,3,3,3,6},--pos1
+roleItems.pos_2 = {
+    'item_double_branches','item_double_circlet','item_tango','item_faerie_fire',
+    -- Bot policy: two Wraith Bands consume both observed starting Circlets.
+    'item_wraith_band','item_wraith_band','item_magic_wand','item_power_treads','item_diffusal_blade',
+    'item_ultimate_scepter','item_aghanims_shard','item_black_king_bar','item_disperser','item_blink',
+    -- Bot policy: consume Scepter, then late durability and attack lockdown within six slots.
+    'item_ultimate_scepter_2','item_skadi','item_basher','item_abyssal_blade',
 }
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-	
-	"item_melee_carry_outfit",
---	"item_wraith_band",
-	"item_diffusal_blade",
-	"item_yasha",
-	"item_broadsword",
-	"item_blitz_knuckles",
-	"item_invis_sword",
-	"item_sange_and_yasha",--
-	"item_aghanims_shard",
-	"item_black_king_bar",--
-	"item_travel_boots",
-	"item_abyssal_blade",--
-	"item_silver_edge",--
-    "item_disperser",--
-	"item_ultimate_scepter",
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-	"item_butterfly",--
-	"item_travel_boots_2",--
+roleItems.pos_3 = {
+    'item_quelling_blade','item_double_branches','item_magic_stick','item_tango','item_faerie_fire',
+    'item_magic_wand','item_power_treads','item_diffusal_blade','item_mage_slayer',
+    'item_ultimate_scepter','item_aghanims_shard','item_disperser','item_black_king_bar',
+    -- Bot policy: consumed Scepter and late durability/mobility within six slots.
+    'item_ultimate_scepter_2','item_skadi','item_blink','item_swift_blink',
 }
-
-sRoleItemsBuyList['pos_2'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_quelling_blade",
-	"item_slippers",
-	"item_circlet",
-
-	"item_magic_wand",
-	"item_wraith_band",
-	"item_power_treads",
-	"item_diffusal_blade",
-	"item_echo_sabre",
-	"item_ultimate_scepter",
-	"item_aghanims_shard",
-	"item_black_king_bar",--
-	"item_skadi",--
-	"item_basher",
-	"item_disperser",--
-	"item_abyssal_blade",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-	"item_orchid",
-	"item_bloodthorn",--
-	"item_nullifier",--
-}
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_2']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_2']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-}
-
+roleItems.pos_4, roleItems.pos_5 = roleItems.pos_1, roleItems.pos_1
+X.sBuyList = roleItems[sRole]
+X.sSellList = {'item_diffusal_blade','item_quelling_blade','item_ultimate_scepter','item_magic_wand',
+    'item_black_king_bar','item_wraith_band','item_disperser','item_wraith_band'}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_melee_carry' }, {"item_power_treads", 'item_quelling_blade'} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

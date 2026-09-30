@@ -7,105 +7,43 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {--pos4,5
-                        ['t25'] = {10, 0},
-                        ['t20'] = {10, 0},
-                        ['t15'] = {10, 0},
-                        ['t10'] = {10, 0},
+-- D2PT 7.41f: supports; forced core roles use hard support without wards.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/shadow_demon')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+local pos4 = sRole == 'pos_4'
+-- [1] Disruption, [2] Disseminate, [3] Shadow Poison, [6] Demonic Purge.
+local nAbilityBuildList = {1,3,3,2,3,6,3,2,2,2,6,1,1,1,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- Strength
+    t15={10,0}, -- Poison cooldown
+    t20={10,0}, -- Purge cooldown
+    t25={10,0}, -- Disruption charges
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    'item_double_branches','item_magic_stick','item_tango','item_faerie_fire','item_blood_grenade',
+    'item_magic_wand','item_arcane_boots','item_blink',
 }
-
-local tAllAbilityBuildList = {
-						{3,1,3,1,3,6,3,1,1,2,6,2,2,2,6},--pos4,5
+if sRole == 'pos_4' or sRole == 'pos_5' then table.insert(X.sBuyList,3,'item_ward_sentry') end
+local continuation = pos4 and {
+    'item_aether_lens','item_aghanims_shard','item_force_staff','item_ultimate_scepter',
+} or {
+    'item_glimmer_cape','item_aghanims_shard','item_aether_lens','item_ultimate_scepter',
 }
+for _, item in ipairs(continuation) do table.insert(X.sBuyList,item) end
+-- Bot policy: consumed Scepter, cooldown reduction, survivability and natural upgrades.
+for _, item in ipairs({'item_ultimate_scepter_2','item_octarine_core','item_aeon_disk',
+    'item_guardian_greaves','item_arcane_blink'}) do table.insert(X.sBuyList,item) end
+X.sSellList = {'item_ultimate_scepter','item_magic_wand'}
 
-local nAbilityBuildList = J.Skill.GetRandomBuild(tAllAbilityBuildList)
-
-local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList)
-
-local nRandItem = RandomInt(1, 2) == 1 and "item_glimmer_cape" or "item_force_staff"
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_4'] = {
-    "item_double_tango",
-    "item_double_branches",
-    "item_blood_grenade",
-
-    "item_magic_wand",
-    "item_arcane_boots",
-    "item_aether_lens",--
-    "item_blink",
-    nRandItem,--
-    "item_guardian_greaves",--
-    "item_ultimate_scepter",
-    "item_aeon_disk",--
-    "item_octarine_core",--
-    "item_ultimate_scepter_2",
-    "item_arcane_blink",--
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-	"item_tango",
-	"item_tango",
-	"item_double_branches",
-	"item_enchanted_mango",
-	"item_blood_grenade",
-
-	"item_magic_wand",
-	"item_boots",
-	"item_tranquil_boots",
-	"item_glimmer_cape",--
-    "item_pipe",--
-	-- "item_aether_lens",--
-	"item_aghanims_shard",
-	"item_force_staff",--
-	"item_boots_of_bearing",--
-	"item_cyclone",
-    "item_lotus_orb",--
-	"item_gungir",--
-	"item_wind_waker",--
-	"item_ultimate_scepter_2",
-	"item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_3'] = {
-    "item_crystal_maiden_outfit",
---		"item_glimmer_cape",
-    "item_aghanims_shard",
-    "item_ultimate_scepter",
-    "item_force_staff",
-    "item_maelstrom",
-	"item_gungir",--
-    "item_cyclone",
-	"item_hurricane_pike",--
-    "item_sheepstick",--
-    "item_wind_waker",--
-    "item_moon_shard",
-    "item_octarine_core",--
-    "item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_3']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-	"item_cyclone",
-	"item_magic_wand",
-
-	"item_ultimate_scepter",
-	"item_magic_wand",
-}
-
-
-if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
-
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X.sBuyList, X.sSellList = {'PvN_antimage'}, {} end
+nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList = J.SetUserHeroInit(nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList)
+X.sSkillList = J.Skill.GetSkillList(sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList)
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
@@ -559,7 +497,7 @@ function X.ConsiderDemonicPurge()
         for _, enemyHero in pairs(nInRangeEnemy)
         do
             if J.IsValidTarget(enemyHero)
-            and J.CanCastOnNonMagicImmune(enemyHero)
+            and J.CanCastOnMagicImmune(enemyHero)
             and J.CanCastOnTargetAdvanced(enemyHero)
             and not J.IsSuspiciousIllusion(enemyHero)
             and not J.IsDisabled(enemyHero)
@@ -583,7 +521,7 @@ function X.ConsiderDemonicPurge()
         end
 
 		if J.IsValidTarget(strongestTarget)
-        and J.CanCastOnNonMagicImmune(strongestTarget)
+        and J.CanCastOnMagicImmune(strongestTarget)
         and J.CanCastOnTargetAdvanced(strongestTarget)
         and not J.IsSuspiciousIllusion(strongestTarget)
         and not J.IsDisabled(strongestTarget)
@@ -605,7 +543,7 @@ function X.ConsiderDemonicPurge()
         local strongestTarget = J.GetStrongestUnit(nCastRange, bot, true, false, nDuration)
 
 		if J.IsValidTarget(strongestTarget)
-        and J.CanCastOnNonMagicImmune(strongestTarget)
+        and J.CanCastOnMagicImmune(strongestTarget)
         and J.CanCastOnTargetAdvanced(strongestTarget)
         and J.IsInRange(bot, strongestTarget, nCastRange + 150)
         -- and J.IsCore(strongestTarget)
@@ -639,12 +577,12 @@ function X.ConsiderDemonicCleanse()
 
     if J.IsInTeamFight(bot, 1200)
     then
-        local nInRangeAlly = J.GetEnemiesNearLoc(bot:GetLocation(), nCastRange + 200)
+        local nInRangeAlly = J.GetAlliesNearLoc(bot:GetLocation(), nCastRange)
         for _, allyHero in pairs(nInRangeAlly)
         do
             if J.IsValidHero(allyHero)
-            and J.IsDisabled(allyHero)
-            and J.IsTaunted(allyHero)
+            and J.IsInRange(bot, allyHero, nCastRange)
+            and (J.IsDisabled(allyHero) or J.IsTaunted(allyHero))
             and not J.IsSuspiciousIllusion(allyHero)
             and not allyHero:HasModifier('modifier_abaddon_borrowed_time')
             and not allyHero:HasModifier('modifier_dazzle_shallow_grave')
@@ -654,7 +592,7 @@ function X.ConsiderDemonicCleanse()
             and not allyHero:HasModifier('modifier_faceless_void_chronosphere_freeze')
             and not allyHero:HasModifier('modifier_necrolyte_reapers_scythe')
             then
-                return BOT_ACTION_DESIRE_HIGH, enemyHero
+                return BOT_ACTION_DESIRE_HIGH, allyHero
             end
         end
     end

@@ -9,97 +9,55 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {--pos2,3
-						['t25'] = {0, 10},
-						['t20'] = {0, 10},
-						['t15'] = {0, 10},
-						['t10'] = {10, 0},
-}
-
-local tAllAbilityBuildList = {
-						{1,3,2,2,2,6,2,1,1,1,6,3,3,3,6},--pos2,3
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sUtility = {"item_crimson_guard", "item_pipe", "item_lotus_orb"}
-local nUtility = sUtility[RandomInt(1, #sUtility)]
-
+-- Updated to 7.41f from D2PT: offlane and mid; forced other roles use offlane.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/shredder')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Whirling Death, [2] Timber Chain, [3] Reactive Armor, [6] Chakram.
+local nAbilityBuildList = {1,3,1,2,1,6,1,2,2,2,6,3,3,3,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- +1.5 mana regen
+    t15={0,10}, -- +2% Whirling Death stat loss
+    t20={10,0}, -- +6% Chakram slow
+    t25={10,0}, -- +75% Timber Chain range/projectile speed
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
 local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_2'] = {
-	"item_tango",
-    "item_double_branches",
-	"item_circlet",
-	"item_mantle",
-
-	"item_bottle",
-	"item_null_talisman",
-    "item_magic_wand",
-    "item_arcane_boots",
-	"item_blink",
-    "item_kaya_and_sange",--
-    "item_pipe",--
-	"item_shivas_guard",--
-    "item_aghanims_shard",
-	"item_cyclone",
-	"item_travel_boots",
-	"item_wind_waker",--
-    "item_arcane_blink",--
-	"item_travel_boots_2",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard"
+sRoleItemsBuyList.pos_3 = {
+    'item_double_gauntlets','item_double_branches','item_magic_stick',
+    'item_bracer','item_magic_wand','item_soul_ring',
+    -- Bot policy: Power Treads from the most-picked boot option.
+    'item_power_treads','item_kaya','item_kaya_and_sange','item_blink','item_black_king_bar',
+    'item_shivas_guard','item_aghanims_shard','item_ultimate_scepter',
+    -- Bot policy: consume Scepter before optional Lotus; upgrade the existing Blink.
+    'item_ultimate_scepter_2','item_lotus_orb','item_overwhelming_blink',
 }
-
-sRoleItemsBuyList['pos_3'] = {
-    "item_tango",
-    "item_double_branches",
-	"item_circlet",
-	"item_gauntlets",
-
-    "item_magic_wand",
-	"item_bracer",
-	"item_helm_of_iron_will",
-	"item_ring_of_basilius",
-    "item_arcane_boots",
-	"item_veil_of_discord",
-	"item_blink",
-    "item_pipe",--
-    "item_kaya_and_sange",--
-	"item_shivas_guard",--
-    nUtility,--
-	"item_travel_boots",
-    "item_arcane_blink",--
-	"item_travel_boots_2",--
-    "item_aghanims_shard",
-    "item_ultimate_scepter_2",
-    "item_moon_shard"
+sRoleItemsBuyList.pos_2 = {
+    -- Observed starting ward omitted: core bots do not place it.
+    'item_double_branches','item_double_branches','item_tango','item_faerie_fire',
+    'item_bottle','item_magic_wand','item_soul_ring','item_power_treads','item_kaya','item_blink',
+    'item_kaya_and_sange','item_black_king_bar','item_shivas_guard',
+    -- Bot policy: Shard and consumed Scepter, then optional Lotus and Blink upgrade.
+    'item_aghanims_shard','item_ultimate_scepter','item_ultimate_scepter_2',
+    'item_lotus_orb','item_overwhelming_blink',
 }
+sRoleItemsBuyList.pos_1 = sRoleItemsBuyList.pos_3
+sRoleItemsBuyList.pos_4 = sRoleItemsBuyList.pos_3
+sRoleItemsBuyList.pos_5 = sRoleItemsBuyList.pos_3
+X.sBuyList = sRoleItemsBuyList[sRole]
+X.sSellList = {'item_kaya_and_sange','item_bracer','item_black_king_bar','item_magic_wand','item_shivas_guard','item_soul_ring','item_shivas_guard','item_bottle'}
 
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_3']
+if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X.sBuyList, X.sSellList = {'PvN_mid'}, {} end
 
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_3']
+nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList = J.SetUserHeroInit(nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList)
+X.sSkillList = J.Skill.GetSkillList(sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList)
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_3']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-}
-
-if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_mid' }, {} end
-
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
-X['bDeafaultAbility'] = false
-X['bDeafaultItem'] = false
+X.bDeafaultAbility = false
+X.bDeafaultItem = false
 
 function X.MinionThink(hMinionUnit)
 

@@ -7,67 +7,40 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						['t25'] = {0, 10},
-						['t20'] = {0, 10},
-						['t15'] = {10, 0},
-						['t10'] = {10, 0},
+-- Updated to 7.41f from D2PT: mid only; forced other roles use mid.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/obsidian_destroyer')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Arcane Orb, [2] Astral Imprisonment, [3] Objurgation, [6] Sanity's Eclipse.
+local nAbilityBuildList = {2,1,2,3,2,6,2,1,1,1,6,3,3,3,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- +200 mana
+    t15={10,0}, -- +0.8% current mana as movement speed
+    t20={0,10}, -- -10s Objurgation cooldown
+    t25={10,0}, -- -60s Sanity's Eclipse cooldown
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+-- Omit the observed opening ward on the core build.
+X.sBuyList = {
+    'item_mantle','item_double_branches','item_circlet','item_tango','item_faerie_fire',
+    'item_null_talisman','item_null_talisman','item_magic_wand','item_power_treads','item_witch_blade',
+    'item_force_staff','item_blink','item_dragon_lance','item_hurricane_pike',
+    'item_black_king_bar','item_ultimate_scepter',
+    -- Bot policy: retain Witch Blade, consume Scepter and add late control within six slots.
+    'item_ultimate_scepter_2','item_sheepstick',
+    'item_aghanims_shard','item_arcane_blink','item_moon_shard',
 }
-
-local tAllAbilityBuildList = {
-						{2,1,4,2,2,6,2,1,1,1,6,4,4,4,6},--pos2
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_2'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_faerie_fire",
-
-    "item_double_null_talisman",
-    "item_power_treads",
-    "item_magic_wand",
-    "item_witch_blade",
-    "item_blink",
-    "item_dragon_lance",
-    "item_black_king_bar",--
-    "item_force_staff",
-    "item_hurricane_pike",--
-    "item_aghanims_shard",
-    "item_devastator",--
-    "item_travel_boots",
-    "item_moon_shard",
-    "item_sheepstick",--
-    "item_arcane_blink",--
-    "item_travel_boots_2",--
-    "item_ultimate_scepter_2",
-}
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_2']
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_2']
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_2']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_2']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-    "item_null_talisman",
-    "item_magic_wand",
-}
+X.sSellList = {'item_blink','item_null_talisman','item_hurricane_pike','item_null_talisman','item_black_king_bar','item_magic_wand'}
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_mid' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Fourth Arcane Orb point at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false

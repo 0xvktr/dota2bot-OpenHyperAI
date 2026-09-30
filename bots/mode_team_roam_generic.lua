@@ -653,6 +653,7 @@ function X.CarryFindTarget()
 					and not X.IsLastHitCreep(creep,denyDamage)
 					and not J.IsTormentor(creep)
 					and not J.IsRoshan(creep)
+					and string.find(creep:GetUnitName(), '^npc_dota_creep_')
 					then
 						local togetherDamage = 0;
 						local togetherCount = 0;
@@ -727,6 +728,7 @@ function X.CarryFindTarget()
 				and not X.IsOthersTarget(creep)
 				and not J.IsTormentor(creep)
 				and not J.IsRoshan(creep)
+				and string.find(creep:GetUnitName(), '^npc_dota_creep_')
 				then
 					return creep,BOT_MODE_DESIRE_ABSOLUTE;
 				end
@@ -984,6 +986,7 @@ function X.GetNearbyLastHitCreep(ignorAlly, bEnemy, nDamage, nRadius, bot)
 	do
 		if X.CanBeAttacked(nCreep) and nCreep:GetHealth() < ( nDamage + 256 )
 		and ( ignorAlly or not X.IsAllysTarget(nCreep) )
+		and ( bEnemy or string.find(nCreep:GetUnitName(), '^npc_dota_creep_') )
 		then
 		
 			local nAttackProDelayTime = J.GetAttackProDelayTime(bot,nCreep) ;

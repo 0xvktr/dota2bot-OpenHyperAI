@@ -7,116 +7,67 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {--pos4,5
-                        ['t25'] = {10, 0},
-                        ['t20'] = {0, 10},
-                        ['t15'] = {0, 10},
-                        ['t10'] = {0, 10},
-}
-
-local tAllAbilityBuildList = {
-						{2,1,1,2,1,6,1,2,2,3,6,3,3,3,6},--pos4,5
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild(tAllAbilityBuildList)
-
-local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList)
-
+-- D2PT 7.41f: carry/offlane/support; forced mid uses carry.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/vengefulspirit')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+local isCore = sRole == 'pos_1' or sRole == 'pos_2' or sRole == 'pos_3'
+-- [1] Magic Missile, [2] Wave of Terror, [3] Vengeance Aura, [6] Nether Swap.
+local nAbilityBuildList = isCore and {1,2,2,3,2,6,2,3,3,3,6,1,1,1,6}
+    or {1,2,1,2,1,6,1,2,2,3,6,3,3,3,6}
+local nTalentBuildList = J.Skill.GetTalentBuild(isCore
+    and {t10={0,10},t15={0,10},t20={0,10},t25={0,10}}
+    or {t10={0,10},t15={0,10},t20={10,0},t25={10,0}})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
 local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_4'] = {
-    "item_double_tango",
-    "item_double_branches",
-    "item_blood_grenade",
-    "item_circlet",
-
-    "item_boots",
-    "item_magic_wand",
-    "item_arcane_boots",
-    "item_pavise",
-    "item_solar_crest",--
-    "item_glimmer_cape",--
-    "item_guardian_greaves",--
-    "item_ultimate_scepter",
-    "item_aghanims_shard",
-    "item_force_staff",
-    "item_lotus_orb",--
-    "item_aghanims_shard",
-    "item_hurricane_pike",--
-    "item_moon_shard",
-    "item_ultimate_scepter_2",
-	"item_sheepstick",--
+sRoleItemsBuyList.pos_1 = {
+    'item_quelling_blade','item_slippers','item_double_branches','item_circlet','item_tango',
+    'item_wraith_band','item_magic_wand','item_power_treads','item_yasha','item_ultimate_scepter',
+    'item_manta','item_dragon_lance','item_hydras_breath',
+    -- Bot policy: observed optional evasion/crit; consume Scepter before BKB fills slot six.
+    'item_butterfly','item_lesser_crit','item_greater_crit','item_aghanims_shard',
+    'item_ultimate_scepter_2','item_black_king_bar','item_moon_shard',
 }
-
-sRoleItemsBuyList['pos_5'] = {
-	"item_tango",
-	"item_tango",
-	"item_double_branches",
-	"item_enchanted_mango",
-	"item_enchanted_mango",
-	"item_blood_grenade",
-
-	"item_magic_wand",
-	"item_tranquil_boots",
-	"item_force_staff",
-	"item_glimmer_cape",--
-	"item_pipe",
-	"item_boots_of_bearing",--
-    "item_pavise",
-    "item_solar_crest",--
-	"item_aghanims_shard",
-	"item_hurricane_pike",--
-	"item_sheepstick",--
-	"item_orchid",
-	"item_bloodthorn",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
+sRoleItemsBuyList.pos_3 = {
+    'item_quelling_blade','item_slippers','item_double_branches','item_circlet','item_tango',
+    'item_wraith_band','item_magic_wand','item_power_treads','item_yasha','item_ultimate_scepter',
+    'item_manta',
+    -- Bot policy: observed optional range/damage progression.
+    'item_dragon_lance','item_hydras_breath',
+    -- Bot policy: observed optional evasion/crit; consume Scepter before BKB fills slot six.
+    'item_butterfly','item_lesser_crit','item_greater_crit','item_aghanims_shard',
+    'item_ultimate_scepter_2','item_black_king_bar','item_moon_shard',
 }
-
-sRoleItemsBuyList['pos_3'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_faerie_fire",
-	"item_enchanted_mango",
-
-	"item_magic_wand",
-	"item_power_treads",
-	"item_witch_blade",
-    "item_force_staff",
-	"item_hurricane_pike",--
-	"item_aghanims_shard",
-	"item_black_king_bar",--
-	"item_devastator",--
-	"item_orchid",
-	"item_bloodthorn",--
-	"item_sheepstick",--
-	"item_travel_boots",
-	"item_moon_shard",
-	"item_travel_boots_2",--
-	"item_ultimate_scepter_2",
+sRoleItemsBuyList.pos_4 = {
+    'item_double_branches','item_branches','item_magic_stick','item_ward_sentry','item_tango',
+    'item_blood_grenade','item_magic_wand','item_tranquil_boots',
+    -- Bot policy: observed optional utility, then Force/Bearing/Lotus; consume Scepter.
+    'item_glimmer_cape','item_aether_lens','item_aghanims_shard','item_vladmir','item_ultimate_scepter',
+    'item_ultimate_scepter_2','item_force_staff','item_ancient_janggo','item_boots_of_bearing',
+    'item_lotus_orb',
 }
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_3']
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_3']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
+sRoleItemsBuyList.pos_5 = {
+    'item_double_branches','item_magic_stick','item_ward_sentry','item_tango','item_faerie_fire',
+    'item_blood_grenade','item_magic_wand','item_tranquil_boots',
+    -- Bot policy: observed optional Solar/Force/Lens/Shard, then consumed Scepter/Glimmer/Bearing/Lotus.
+    'item_pavise','item_solar_crest','item_force_staff','item_aether_lens','item_aghanims_shard',
+    'item_ultimate_scepter','item_ultimate_scepter_2','item_glimmer_cape','item_ancient_janggo',
+    'item_boots_of_bearing','item_lotus_orb',
 }
+sRoleItemsBuyList.pos_2 = sRoleItemsBuyList.pos_1
+X.sBuyList = sRoleItemsBuyList[sRole]
+X.sSellList = isCore and {'item_hydras_breath','item_quelling_blade','item_butterfly','item_wraith_band','item_butterfly','item_magic_wand'}
+    or {'item_ultimate_scepter','item_magic_wand'}
 
-if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
-
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
-X['bDeafaultAbility'] = false
-X['bDeafaultItem'] = false
+if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X.sBuyList, X.sSellList = { 'PvN_antimage' }, {} end
+nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList = J.SetUserHeroInit(nAbilityBuildList, nTalentBuildList, X.sBuyList, X.sSellList)
+X.sSkillList = J.Skill.GetSkillList(sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList)
+-- Observed ability at 10, talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
+X.bDeafaultAbility = false
+X.bDeafaultItem = false
 
 function X.MinionThink(hMinionUnit)
     Minion.MinionThink(hMinionUnit)

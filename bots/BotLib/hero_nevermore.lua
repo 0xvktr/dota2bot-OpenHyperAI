@@ -15,137 +15,46 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-                        {--pos1
-                            ['t25'] = {10, 0},
-                            ['t20'] = {0, 10},
-                            ['t15'] = {0, 10},
-                            ['t10'] = {10, 0},
-                        },
-                        {--pos2
-                            ['t25'] = {10, 0},
-                            ['t20'] = {0, 10},
-                            ['t15'] = {10, 0},
-                            ['t10'] = {0, 10},
-                        },
-}
-
-local tAllAbilityBuildList = {
-						{1,5,1,5,1,5,1,5,6,4,6,4,4,4,6}, -- starting with armor reduction is better, souls aslo give him more damage for better last hit
-}
-
-local nAbilityBuildList = tAllAbilityBuildList[1]
-local nTalentBuildList
-
-if sRole == "pos_1" or sRole == "pos_3" then
-    nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[1])
-else
-    nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList[2])
-end
-
+-- Updated to 7.41f from D2PT: physical carry and spell mid; forced other roles use carry.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/nevermore')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+local isMid = sRole=='pos_2'
+-- [1] linked Shadowrazes, [4] Feast of Souls, [5] Presence, [6] Requiem.
+local nAbilityBuildList = {1,5,1,5,1,6,1,5,5,4,6,4,4,4,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10=isMid and {0,10} or {10,0}, -- Raze stack damage / Feast attack speed
+    t15={0,10}, -- Presence armor reduction
+    t20={0,10}, -- +5 Necromastery max souls
+    t25=isMid and {0,10} or {10,0}, -- Feast cast speed / Raze attacks
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
 local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_faerie_fire",
-	
-	"item_magic_wand",
-	"item_power_treads",
-	"item_lifesteal",
-	"item_dragon_lance",
-	"item_lesser_crit",
-	"item_black_king_bar",--
-	"item_butterfly",--
-	"item_greater_crit",--
-	"item_hurricane_pike",--
-	"item_aghanims_shard",
-	"item_satanic",--
-	"item_moon_shard",
-	"item_travel_boots_2",--
-	"item_ultimate_scepter_2",
+sRoleItemsBuyList.pos_1 = {
+    'item_magic_wand','item_faerie_fire','item_faerie_fire',
+    'item_power_treads','item_falcon_blade','item_lifesteal','item_mask_of_madness',
+    'item_yasha','item_dragon_lance','item_manta','item_hurricane_pike',
+    'item_black_king_bar','item_lesser_crit','item_greater_crit','item_satanic',
+    -- Bot policy: replace Mask of Madness, then consumable/boots upgrades.
+    'item_aghanims_shard','item_moon_shard','item_travel_boots','item_travel_boots_2',
 }
-
-sRoleItemsBuyList['pos_2'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_faerie_fire",
-	"item_enchanted_mango",
-	"item_enchanted_mango",
-
-	"item_bottle",
-	"item_magic_wand",
-	"item_power_treads",
-	"item_lifesteal",
-	"item_dragon_lance",
-	"item_lesser_crit",
-	"item_black_king_bar",--
-	"item_orchid",
-	"item_bloodthorn",--
-	"item_greater_crit",--
-	"item_hurricane_pike",--
-	"item_aghanims_shard",
-	"item_satanic",--
-	"item_moon_shard",
-	"item_travel_boots_2",--
-	"item_ultimate_scepter_2",
+sRoleItemsBuyList.pos_2 = {
+    -- Observed starting ward omitted: core bots do not place it.
+    'item_double_branches','item_tango','item_enchanted_mango','item_enchanted_mango','item_faerie_fire',
+    'item_bottle','item_magic_wand','item_power_treads','item_yasha','item_yasha_and_kaya',
+    'item_blink','item_black_king_bar','item_ultimate_scepter',
+    -- Bot policy: consume Scepter to fit Refresher and Hex; natural Blink/boots upgrades.
+    'item_ultimate_scepter_2','item_refresher','item_sheepstick','item_aghanims_shard',
+    'item_swift_blink','item_moon_shard','item_travel_boots','item_travel_boots_2',
 }
-
-sRoleItemsBuyList['pos_4'] = {
-	"item_tango",
-	"item_tango",
-	"item_double_branches",
-	"item_clarity",
-
-	"item_magic_wand",
-	"item_tranquil_boots",
-	"item_null_talisman",
-	"item_glimmer_cape",--
-	"item_guardian_greaves",--
-	"item_force_staff",
-	"item_cyclone",
-	"item_boots_of_bearing",--
-	"item_octarine_core",--
-	"item_hurricane_pike",--
-	"item_aghanims_shard",
-	"item_wind_waker",--
-	"item_ultimate_scepter_2",
-	"item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-	"item_tango",
-	"item_tango",
-	"item_double_branches",
-	"item_clarity",
-
-	"item_magic_wand",
-	"item_tranquil_boots",
-	"item_null_talisman",
-	"item_glimmer_cape",--
-	"item_pipe",--
-	"item_force_staff",
-	"item_cyclone",
-	"item_boots_of_bearing",--
-	"item_octarine_core",--
-	"item_hurricane_pike",--
-	"item_aghanims_shard",
-	"item_wind_waker",--
-	"item_ultimate_scepter_2",
-	"item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_kaya",
-	"item_quelling_blade",
-
-	"item_octarine_core",
-	"item_bottle",
+sRoleItemsBuyList.pos_3 = sRoleItemsBuyList.pos_1
+sRoleItemsBuyList.pos_4 = sRoleItemsBuyList.pos_1
+sRoleItemsBuyList.pos_5 = sRoleItemsBuyList.pos_1
+X.sBuyList = sRoleItemsBuyList[sRole]
+X.sSellList = {
+    'item_dragon_lance','item_magic_wand','item_black_king_bar','item_falcon_blade',
+    'item_satanic','item_mask_of_madness','item_blink','item_bottle',
+    'item_ultimate_scepter','item_magic_wand','item_travel_boots','item_power_treads',
 }
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_mid' }, {} end
@@ -153,6 +62,10 @@ if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList']
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
@@ -166,49 +79,16 @@ function X.MinionThink(hMinionUnit)
 
 end
 
---[[
-
-npc_dota_hero_nevermore
-
-"Ability1"		"nevermore_shadowraze1"
-"Ability2"		"nevermore_shadowraze2"
-"Ability3"		"nevermore_shadowraze3"
-"Ability4"		"nevermore_necromastery"
-"Ability5"		"nevermore_dark_lord"
-"Ability6"		"nevermore_requiem"
-"Ability10"		"special_bonus_spell_amplify_8"
-"Ability11"		"special_bonus_attack_speed_20"
-"Ability12"		"special_bonus_unique_nevermore_3"
-"Ability13"		"special_bonus_movement_speed_30"
-"Ability14"		"special_bonus_unique_nevermore_1"
-"Ability15"		"special_bonus_unique_nevermore_2"
-"Ability16"		"special_bonus_unique_nevermore_5"
-"Ability17"		"special_bonus_cooldown_reduction_40"
-
-modifier_nevermore_shadowraze_debuff
-modifier_nevermore_shadowraze_counter
-modifier_nevermore_presence_aura
-modifier_nevermore_presence
-modifier_nevermore_requiem_invis_break
-modifier_nevermore_requiem_thinker
-modifier_nevermore_requiem_aura
-modifier_nevermore_requiem
-modifier_nevermore_necromastery
-
---]]
 
 local abilityZ = bot:GetAbilityByName( sAbilityList[1] )
 local abilityX = bot:GetAbilityByName( sAbilityList[2] )
 local abilityC = bot:GetAbilityByName( sAbilityList[3] )
-local abilityN = bot:GetAbilityByName( sAbilityList[4] )
 local FeastOfSouls = bot:GetAbilityByName('nevermore_frenzy')
 local abilityR = bot:GetAbilityByName( sAbilityList[6] )
-local talent4 = bot:GetAbilityByName( sTalentList[4] )
 
 local castZDesire
 local castXDesire
 local castCDesire
-local castNDesire, castNTarget
 local FeastOfSoulsDesire
 local castRDesire
 
@@ -275,15 +155,6 @@ function X.SkillsComplement()
 
 	end
 	
-	castNDesire, castNTarget = X.ConsiderN()
-	if castNDesire > 0
-	then
-
-		bot:ActionQueue_UseAbilityOnEntity ( abilityN, castNTarget )
-		return
-
-	end
-	
 	FeastOfSoulsDesire = X.ConsiderFeastOfSouls()
 	if FeastOfSoulsDesire > 0
 	then
@@ -291,28 +162,6 @@ function X.SkillsComplement()
 		bot:ActionQueue_UseAbility(FeastOfSouls)
 		return
 	end
-end
-
-function X.ConsiderN()
-
-	if not abilityN:IsTrained()
-		or abilityN:IsPassive()
-		or not abilityN:IsFullyCastable()
-		or bot:IsDisarmed()
-		or abilityN:GetAutoCastState()
-	then
-		return 0
-	end
-	
-	
-	if not abilityN:GetAutoCastState()
-	then
-		abilityN:ToggleAutoCast()
-	end
-		
-		
-	return BOT_ACTION_DESIRE_NONE
-
 end
 
 function X.ConsiderR()
@@ -381,14 +230,12 @@ function X.Consider( nAbility, nDistance )
 		return BOT_ACTION_DESIRE_NONE, 0
 	end
 
-	local nRadius	 = 248
+	local nRadius = nAbility:GetSpecialValueInt('shadowraze_radius')
 	local nCastLocation = J.GetFaceTowardDistanceLocation( bot, nDistance )
 	local nCastPoint = nAbility:GetCastPoint()
 	local nDamageType = DAMAGE_TYPE_MAGICAL
 	local nSkillLV	 = nAbility:GetLevel()
-	local nDamage	 = 20 + 70 * nSkillLV
-	
-	if talent4:IsTrained() then nDamage = nDamage + talent4:GetSpecialValueInt( "value" ) end
+	local nDamage = nAbility:GetSpecialValueInt('shadowraze_damage')
 	
 	local nBonus	 = nAbility:GetSpecialValueInt( 'stack_bonus_damage' )
 	local keyWord	 = "ranged"

@@ -16,127 +16,50 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-						{--pos2
-							['t25'] = {0, 10},
-							['t20'] = {10, 0},
-							['t15'] = {0, 10},
-							['t10'] = {0, 10},
-						},
-						{--pos3
-							['t25'] = {0, 10},
-							['t20'] = {10, 0},
-							['t15'] = {0, 10},
-							['t10'] = {0, 10},
-						},
-}
-
-local tAllAbilityBuildList = {
-						{1,3,1,3,1,6,1,2,3,3,6,2,2,2,6},--pos2
-						{1,3,1,2,1,6,1,3,3,3,6,2,2,2,6},--pos3
-}
-
-local nAbilityBuildList
-local nTalentBuildList
-
-if sRole == "pos_2"
-then
-    nAbilityBuildList   = tAllAbilityBuildList[1]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[1])
-else
-    nAbilityBuildList   = tAllAbilityBuildList[2]
-    nTalentBuildList    = J.Skill.GetTalentBuild(tTalentTreeList[2])
-end
-
-local sHalberdPipe = RandomInt( 1, 2 ) == 1 and "item_heavens_halberd" or "item_pipe"
-
+-- Updated to 7.41f from D2PT: carry, mid and offlane; forced supports use offlane.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/necrolyte')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Death Pulse, [2] Ghost Shroud, [3] Heartstopper Aura, [6] Reaper's Scythe.
+local nAbilityBuildList = {1,3,1,2,1,6,1,3,3,3,6,2,2,2,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- +2s Sadist stack duration
+    t15={10,0}, -- +60 Death Pulse heal
+    t20=sRole=='pos_1' and {0,10} or {10,0}, -- spell area / Heartstopper regen reduction
+    t25={10,0}, -- -2.5s Death Pulse cooldown
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
 local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_2'] = {
-	"item_tango",
-	"item_double_branches",
-	"item_faerie_fire",
-	"item_circlet",
-	"item_circlet",
-
-	"item_magic_wand",
-	"item_bracer",
-	"item_boots",
-	"item_radiance",--
-	"item_kaya_and_sange",--
-	"item_aghanims_shard",
-	"item_heart",--
-	"item_travel_boots",
-	"item_ultimate_scepter",
-	"item_shivas_guard",--
-	"item_crellas_crozier",--
-	"item_octarine_core",--
-	"item_moon_shard",
-	"item_travel_boots_2",--
-	"item_ultimate_scepter_2",
-	"item_wind_waker",--
+sRoleItemsBuyList.pos_1 = {
+    'item_magic_wand','item_faerie_fire','item_faerie_fire',
+    'item_boots','item_radiance','item_travel_boots','item_aghanims_shard',
+    'item_yasha','item_manta','item_heart','item_shivas_guard','item_black_king_bar',
+    -- Bot policy: consume Scepter and upgrade travel boots without another permanent slot.
+    'item_ultimate_scepter','item_ultimate_scepter_2','item_travel_boots_2','item_moon_shard',
 }
-
-sRoleItemsBuyList['pos_3'] = {
-	"item_mage_outfit",
-	"item_shadow_amulet",
-	"item_veil_of_discord",
-	sHalberdPipe,--
-	"item_glimmer_cape",--
-	"item_crellas_crozier",--
-	"item_shivas_guard",--
-	"item_kaya_and_sange",--
-	"item_aghanims_shard",
-	"item_heart",--
-	"item_sheepstick",--
-	-- "item_wind_waker",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-	"item_travel_boots_2",--
+sRoleItemsBuyList.pos_2 = {
+    -- Observed starting ward omitted: core bots do not place it.
+    'item_double_branches','item_double_circlet','item_tango','item_faerie_fire',
+    'item_null_talisman','item_magic_wand','item_boots','item_radiance','item_travel_boots',
+    'item_aghanims_shard','item_black_king_bar','item_heart','item_shivas_guard',
+    -- Bot policy: Scepter/boots upgrades, then a defensive late-game slot.
+    'item_ultimate_scepter','item_ultimate_scepter_2','item_travel_boots_2',
+    'item_cyclone','item_wind_waker','item_moon_shard',
 }
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_2']
-
-sRoleItemsBuyList['pos_4'] = {
-    "item_blood_grenade",
-	"item_priest_outfit",
-	"item_mekansm",
-	"item_glimmer_cape",--
-	"item_guardian_greaves",--
-	"item_force_staff",
-    "item_ultimate_scepter",
-	"item_hurricane_pike",--
-	"item_shivas_guard",--
-	"item_kaya_and_sange",--
-	"item_sheepstick",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
+sRoleItemsBuyList.pos_3 = {
+    'item_double_branches','item_circlet','item_magic_stick','item_tango',
+    'item_magic_wand','item_bracer','item_boots','item_radiance','item_travel_boots',
+    'item_aghanims_shard','item_black_king_bar','item_heart','item_shivas_guard',
+    -- Bot policy: Scepter/boots upgrades, then a defensive late-game slot.
+    'item_ultimate_scepter','item_ultimate_scepter_2','item_travel_boots_2',
+    'item_cyclone','item_wind_waker','item_moon_shard',
 }
-
-sRoleItemsBuyList['pos_5'] = {
-    "item_blood_grenade",
-	"item_mage_outfit",
-	"item_ancient_janggo",
-	"item_glimmer_cape",--
-	"item_boots_of_bearing",--
-	"item_pipe",--
-    "item_ultimate_scepter",
-	"item_spirit_vessel",--
-	"item_shivas_guard",--
-	"item_sheepstick",--
-	"item_moon_shard",
-	"item_ultimate_scepter_2",
-}
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-	"item_wind_waker",--
-	"item_radiance",--
+sRoleItemsBuyList.pos_4 = sRoleItemsBuyList.pos_3
+sRoleItemsBuyList.pos_5 = sRoleItemsBuyList.pos_3
+X.sBuyList = sRoleItemsBuyList[sRole]
+X.sSellList = {
+    'item_radiance','item_null_talisman','item_radiance','item_bracer',
+    'item_shivas_guard','item_magic_wand',
 }
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_priest' }, {} end
@@ -144,10 +67,14 @@ if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList']
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Observed ability at 10, first talent at 11; preserve custom overrides.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 
 
 X['bDeafaultAbility'] = false
-X['bDeafaultItem'] = true
+X['bDeafaultItem'] = false
 
 function X.MinionThink(hMinionUnit)
 
@@ -158,35 +85,6 @@ function X.MinionThink(hMinionUnit)
 
 end
 
---[[
-
-npc_dota_hero_necrolyte
-
-"Ability1"		"necrolyte_death_pulse"
-"Ability2"		"necrolyte_sadist"
-"Ability3"		"necrolyte_heartstopper_aura"
-"Ability4"		"generic_hidden"
-"Ability5"		"generic_hidden"
-"Ability6"		"necrolyte_reapers_scythe"
-"Ability10"		"special_bonus_attack_damage_30"
-"Ability11"		"special_bonus_strength_10"
-"Ability12"		"special_bonus_unique_necrophos_3"
-"Ability13"		"special_bonus_unique_necrophos_4"
-"Ability14"		"special_bonus_magic_resistance_20"
-"Ability15"		"special_bonus_attack_speed_70"
-"Ability16"		"special_bonus_unique_necrophos_2"
-"Ability17"		"special_bonus_unique_necrophos"
-
-modifier_necrolyte_sadist_active
-modifier_necrolyte_sadist_aura_effect
-modifier_necrolyte_heartstopper_aura
-modifier_necrolyte_heartstopper_aura_counter
-modifier_necrolyte_heartstopper_aura_effect
-modifier_necrolyte_reapers_scythe
-modifier_necrolyte_reapers_scythe_respawn_time
-
-
---]]
 
 local abilityQ = bot:GetAbilityByName( sAbilityList[1] )
 local abilityW = bot:GetAbilityByName( sAbilityList[2] )
