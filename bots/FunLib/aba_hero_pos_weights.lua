@@ -45,13 +45,7 @@ local HeroPositions = {
     [HeroName.Gyrocopter] = {44, 0, 0, 46, 43}, -- D2PT 7.41f
     [HeroName.Hoodwink] = {0, 0, 0, 47, 63}, -- D2PT 7.41f
     [HeroName.Huskar] = {0, 71, 0, 0, 0}, -- D2PT 7.41f
-    [HeroName.Invoker] = {
-        30,
-        70,
-        10,
-        30,
-        0
-    },
+    [HeroName.Invoker] = {0, 100, 0, 0, 0},
     [HeroName.Jakiro] = {0, 0, 0, 35, 38}, -- D2PT 7.41f
     [HeroName.Juggernaut] = {94, 0, 0, 0, 0}, -- D2PT 7.41f
     [HeroName.KeeperOfTheLight] = {0, 96, 0, 62, 0}, -- D2PT 7.41f

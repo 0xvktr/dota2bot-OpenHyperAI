@@ -209,3 +209,14 @@ distance check or movement order. Global targeting still needs engine verificati
 Custom builds
 do not automatically enable this spending. D2PT's Scepter purchase rate does not identify
 gift recipients; this is a bot policy, not an inferred support/jungle build.
+
+Invoker mid was migrated on 2026-09-30 with the most-played Quas-Exort Meteor Hammer build;
+support roles are excluded by explicit user preference. Its 24 orb points include the bonus
+points from Invoke at levels 6/12/18; D2PT orb icons are treated as expenditure order.
+The dedicated tests cover the shipped skill order, actual talent slots and conservative Hammer
+channeling. Mid-source All/Normalized matchup lists were refreshed alongside the build.
+D2PT favors Wex Shard and Exort Scepter, but purchases of Shard/Scepter/Blessing are omitted
+until a supported bot action for the 7.41 upgrade selection is verified. Simply owning the
+item does not establish that the chosen upgrade is active. Existing Cataclysm casting remains
+disabled; the capability gate now checks the actual Sun Strike upgrade rather than HasScepter.
+These are explicit engine-integration limitations, not claims that those upgrades are poor choices.

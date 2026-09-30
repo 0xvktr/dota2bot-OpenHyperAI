@@ -110,7 +110,8 @@ run(['tests/alchemist_scepter_spec.lua'], 'Alchemist Scepter gift scenarios pass
 run(['tests/axe_culling_blade_spec.lua'], 'Axe Culling Blade talent scenario passed');
 run(['tests/ancient_apparition_combo_spec.lua'], 'Ancient Apparition combo scenarios passed');
 run(['tests/invoker_skill_spec.lua'], 'Invoker skill order scenarios passed');
-// Both Invoker builds level every orb to its 7.41b max of 8 (24 points).
+run(['tests/invoker_meteor_spec.lua'], 'Invoker Meteor Hammer scenarios passed');
+// Legacy explicit orb lists, when present, must retain eight points in each orb.
 for (const [, body] of read('bots/BotLib/hero_invoker.lua').matchAll(/^\s*\{([\d,]+)\},?\s*--/gm)) {
     const n = [0, 0, 0];
     for (const d of body.split(',')) n[+d - 1]++;

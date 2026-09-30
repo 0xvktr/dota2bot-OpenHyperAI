@@ -73,8 +73,9 @@ end
 -- everything behind it, so a legal build never leaves a learnable ability stuck behind it.
 -- The second talent of an already-chosen tier is rejected by the engine and costs no point.
 local function checkSkillList(list, unit, report)
-    local ultimatePicks = unit == 'npc_dota_hero_meepo' and 4 or 3
-    local abilityPicks = 12 + ultimatePicks
+    local invoker = unit == 'npc_dota_hero_invoker'
+    local ultimatePicks = invoker and 0 or (unit == 'npc_dota_hero_meepo' and 4 or 3)
+    local abilityPicks = invoker and 24 or (12 + ultimatePicks)
     local attributes = 0
     for _, name in ipairs(list) do
         if name == 'special_bonus_attributes' then attributes = attributes + 1 end
@@ -102,9 +103,10 @@ local function checkSkillList(list, unit, report)
         end
     end
     for slot = 1, 3 do
-        if (counts['A'..slot] or 0) > 4 then return report('A'..slot..' is leveled more than 4 times') end
+        local maximum = invoker and 8 or 4
+        if (counts['A'..slot] or 0) > maximum then return report('A'..slot..' exceeds its maximum level') end
     end
-    if counts.A6 ~= ultimatePicks then return report('the ultimate must be leveled exactly '..ultimatePicks..' times, found '..tostring(counts.A6)) end
+    if (counts.A6 or 0) ~= ultimatePicks then return report('the ultimate must be leveled exactly '..ultimatePicks..' times, found '..tostring(counts.A6)) end
     if abilityTotal ~= abilityPicks then
         return report('expected '..abilityPicks..' ability points, found '..abilityTotal)
     end
@@ -129,6 +131,7 @@ local function checkSkillList(list, unit, report)
     for i, name in ipairs(list) do queue[i] = name end
     for level = 1, 30 do
         points = points + 1
+        if invoker and (level == 6 or level == 12 or level == 18) then points = points + 1 end
         while queue[1] do
             local head = queue[1]
             local tier = talentTier(head)
@@ -524,7 +527,7 @@ for _, hero in ipairs(CTX.heroes) do
                     report(tostring(custom))
                 else
                     checkSkillList(custom.sSkillList or {}, unit, function(message) report('custom skill list: '..message) end)
-                    local firstTalent = unit == 'npc_dota_hero_meepo' and 11 or 10
+                    local firstTalent = (unit == 'npc_dota_hero_meepo' or unit == 'npc_dota_hero_invoker') and 11 or 10
                     if not H.talents or not (custom.sSkillList and indexOf(H.talents, custom.sSkillList[firstTalent])) then
                         report('a user-supplied ability build must keep its standard talent layout')
                     end

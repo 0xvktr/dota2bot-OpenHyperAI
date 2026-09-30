@@ -8,115 +8,36 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {
-{--冰雷
-    ['t25'] = {10, 0},
-    ['t20'] = {10, 0},
-    ['t15'] = {10, 0},
-    ['t10'] = {10, 0}},
-{--冰火
-    ['t25'] = {0, 10},
-    ['t20'] = {0, 10},
-    ['t15'] = {10, 0},
-    ['t10'] = {10, 0}}}
-
--- 7.41b: orbs max at 8 and Invoke adds bonus orb points at 6/12/18, so each list has 24 orb points.
-local tAllAbilityBuildList = {
-						{2,1,2,1,3,1,2,1,2,2,3,3,3,3,3,3,2,2,1,1,1,2,1,3}, --冰雷核
-                        {3,1,3,1,2,3,3,1,1,3,2,3,2,3,2,2,2,2,1,1,1,3,1,2} --冰火核
-                        -- {1,2,2,3,2,1,2,1,2,1,2,1,2,1,1,3,3,3,3,3,3},--冰雷辅助
+-- Updated to 7.41f: D2PT mid Quas-Exort; forced other roles use this build.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/invoker')
+local InvokerUtility = require(GetScriptDirectory()..'/FunLib/invoker_utility')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- D2PT's ten icons are orb expenditure order, not ten single-point hero levels:
+-- Invoke grants an extra point at 6/12/18. Keep 24 orb points (8 each); Invoke is innate.
+-- First ten match the 4460-game QE sequence; the rest are a legal Exort/Wex continuation.
+local nAbilityBuildList = {3,1,3,1,3,1,2,3,1,3, 2,3,2,3,2, 3,2,2,1,2, 2,1,1,1}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={0,10}, -- +50 Ice Wall DPS (engine talent 1)
+    t15={10,0}, -- -6s Cold Snap cooldown (engine talent 4)
+    t20={0,10}, -- +2 Chaos Meteors (engine talent 5)
+    t25={0,10}, -- Radial Deafening Blast (engine talent 7)
+})
+-- Use the observed Tango opening (1598 matches) for reliable bot lane sustain; omit ward.
+X.sBuyList = {
+    'item_tango', 'item_mantle', 'item_double_branches', 'item_circlet', 'item_faerie_fire',
+    'item_null_talisman', 'item_null_talisman', 'item_magic_wand',
+    'item_boots', 'item_meteor_hammer', 'item_travel_boots', 'item_octarine_core',
+    'item_black_king_bar', 'item_shivas_guard',
+    -- Shard/Scepter require a new upgrade-choice UI with no verified bot action; see BuildData.
+    -- Reviewed late utility: Hex replaces Hammer, then Blink fills the remaining slot.
+    'item_sheepstick', 'item_blink', 'item_overwhelming_blink', 'item_travel_boots_2',
 }
-
-local nAbilityBuildList = tAllAbilityBuildList[1]
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList[1] )
-
-local sRoleItemsBuyList = { }
-
--- 冰雷核
-sRoleItemsBuyList['pos_2'] = {
-	"item_ranged_carry_outfit",
-    "item_urn_of_shadows",
-    "item_spirit_vessel",
-    -- "item_witch_blade",
-    "item_orchid",
-    "item_sphere",--
-    "item_black_king_bar",--6
-	"item_dragon_lance",
-	"item_hurricane_pike",--3
-    "item_aghanims_shard",
-    "item_ultimate_scepter",
-    "item_travel_boots",
-    "item_bloodthorn",--5
-    -- "item_devastator",--4
-    "item_sheepstick",--2
-    "item_moon_shard",
-    "item_ultimate_scepter_2",
-    "item_travel_boots_2",--1
-}
-
--- 冰火核
-sRoleItemsBuyList['pos_2_qe'] = {
-    "item_tango",
-    "item_double_branches",
-
-    "item_bracer",
-    "item_magic_wand",
-    "item_boots",
-    "item_hand_of_midas",
-    "item_power_treads",
-    -- "item_cyclone", --瞎吹还喜欢走到吹起的点上，以后再改
-    "item_orchid",
-    "item_sphere",--
-    "item_black_king_bar",--
-    "item_travel_boots",
-    "item_ultimate_scepter",
-    "item_bloodthorn",--
-	-- "item_hurricane_pike",--
-    "item_sheepstick",--
-    "item_aghanims_shard",
-    -- "item_octarine_core",--
-    "item_refresher",--
-    "item_moon_shard",
-    "item_ultimate_scepter_2",
-    -- "item_wind_waker",--
-    "item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_1'] = sRoleItemsBuyList['pos_2']
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_2']
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_2']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_2']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-if Utils['GameStates']['invoker'] == nil then
-    if (sRole == 'pos_2' or sRole == 'pos_1') and RandomInt( 1, 9 ) >= 3 then
-        Utils['GameStates']['invoker'] = { roleType = 'pos_2_qe' }
-    else
-        Utils['GameStates']['invoker'] = { roleType = 'pos_2' }
-    end
-else
-    if Utils['GameStates']['invoker'].roleType == 'pos_2_qe' then
-        X['sBuyList'] = sRoleItemsBuyList['pos_2_qe']
-        nAbilityBuildList = tAllAbilityBuildList[2]
-        nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList[2] )
-    end
-end
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-	"item_ultimate_scepter",
-	"item_magic_wand",
-
-	"item_sheepstick",
-	"item_hand_of_midas",
+X.sSellList = {
+    'item_octarine_core','item_null_talisman',
+    'item_black_king_bar','item_null_talisman',
+    'item_shivas_guard','item_magic_wand',
+    'item_sheepstick','item_meteor_hammer',
 }
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
@@ -132,7 +53,7 @@ function X.MinionThink(hMinionUnit)
     if Utils.IsUnitWithName(hMinionUnit, 'forged_spirit') then
         local botTarget = J.GetProperTarget(bot)
         local unitTarget = hMinionUnit:GetAttackTarget()
-        if unitTarget == nil then hMinionUnit:GetTarget() end
+        if unitTarget == nil then unitTarget = hMinionUnit:GetTarget() end
         
         -- 如果没塔 或者 目标血量低，则攻击目标
         local nEnemyTowers = bot:GetNearbyTowers(700, true)
@@ -334,6 +255,7 @@ function X.SkillsComplement()
 
     CheckAbilityUsage()
     if J.CanNotUseAbility(bot) then return end
+    if InvokerUtility.TryMeteorHammer(bot, J) then return end
 
     nEnemyHeroes = J.GetNearbyHeroes(bot, 1600, true)
     nAllyHeroes = J.GetNearbyHeroes(bot, 1600, false)
@@ -1872,7 +1794,7 @@ end
 -- check if Invoker has trained the required basic elements for invoking the spell
 function X.HaveElementsTrainedToInvokeAbility(ability)
     if type(ability) == "string" and ability == Cataclysm then
-        return bot:HasScepter() and X.HaveElementsTrainedToInvokeAbility(Sunstrike)
+        return Sunstrike:GetSpecialValueInt('cataclysm_count') > 0 and X.HaveElementsTrainedToInvokeAbility(Sunstrike)
     elseif ability == DeafeningBlast then
         return Quas:IsTrained() and Wex:IsTrained() and Exort:IsTrained()
     elseif ability == ChaosMeteor then
@@ -1911,6 +1833,8 @@ function CheckAbilityUsage()
     -- Check if the spell is just used.
     local abilities = { bot:GetAbilityInSlot(3), bot:GetAbilityInSlot(4) }
     for i, ability in pairs(abilities) do
+        local knownName = ability and AbilityNameMap[ability:GetName()]
+        if knownName and ability:GetCooldown() > 0 then
         local pCD = ability:GetCooldownTimeRemaining()/ability:GetCooldown()
         local detectP = 0.9
         if X.IsAbilityAvailableOnSlots(ability) and not ability:IsCooldownReady() and pCD >= detectP then
@@ -1933,6 +1857,7 @@ function CheckAbilityUsage()
             end
         end
     end
+    end -- known invoked spell
     previouslyRecordedMana = bot:GetMana()
 end
 

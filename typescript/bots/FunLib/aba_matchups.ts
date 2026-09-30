@@ -1020,29 +1020,27 @@ const heroes: HeroMatchups = {
         ],
     },
 
+    // D2PT 7.41f, 2026-09-30: Mid, All roles, Normalized; displayed rows >=50, aggregate >=100.
     npc_dota_hero_invoker: {
         synergy: [
-            "npc_dota_hero_phantom_lancer",
-            "npc_dota_hero_batrider",
-            "npc_dota_hero_undying",
-            "npc_dota_hero_faceless_void",
-            "npc_dota_hero_life_stealer",
-            "npc_dota_hero_skeleton_king",
-            "npc_dota_hero_shredder",
-            "npc_dota_hero_dark_seer",
-            "npc_dota_hero_furion",
-            "npc_dota_hero_anti-mage",
+            "npc_dota_hero_naga_siren", // n=191, normalized +8.60 pp
+            "npc_dota_hero_lycan", // n=309, normalized +6.90 pp
+            "npc_dota_hero_bloodseeker", // n=136, normalized +6.20 pp
+            "npc_dota_hero_enigma", // n=1345, normalized +5.79 pp
+            "npc_dota_hero_broodmother", // n=115, normalized +5.61 pp
+            "npc_dota_hero_death_prophet", // n=290, normalized +5.30 pp
+            "npc_dota_hero_skeleton_king", // n=547, normalized +5.25 pp
+            "npc_dota_hero_legion_commander", // n=1315, normalized +4.60 pp
         ],
         counter: [
-            "npc_dota_hero_medusa",
-            "npc_dota_hero_viper",
-            "npc_dota_hero_death_prophet",
-            "npc_dota_hero_abyssal_underlord",
-            "npc_dota_hero_visage",
-            "npc_dota_hero_batrider",
-            "npc_dota_hero_doom_bringer",
-            "npc_dota_hero_muerta",
-            "npc_dota_hero_naga_siren",
+            "npc_dota_hero_medusa", // n=142, normalized +9.30 pp
+            "npc_dota_hero_venomancer", // n=331, normalized +7.44 pp
+            "npc_dota_hero_gyrocopter", // n=444, normalized +6.99 pp
+            "npc_dota_hero_muerta", // n=334, normalized +6.60 pp
+            "npc_dota_hero_bristleback", // n=287, normalized +6.60 pp
+            "npc_dota_hero_slardar", // n=968, normalized +6.48 pp
+            "npc_dota_hero_huskar", // n=493, normalized +6.34 pp
+            "npc_dota_hero_abyssal_underlord", // n=1538, normalized +6.20 pp
         ],
     },
 

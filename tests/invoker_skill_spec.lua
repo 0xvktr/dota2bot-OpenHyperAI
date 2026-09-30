@@ -26,4 +26,20 @@ assert(levels.T1 == 10 and levels.T3 == 15 and levels.T5 == 20 and levels.T7 == 
 local counts = {}
 for _, name in ipairs(list) do counts[name] = (counts[name] or 0) + 1 end
 assert(counts.invoker_quas == 8 and counts.invoker_wex == 8 and counts.invoker_exort == 8, 'each orb reaches its max level of 8')
+-- Check the shipped default, not just the skill-list helper's synthetic input.
+local H = dofile('tests/hero_harness.lua')
+local hero = H.load('npc_dota_hero_invoker', 'pos_2')
+local expected = {'A3','A1','A3','A1','A3','A1','A2','A3','A1','A3'}
+for i, name in ipairs(expected) do assert(hero.sSkillList[i] == name, 'D2PT orb order at '..i) end
+local selected = {}
+for _, name in ipairs(hero.sSkillList) do if name:match('^T') then selected[#selected+1] = name end end
+assert(table.concat(selected, ',') == 'T1,T4,T5,T7,T2,T3,T6,T8', 'reviewed real talent slots')
+local custom = H.load('npc_dota_hero_invoker', 'pos_2', {custom=true})
+assert(table.concat(custom.sSkillList, ',') == table.concat(hero.sSkillList, ','), 'preserve custom skill layout')
+-- Empty/unknown invoked slots must not index a missing cooldown record.
+H.bot.GetAbilityInSlot = function() return {GetName=function() return 'invoker_empty1' end} end
+H.bot.GetMana = function() return 500 end
+CheckAbilityUsage()
+H.bot.GetAbilityInSlot = function() return nil end
+CheckAbilityUsage()
 print('Invoker skill order scenarios passed')
