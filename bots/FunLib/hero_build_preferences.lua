@@ -1,5 +1,6 @@
 -- Shared data-only preferences: never execute a hero BotLib in the server VM.
 local builds = {
+    npc_dota_hero_lone_druid = require('bots.BotLib.Builds.lone_druid'),
     npc_dota_hero_invoker = require('bots.BotLib.Builds.invoker'),
     npc_dota_hero_zuus = require('bots.BotLib.Builds.zuus'),
     npc_dota_hero_witch_doctor = require('bots.BotLib.Builds.witch_doctor'),

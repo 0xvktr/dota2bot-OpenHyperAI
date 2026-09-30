@@ -22,6 +22,30 @@ end
 -- End of Lua Library inline imports
 local ____exports = {}
 local heroes = {
+    -- D2PT 7.41f, 2026-09-30; source role: Carry; All roles, Normalized.
+    npc_dota_hero_lone_druid = {
+        synergy = {
+            "npc_dota_hero_sniper", -- n=121, normalized +7.10 pp
+            "npc_dota_hero_brewmaster", -- n=119, normalized +6.40 pp
+            "npc_dota_hero_arc_warden", -- n=117, normalized +4.80 pp
+            "npc_dota_hero_enigma", -- n=288, normalized +4.60 pp
+            "npc_dota_hero_dragon_knight", -- n=466, normalized +4.58 pp
+            "npc_dota_hero_lich", -- n=358, normalized +4.56 pp
+            "npc_dota_hero_huskar", -- n=103, normalized +4.40 pp
+            "npc_dota_hero_puck", -- n=196, normalized +3.60 pp
+        },
+        counter = {
+            "npc_dota_hero_morphling", -- n=150, normalized +7.40 pp
+            "npc_dota_hero_jakiro", -- n=127, normalized +5.99 pp
+            "npc_dota_hero_axe", -- n=439, normalized +5.90 pp
+            "npc_dota_hero_shadow_shaman", -- n=235, normalized +5.77 pp
+            "npc_dota_hero_tinker", -- n=175, normalized +5.50 pp
+            "npc_dota_hero_faceless_void", -- n=100, normalized +5.10 pp
+            "npc_dota_hero_bane", -- n=303, normalized +4.82 pp
+            "npc_dota_hero_void_spirit", -- n=208, normalized +4.38 pp
+        },
+    },
+
     -- D2PT 7.41f, 2026-09-30; source role: Offlane; All roles, Normalized.
     npc_dota_hero_primal_beast = {
         synergy = {

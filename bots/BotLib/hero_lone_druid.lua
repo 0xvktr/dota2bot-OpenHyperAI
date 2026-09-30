@@ -8,124 +8,53 @@ local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
 local sRole = J.Item.GetRoleItemsBuyList( bot )
 
-if Utils.GetLoneDruid(bot).hero == nil then Utils.GetLoneDruid(bot).hero = bot end
-
-local tTalentTreeList = {--pos2
-                        ['t25'] = {0, 10},
-                        ['t20'] = {0, 10},
-                        ['t15'] = {0, 10},
-                        ['t10'] = {0, 10},
+-- Updated to 7.41f from D2PT; forced skipped roles use carry.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/lone_druid')
+local BearItems = require(GetScriptDirectory()..'/FunLib/lone_druid_items')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+Utils.GetLoneDruid(bot).hero = bot
+Utils.GetLoneDruid(bot).roleType = 'pos_1_w_bear'
+-- [1] Entangle, [2] Spirit Link, [3] Savage Roar, [6] True Form; Spirit Bear is innate.
+local nAbilityBuildList = {1,2,2,1,2,6,2,1,1,3,6,3,3,3,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- Entangle root damage
+    t15={0,10}, -- Savage Roar cooldown
+    t20={0,10}, -- Savage Roar radius
+    t25={10,0}, -- Entangle root duration
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+X.sBuyList = {
+    'item_double_branches','item_double_branches','item_faerie_fire','item_blight_stone',
+    'item_magic_wand','item_boots','item_power_treads','item_maelstrom','item_mjollnir',
+    'item_ultimate_scepter','item_invis_sword','item_aghanims_shard','item_silver_edge',
+    -- Bot policy: bear's six-slot finish, then Druid survival.
+    'item_black_king_bar','item_butterfly','item_glimmer_cape',
 }
-
-local tAllAbilityBuildList = {
-                        -- {1,2,1,2,1,6,1,2,2,3,6,3,3,3,6},--pos2
-                        {2,2,6,2,2,3,6,3,3,3,6,1,1,1,1},--no bear
-}
-
-local nAbilityBuildListWithBear = {1,2,1,3,1,6,1,2,2,2,6,3,3,3,6} --pos2
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-local sUtility = {"item_mjollnir", "item_radiance"}
-local nUtility = sUtility[RandomInt(1, #sUtility)]
-
-sRoleItemsBuyList['pos_1'] = {
-	"item_ranged_carry_outfit",
-	-- "item_dragon_lance",
-	"item_mask_of_madness",
-    "item_maelstrom",
-    "item_mjollnir",--
-	-- "item_hurricane_pike",--
-    "item_basher",
-    "item_monkey_king_bar",--
-    "item_black_king_bar",--
-    "item_abyssal_blade",--
-	"item_skadi",--
-	"item_travel_boots",
-	"item_moon_shard",
-    "item_ultimate_scepter",
-    "item_ultimate_scepter_2",
-    
-	"item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_1_w_bear'] = {
-    "item_tango",
-    "item_phase_boots",
-    -- "item_quelling_blade",
-    "item_magic_wand",
-    "item_mask_of_madness",--1
-    -- "item_maelstrom",
-    'item_boots',
-    nUtility,--1
-    'item_boots',
-    -- "item_basher",
-    "item_abyssal_blade",--1
-    "item_ultimate_scepter",
-    "item_black_king_bar",--1
-    "item_assault",--1
-    "item_black_king_bar",--2
-    "item_monkey_king_bar",--1
-	"item_moon_shard",
-    "item_moon_shard",
-    "item_ultimate_scepter_2",
-    "item_aghanims_shard",
-
-
-    "item_travel_boots",
-    "item_skadi",--2
-    "item_monkey_king_bar",--2
-    "item_satanic",--2
-    "item_greater_crit",--2
-    "item_ultimate_scepter",
-    "item_ultimate_scepter_2",
-    "item_travel_boots_2",--2
-}
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	-- "item_black_king_bar",
-	-- "item_quelling_blade",
-}
-
-if Utils.GetLoneDruid(bot).roleType == nil then
-    if RandomInt(1, 5) >= 0 then -- always with bear, for now.
-        Utils.GetLoneDruid(bot).roleType = 'pos_1_w_bear'
-    else
-        Utils.GetLoneDruid(bot).roleType = 'pos_1'
-    end
-else
-    if Utils.GetLoneDruid(bot).roleType == 'pos_1_w_bear' then
-        X['sBuyList'] = sRoleItemsBuyList['pos_1_w_bear']
-        nAbilityBuildList = nAbilityBuildListWithBear
-    end
-end
-
+X.sSellList = {}
+local defaultItems = X.sBuyList
 
 if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
 
 nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
 
 X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
+if X.sBuyList == defaultItems then X.itemOwnership = BuildData.itemOwnership end
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
 
 function X.MinionThink(hMinionUnit)
+    if hMinionUnit and not hMinionUnit:IsNull() and hMinionUnit:IsAlive()
+        and string.find(hMinionUnit:GetUnitName(), 'lone_druid_bear') and not hMinionUnit:IsIllusion() then
+        Utils.GetLoneDruid(bot).bear = hMinionUnit
+        hMinionUnit.isBear = true
+        if BearItems.Transfer(bot, hMinionUnit, X.itemOwnership, J.Item, GetDroppedItemList()) then return end
+        if BearItems.UseItems(hMinionUnit, J.GetProperTarget(bot), J.IsRetreating(bot)) then return end
+    end
     Minion.MinionThink(hMinionUnit)
 end
 

@@ -20,7 +20,8 @@ function bot.GetPlayerID() return 0 end
 function GetBot() return bot end
 H.bot = bot
 
-package.loaded['bots/FunLib/utils'] = {}
+local druidState = {}
+package.loaded['bots/FunLib/utils'] = { GetLoneDruid = function() return druidState end }
 local Skill = realDofile('bots/FunLib/aba_skill.lua')
 local DEFAULT_ABILITIES = { 'A1', 'A2', 'A3', 'A4', 'A5', 'A6' }
 -- Heroes whose real GetAbilityList order differs from the default: each entry maps a list index to

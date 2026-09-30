@@ -10,6 +10,7 @@ local Utils = require( GetScriptDirectory()..'/FunLib/utils')
 
 local AlchemistScepter = require(GetScriptDirectory()..'/FunLib/alchemist_scepter')
 local InventoryUpkeep = require(GetScriptDirectory()..'/FunLib/inventory_upkeep')
+local LoneDruidItems = require(GetScriptDirectory()..'/FunLib/lone_druid_items')
 local X = {}
 
 if bot:IsInvulnerable()
@@ -116,6 +117,11 @@ local tARDMNeverRebuy = {
 }
 
 local function _stillNeeds(itemName)
+    if BotBuild.itemOwnership and LoneDruidItems.BearTarget(BotBuild.itemOwnership, bot.currBuyingItemInPurchaseList) then
+        local required = bot.currBuyingRequiredCounts and bot.currBuyingRequiredCounts[itemName]
+        return required == nil or LoneDruidItems.OwnedCount(bot, Utils.GetLoneDruid(bot).bear,
+            BotBuild.itemOwnership, bot.currBuyingItemInPurchaseList, itemName, Item, GetDroppedItemList()) < required
+    end
 	-- Don't buy a second pair of basic boots if we already have upgraded boots.
 	-- BUT allow buying item_boots when it's a COMPONENT of the current build target
 	-- (e.g., building power_treads needs item_boots as a component — don't skip it).
@@ -660,7 +666,8 @@ function ItemPurchaseThink()
 	-- try to recover own dropped items (generic, not only for bear)
 	local dropped = GetDroppedItemList()
 	for _, d in pairs(dropped) do
-		if d ~= nil and d.owner == bot and d.item ~= nil and not string.find(d.item:GetName(), 'token') then
+		if d ~= nil and d.owner == bot and d.item ~= nil and not string.find(d.item:GetName(), 'token')
+            and not LoneDruidItems.IsBearDrop(bot, d.item) then
 			local dist = GetUnitToLocationDistance(bot, d.location)
 			if dist > 200 and dist < 1000 then
 				bot:Action_MoveToLocation(d.location)
@@ -671,7 +678,9 @@ function ItemPurchaseThink()
 		end
 	end
 
-	if bot == Utils.GetLoneDruid(bot).hero then
+	if BotBuild.itemOwnership then
+        if LoneDruidItems.Transfer(bot, Utils.GetLoneDruid(bot).bear, BotBuild.itemOwnership, Item, dropped) then return end
+    elseif bot == Utils.GetLoneDruid(bot).hero then
 		local bear = Utils.GetLoneDruid(bot).bear
 		if bear ~= nil then
 			local hEnemyList = J.GetNearbyHeroes(bot, 1000, true, BOT_MODE_NONE)
@@ -702,7 +711,7 @@ function ItemPurchaseThink()
 			end
 		end
 	end
-	if Utils.IsBear(bot) and bot:IsAlive() then
+	if not BotBuild.itemOwnership and string.find(botName, 'lone_druid_bear') and bot:IsAlive() then
 		local dropItemList = GetDroppedItemList()
 		for _, tDropItem in pairs( dropItemList )
 		do
@@ -1189,6 +1198,12 @@ function ItemPurchaseThink()
 
 		bot.currBuyingItemInPurchaseList = bot.purchaseListInReverseOrder[#bot.purchaseListInReverseOrder]
 		local basicItemTable = Item.GetBasicItems( { bot.currBuyingItemInPurchaseList } )
+        if BotBuild.itemOwnership then
+            basicItemTable = LoneDruidItems.BasicItems(bot.currBuyingItemInPurchaseList, Item)
+            if bot.currBuyingItemInPurchaseList == 'item_double_branches' then
+                bot.loneDruidOpeningBranches = (bot.loneDruidOpeningBranches or 0) + 2
+            end
+        end
 		-- original behavior: reverse-half interleave to spread purchases
 		for i = 1, math.ceil( #basicItemTable / 2 )
 		do
@@ -1198,16 +1213,21 @@ function ItemPurchaseThink()
 		bot.currBuyingBasicItemRefList = Utils.Deepcopy(bot.currBuyingBasicItemList)
 		-- build the required counts map for dedupe and re-buy-missing
 		bot.currBuyingRequiredCounts = _buildRequiredCounts(bot.currBuyingBasicItemRefList)
+        if BotBuild.itemOwnership and bot.currBuyingItemInPurchaseList == 'item_double_branches' then
+            bot.currBuyingRequiredCounts.item_branches = bot.loneDruidOpeningBranches
+        end
 		-- proactively drop already-satisfied components to avoid overbuying
 		_popIfNoLongerNeeded()
 	end
 
 	if #bot.currBuyingBasicItemList == 0
 	then
-		if Item.IsItemInHero( bot.currBuyingItemInPurchaseList )
+		if (BotBuild.itemOwnership and LoneDruidItems.Complete(bot, Utils.GetLoneDruid(bot).bear,
+            BotBuild.itemOwnership, bot.currBuyingItemInPurchaseList))
+            or (not BotBuild.itemOwnership and Item.IsItemInHero(bot.currBuyingItemInPurchaseList))
 			or bot.currBuyingItemInPurchaseList == "item_aghanims_shard"
 			or (
-				bot == Utils.GetLoneDruid(bot).hero
+				not BotBuild.itemOwnership and bot == Utils.GetLoneDruid(bot).hero
 				and Utils.GetLoneDruid(bot).bear ~= nil
 				and Item.GetItemTotalWorthInSlots(Utils.GetLoneDruid(bot).bear) < 28000
 				and Item.IsItemInTargetHero(bot.currBuyingItemInPurchaseList, Utils.GetLoneDruid(bot).bear)
@@ -1220,7 +1240,14 @@ function ItemPurchaseThink()
 			bot.purchaseListInReverseOrder[#bot.purchaseListInReverseOrder] = nil
 		elseif currentTime > bot.lastInvCheck + 1.0 then
 			bot.lastInvCheck = currentTime
-			if bot.rebuildCount < 3 and botCourierValue == 0 and botStashValue == 0 and botName ~= "npc_dota_hero_lone_druid" then
+			if BotBuild.itemOwnership and LoneDruidItems.BearTarget(BotBuild.itemOwnership, bot.currBuyingItemInPurchaseList)
+                and botCourierValue == 0 and botStashValue == 0 then
+                local missing = LoneDruidItems.MissingItems(bot, Utils.GetLoneDruid(bot).bear,
+                    BotBuild.itemOwnership, bot.currBuyingItemInPurchaseList, Item, GetDroppedItemList())
+                for i = #missing, 1, -1 do
+                    bot.currBuyingBasicItemList[#bot.currBuyingBasicItemList+1] = missing[i]
+                end
+            elseif bot.rebuildCount < 3 and botCourierValue == 0 and botStashValue == 0 and botName ~= "npc_dota_hero_lone_druid" then
 				bot.rebuildCount = bot.rebuildCount + 1
 				-- try rebuild it based on what's actually missing
 				local newList = Item.GetReducedPurchaseList(bot, bot.currBuyingBasicItemRefList)

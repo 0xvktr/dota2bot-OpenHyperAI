@@ -58,13 +58,7 @@ local HeroPositions = {
     [HeroName.Lifestealer] = {92, 0, 0, 0, 0}, -- D2PT 7.41f
     [HeroName.Lina] = {42, 85, 0, 0, 0}, -- D2PT 7.41f
     [HeroName.Lion] = {0, 53, 0, 85, 90}, -- D2PT 7.41f
-    [HeroName.LoneDruid] = {
-        20,
-        25,
-        15,
-        0,
-        0
-    },
+    [HeroName.LoneDruid] = {74, 0, 0, 0, 0}, -- D2PT 7.41f
     [HeroName.Luna] = {94, 0, 0, 0, 0}, -- D2PT 7.41f
     [HeroName.Lycan] = {0, 0, 66, 0, 0}, -- D2PT 7.41f
     [HeroName.Magnus] = {0, 55, 78, 0, 0}, -- D2PT 7.41f

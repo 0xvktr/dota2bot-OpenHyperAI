@@ -6,53 +6,11 @@ local J = require( GetScriptDirectory()..'/FunLib/jmz_func' )
 local Minion = dofile( GetScriptDirectory()..'/FunLib/aba_minion' )
 
 if Utils.GetLoneDruid(bear).bear == nil or not Utils.GetLoneDruid(bear).bear:IsAlive() then Utils.GetLoneDruid(bear).bear = bear end
-bear.assignedRole = Utils.GetLoneDruid(bear).hero.assignedRole -- math.min(1, Utils['LoneDruid'].hero.assignedRole - 1)
+bear.assignedRole = Utils.GetLoneDruid(bear).hero and Utils.GetLoneDruid(bear).hero.assignedRole or 'pos_1'
 bear.isBear = true
-
-local sTalentList = J.Skill.GetTalentList( bear )
-local sAbilityList = J.Skill.GetAbilityList( bear )
-local sRole = J.Item.GetRoleItemsBuyList( bear )
-
-local tTalentTreeList = {--pos2
-                        ['t25'] = {0, 10},
-                        ['t20'] = {0, 10},
-                        ['t15'] = {0, 10},
-                        ['t10'] = {0, 10},
-}
-
-local tAllAbilityBuildList = {
-                        {1,2,1,2,1,6,1,2,2,3,6,3,3,3,6},--pos2
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild( tAllAbilityBuildList )
-
-local nTalentBuildList = J.Skill.GetTalentBuild( tTalentTreeList )
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_1'] = { }
-
-sRoleItemsBuyList['pos_2'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_3'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_4'] = sRoleItemsBuyList['pos_1']
-
-sRoleItemsBuyList['pos_5'] = sRoleItemsBuyList['pos_1']
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-}
-
-if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
-
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
+-- Spirit Bear inherits levels from its owner's innate ability.
+X.sBuyList, X.sSkillList = {}, {}
+X.sSellList = {'item_silver_edge','item_blight_stone'}
 
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
@@ -62,7 +20,7 @@ function X.MinionThink(hMinionUnit)
 end
 
 -- Ability usage logic
-local abilityQ = bear:GetAbilityByName(sAbilityList[1])
+local abilityQ = bear:GetAbilityByName('lone_druid_spirit_bear_return')
 local SavageRoar = bear:GetAbilityByName('lone_druid_savage_roar_bear')
 
 local castQDesire
@@ -72,7 +30,7 @@ local hEnemyList, hAllyList, botTarget, distanceFromHero
 
 function X.SkillsComplement()
 
-    if J.CanNotUseAbility(bear) or bear:IsInvisible() then return end
+    if Utils.GetLoneDruid(bear).hero == nil or J.CanNotUseAbility(bear) or bear:IsInvisible() then return end
 
     botTarget = J.GetProperTarget(Utils.GetLoneDruid(bear).hero)
     if botTarget ~= nil then bear:SetTarget(botTarget) end
@@ -107,7 +65,7 @@ function X.ConsiderQ()
     if distanceFromHero > 3000
     and J.GetHP(bear) > 0.25
     and not J.IsRetreating(bear)
-    and not J.Item.HasItem( bear, 'item_ultimate_scepter' ) then
+    and not bear:HasScepter() then
         return BOT_ACTION_DESIRE_HIGH
     end
 

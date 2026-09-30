@@ -17,6 +17,7 @@ for (const name of heroNames) {
 
 // 1. Lua syntax: every migrated hero, its build data, and the shared infrastructure.
 const lua = [
+    'bots/FunLib/lone_druid_items.lua', 'bots/BotLib/hero_lone_druid_bear.lua',
     ...heroNames.flatMap(n => [`bots/BotLib/hero_${n}.lua`, `${buildsDir}/${n}.lua`]),
     'bots/FunLib/hero_build_preferences.lua', 'bots/FunLib/alchemist_scepter.lua', 'bots/FunLib/inventory_upkeep.lua', 'bots/FunLib/debug_dumps.lua', 'bots/FunLib/aba_ward_utility.lua', 'bots/mode_ward_generic.lua', 'bots/FunLib/aba_item.lua',
     'bots/FunLib/aba_hero_pos_weights.lua', 'bots/FretBots/BonusTimers.lua', 'bots/Buff/NeutralItems.lua',
@@ -95,6 +96,18 @@ const toLua = value => {
 fs.writeFileSync('.test-tools/build-context.lua',
     'return ' + toLua({heroes, items, neutralTiers, enhancementTiers, weights}) + '\n');
 
+const druidPurchase = read('bots/item_purchase_generic.lua');
+const purchaseSection = (start, end) => {
+    const a = druidPurchase.indexOf(start), b = druidPurchase.indexOf(end, a);
+    assert(a >= 0 && b > a, 'missing Lone Druid purchase test hook');
+    return druidPurchase.slice(a, b);
+};
+fs.writeFileSync('.test-tools/lone-druid-purchase-hooks.lua',
+    'return function(bot, BotBuild, Utils, Item, LoneDruidItems)\n' +
+    purchaseSection('local function _countOwnedEverywhere(', 'local function _buildRequiredCounts(') +
+    purchaseSection('local function _stillNeeds(', 'local function _popIfNoLongerNeeded(') +
+    'return _stillNeeds\nend\n');
+
 // 4. Run the Lua suites under fengari. fengari exits 0 even when a script errors, so every
 // suite must print its success marker.
 const fengari = path.resolve('.test-tools/node_modules/fengari-node-cli/src/lua-cli.js');
@@ -111,6 +124,7 @@ run(['tests/axe_culling_blade_spec.lua'], 'Axe Culling Blade talent scenario pas
 run(['tests/ancient_apparition_combo_spec.lua'], 'Ancient Apparition combo scenarios passed');
 run(['tests/invoker_skill_spec.lua'], 'Invoker skill order scenarios passed');
 run(['tests/invoker_meteor_spec.lua'], 'Invoker Meteor Hammer scenarios passed');
+run(['tests/lone_druid_items_spec.lua'], 'Lone Druid ownership scenarios passed');
 // Legacy explicit orb lists, when present, must retain eight points in each orb.
 for (const [, body] of read('bots/BotLib/hero_invoker.lua').matchAll(/^\s*\{([\d,]+)\},?\s*--/gm)) {
     const n = [0, 0, 0];

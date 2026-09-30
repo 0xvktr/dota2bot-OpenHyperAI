@@ -114,6 +114,7 @@ Tinker, Tiny, Treant Protector, Troll Warlord, Tusk, Undying, Ursa,
 Vengeful Spirit, Venomancer and Viper were refreshed on 2026-09-30.
 Visage, Void Spirit, Warlock, Weaver, Windranger, Winter Wyvern, Io,
 Witch Doctor and Zeus were refreshed on 2026-09-30.
+Lone Druid carry was refreshed on 2026-09-30; other roles use its carry fallback.
 Unmarked heroes retain their older lists and can be refreshed as their builds are updated.
 Source pages are `https://dota2protracker.com/hero/<hero>?section=matchups`. Both the builds and matchups
 sections take `&role=carry|mid|offlane|support|hard-support` (hyphen); an unrecognised value such as
@@ -220,3 +221,14 @@ until a supported bot action for the 7.41 upgrade selection is verified. Simply 
 item does not establish that the chosen upgrade is active. Existing Cataclysm casting remains
 disabled; the capability gate now checks the actual Sun Strike upgrade rather than HasScepter.
 These are explicit engine-integration limitations, not claims that those upgrades are poor choices.
+
+Lone Druid's D2PT carry progression combines both inventories. DotaCoach labels Treads,
+Maelstrom/Mjollnir, Scepter and Shadow Blade/Silver Edge as bear items, and Shard as a hero item.
+The default ownership policy keeps Druid's starting stats, Wand and Boots; BKB/Butterfly complete
+the bear's six slots, followed by a hero Glimmer Cape as bot policy. First composites assemble
+on Druid; upgrades reuse bases already on the bear and transfer only their missing components.
+Tracked drops prevent recovery by Druid or duplicate purchases. Bear item actives have explicit
+minion hooks; separate bear skill leveling is disabled because its abilities inherit levels.
+Custom item lists do not enable this ownership policy. Neutral preferences use the existing hero
+distributors; separate Spirit Bear neutral crafting is not implemented. Two-inventory recipes,
+handoffs, Scepter effects and bear actives still require lobby verification.
