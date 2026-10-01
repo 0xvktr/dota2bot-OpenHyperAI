@@ -1,11 +1,11 @@
 ---
 id: TASK-35
 title: Interactive schematic map for planning bot routes and timings
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-10-01 09:30'
-updated_date: '2026-10-01 11:00'
+updated_date: '2026-10-01 12:00'
 labels:
   - tooling
 dependencies: []
@@ -13,7 +13,7 @@ references:
   - tests/neutral_spawners_741f.lua
   - docs/OBJECTIVE_TESTING.md
 priority: medium
-ordinal: 39000
+ordinal: 13000
 ---
 
 ## Description
@@ -28,7 +28,7 @@ Farm routes, stacks, pulls, rotations and ward spots are all easier to plan on a
 - [x] #2 The map page draws camps with numbers, types and spawn boxes, buildings, lanes, runes and objectives in world coordinates at Valve's minimap framing
 - [x] #3 Measured pull data (TASK-5) is shown on the map, with room for stack timings
 - [x] #4 The user can draw a path on the map and export it as world coordinates
-- [ ] #5 Hovering shows world coordinates
+- [x] #5 Hovering shows world coordinates
 <!-- AC:END -->
 
 ## Implementation Plan

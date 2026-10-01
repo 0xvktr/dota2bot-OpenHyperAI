@@ -4,7 +4,7 @@ title: Validate Ancient Apparition ability rework in a lobby
 status: Needs In-Game Test
 assignee: []
 created_date: '2026-09-29 21:29'
-updated_date: '2026-09-30 13:59'
+updated_date: '2026-10-01 10:42'
 labels:
   - hero
   - weak-hero
@@ -29,7 +29,7 @@ AA's ability logic was reworked from Torte de Lini's guide tips and Valve's 7.41
 - [ ] #1 Every Ice Blast is released near its target, including short-range casts into nearby fights
 - [ ] #2 Release still fires when AA is silenced mid-flight
 - [ ] #3 Cold Feet opens ganks and Ice Vortex follows on the cursed target
-- [ ] #4 Chilling Touch harasses in lane without drawing tower aggro
+- [x] #4 Chilling Touch harasses in lane without drawing tower aggro
 - [ ] #5 Decision recorded on whether AA leaves the WeakHeroes list in bots/hero_selection.lua
 <!-- AC:END -->
 
