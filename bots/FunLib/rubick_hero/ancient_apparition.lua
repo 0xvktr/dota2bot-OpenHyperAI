@@ -1,6 +1,7 @@
 local bot
 local X = {}
 local J = require(GetScriptDirectory()..'/FunLib/jmz_func')
+local HealReliant = require(GetScriptDirectory()..'/FunLib/heal_reliant_heroes')
 
 local ColdFeet
 local IceVortex
@@ -520,8 +521,20 @@ function X.GetIceBlastRadius(vLocation)
                     IceBlast:GetSpecialValueInt('radius_max'))
 end
 
+-- What Ice Blast is worth on one enemy. Every hero counts 1; the bonuses stay below 1 so an extra
+-- hero still outweighs a single priority target, but they decide between equal or near-equal blasts.
+local ICE_BLAST_LARGE_HEALTH_POOL = 3000
+function X.GetIceBlastTargetWeight(hEnemy)
+    local nWeight = 1
+    -- Frostbite blocks healing and shatters by max-health percentage.
+    if HealReliant.Is(hEnemy) then nWeight = nWeight + 0.6 end
+    if hEnemy:GetMaxHealth() >= ICE_BLAST_LARGE_HEALTH_POOL then nWeight = nWeight + 0.3 end
+    return nWeight
+end
+
+-- Returns the best blast location, how many heroes it hits and its total target weight.
 function X.GetBestIceBlastLocation(tEnemies)
-    local vBest, nBestCount = nil, 0
+    local vBest, nBestCount, nBestWeight = nil, 0, 0
     for _, enemyHero in pairs(tEnemies)
     do
         if J.IsValidHero(enemyHero)
@@ -529,15 +542,17 @@ function X.GetBestIceBlastLocation(tEnemies)
         and not enemyHero:HasModifier('modifier_ice_blast')
         then
             local vLocation = enemyHero:GetLocation()
-            local nCount = #J.GetEnemiesNearLoc(vLocation, X.GetIceBlastRadius(vLocation))
-            if nCount > nBestCount
+            local tHit = J.GetEnemiesNearLoc(vLocation, X.GetIceBlastRadius(vLocation))
+            local nWeight = 0
+            for _, hHit in pairs(tHit) do nWeight = nWeight + X.GetIceBlastTargetWeight(hHit) end
+            if nWeight > nBestWeight
             then
-                vBest, nBestCount = vLocation, nCount
+                vBest, nBestCount, nBestWeight = vLocation, #tHit, nWeight
             end
         end
     end
 
-    return vBest, nBestCount
+    return vBest, nBestCount, nBestWeight
 end
 
 -- Ability thinks are throttled (~0.12-0.2s), so the tracer moves 180-300 units between checks; waiting

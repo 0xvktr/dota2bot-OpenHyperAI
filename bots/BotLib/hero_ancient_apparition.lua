@@ -3,6 +3,7 @@ local bot           = GetBot()
 
 local J             = require( GetScriptDirectory()..'/FunLib/jmz_func' )
 local Minion        = dofile( GetScriptDirectory()..'/FunLib/aba_minion' )
+local HealReliant   = require( GetScriptDirectory()..'/FunLib/heal_reliant_heroes' )
 local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
@@ -467,10 +468,12 @@ function X.ConsiderChillingTouch()
     end
 
     -- Lane harass with the extended attack range, keeping mana for Cold Feet.
-    -- Stay out of enemy tower range so hitting a hero does not draw tower aggro.
+    -- Attacking a hero draws aggro from enemy towers and from lane creeps within their 500
+    -- acquisition range, so only harass from outside both.
     if J.IsLaning(bot)
     and J.GetMP(bot) > 0.5
     and #bot:GetNearbyTowers(900, true) == 0
+    and #bot:GetNearbyLaneCreeps(500, true) == 0
     then
         for _, enemyHero in pairs(nEnemyHeroes)
         do
@@ -645,8 +648,33 @@ function X.GetIceBlastRadius(vLocation)
                     IceBlast:GetSpecialValueInt('radius_max'))
 end
 
+-- Aghanim's Shard: the explosion stuns for a share of Cold Feet's stun (0 without the Shard).
+function X.HasIceBlastStun()
+    return IceBlast:GetSpecialValueInt('cold_feet_stun_duration_pct') > 0
+end
+
+-- What Ice Blast is worth on one enemy. Every hero counts 1; the bonuses stay below 1 so an extra
+-- hero still outweighs a single priority target, but they decide between equal or near-equal blasts.
+local ICE_BLAST_LARGE_HEALTH_POOL = 3000
+local ICE_BLAST_STUN_RANGE = 1600
+function X.GetIceBlastTargetWeight(hEnemy)
+    local nWeight = 1
+    -- Frostbite blocks healing and shatters by max-health percentage.
+    if HealReliant.Is(hEnemy) then nWeight = nWeight + 0.6 end
+    if hEnemy:GetMaxHealth() >= ICE_BLAST_LARGE_HEALTH_POOL then nWeight = nWeight + 0.3 end
+    -- Close enough for the Shard stun to land before they react; on a Cold Feet target it also
+    -- holds them inside the break distance.
+    if X.HasIceBlastStun() and GetUnitToUnitDistance(bot, hEnemy) <= ICE_BLAST_STUN_RANGE
+    then
+        nWeight = nWeight + 0.3
+        if hEnemy:HasModifier('modifier_cold_feet') then nWeight = nWeight + 0.4 end
+    end
+    return nWeight
+end
+
+-- Returns the best blast location, how many heroes it hits and its total target weight.
 function X.GetBestIceBlastLocation(tEnemies)
-    local vBest, nBestCount = nil, 0
+    local vBest, nBestCount, nBestWeight = nil, 0, 0
     for _, enemyHero in pairs(tEnemies)
     do
         if J.IsValidHero(enemyHero)
@@ -654,15 +682,17 @@ function X.GetBestIceBlastLocation(tEnemies)
         and not enemyHero:HasModifier('modifier_ice_blast')
         then
             local vLocation = enemyHero:GetLocation()
-            local nCount = #J.GetEnemiesNearLoc(vLocation, X.GetIceBlastRadius(vLocation))
-            if nCount > nBestCount
+            local tHit = J.GetEnemiesNearLoc(vLocation, X.GetIceBlastRadius(vLocation))
+            local nWeight = 0
+            for _, hHit in pairs(tHit) do nWeight = nWeight + X.GetIceBlastTargetWeight(hHit) end
+            if nWeight > nBestWeight
             then
-                vBest, nBestCount = vLocation, nCount
+                vBest, nBestCount, nBestWeight = vLocation, #tHit, nWeight
             end
         end
     end
 
-    return vBest, nBestCount
+    return vBest, nBestCount, nBestWeight
 end
 
 -- Ability thinks are throttled (~0.12-0.2s), so the tracer moves 180-300 units between checks; waiting

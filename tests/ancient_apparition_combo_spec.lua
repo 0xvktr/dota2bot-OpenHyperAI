@@ -26,6 +26,7 @@ function GetLinearProjectiles() return projectiles end
 local enemies = {}
 local function Enemy(x, y, hp, maxHp)
     local e = { loc = V(x, y), hp = hp or 1000, maxHp = maxHp or 1000, mods = {}, disabled = false }
+    function e:GetUnitName() return self.unit or 'npc_dota_hero_axe' end
     function e:GetLocation() return self.loc end
     function e:GetExtrapolatedLocation() return self.loc end
     function e:HasModifier(name) return self.mods[name] == true end
@@ -43,6 +44,8 @@ local actions = {}
 bot.loc = V(0, 0)
 function bot:GetLocation() return self.loc end
 function bot:GetNearbyTowers() return {} end
+local laneCreeps = {}
+function bot:GetNearbyLaneCreeps() return laneCreeps end
 local botStunned = false
 function bot:IsAlive() return true end
 function bot:IsStunned() return botStunned end
@@ -226,5 +229,47 @@ Tracer(2150); actions = {}; J.CanNotUseAbility = function() return true end
 Rubick.ConsiderStolenSpell(release)
 assert(actions[1] and actions[1][2] == 'ancient_apparition_ice_blast_release', 'stolen Release fires past the target while silenced')
 J.CanNotUseAbility = nil
+
+-- 11. Ice Blast target priority: heal-reliant heroes and large health pools decide equal or
+-- near-equal blasts, but an extra hero still outweighs one priority target.
+reset()
+Enemy(3000, 0); Enemy(3200, 0)
+local huskar = Enemy(0, 3000); huskar.unit = 'npc_dota_hero_huskar'; Enemy(200, 3000)
+loc, count = AA.GetBestIceBlastLocation(enemies)
+assert(count == 2 and dist(loc, huskar.loc) <= 300, 'equal counts: the blast with the heal-reliant hero wins')
+reset()
+Enemy(3000, 0); Enemy(3200, 0); Enemy(3100, 150)
+huskar = Enemy(0, 3000); huskar.unit = 'npc_dota_hero_huskar'
+loc, count = AA.GetBestIceBlastLocation(enemies)
+assert(count == 3, 'three heroes outweigh a lone heal-reliant hero')
+reset()
+Enemy(3000, 0); local tank = Enemy(0, 3000, 4000, 4000)
+loc = AA.GetBestIceBlastLocation(enemies)
+assert(loc == tank.loc, 'a large health pool breaks a one-on-one tie')
+loc = Rubick.GetBestIceBlastLocation(enemies)
+assert(loc == tank.loc, 'stolen Ice Blast shares the target priority')
+
+-- 12. Aghanim's Shard: the explosion stuns, so a close Cold Feet target is worth more.
+reset()
+local far = Enemy(0, 3000)
+local cursed = Enemy(800, 0); cursed.mods.modifier_cold_feet = true
+loc = AA.GetBestIceBlastLocation(enemies)
+assert(loc == far.loc, 'without the Shard equal single targets keep the first candidate')
+values.ancient_apparition_ice_blast.cold_feet_stun_duration_pct = 50
+loc = AA.GetBestIceBlastLocation(enemies)
+assert(loc == cursed.loc, 'with the Shard the close cursed enemy is preferred')
+values.ancient_apparition_ice_blast.cold_feet_stun_duration_pct = nil
+
+-- 13. Lane harass: skipped while an enemy lane creep is within aggro range of AA.
+reset()
+castable.ancient_apparition_chilling_touch = true
+J.IsLaning = function() return true end
+local laner = Enemy(700, 0)
+desire, t = AA.ConsiderChillingTouch()
+assert(desire > 0 and t == laner, 'Chilling Touch harasses a laner with no creeps near AA')
+laneCreeps = { {} }
+desire = AA.ConsiderChillingTouch()
+assert(desire == 0, 'no harass when it would draw lane-creep aggro')
+laneCreeps = {}; J.IsLaning = nil
 
 print('Ancient Apparition combo scenarios passed')
