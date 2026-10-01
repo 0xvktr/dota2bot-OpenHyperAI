@@ -33,6 +33,10 @@ const earlyDefense = cp.spawnSync(process.execPath, ['tests/early_lane_defense_s
 if (earlyDefense.error || earlyDefense.status !== 0) process.exit(1);
 const highFive = cp.spawnSync(process.execPath, ['tests/high_five_spec.cjs'], {stdio: 'inherit'});
 if (highFive.error || highFive.status !== 0) process.exit(1);
+for (const file of ['camp_filter_spec.cjs', 'early_item_cleanup_spec.cjs']) {
+    const check = cp.spawnSync(process.execPath, ['tests/' + file], {stdio: 'inherit'});
+    if (check.error || check.status !== 0) process.exit(1);
+}
 const run = cp.spawnSync(process.execPath, [lua, 'tests/objectives_spec.lua'], { encoding: 'utf8' });
 process.stdout.write(run.stdout || '');
 process.stderr.write(run.stderr || '');

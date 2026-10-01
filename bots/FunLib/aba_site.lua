@@ -403,23 +403,27 @@ end
 ____exports.IsLargeCamp = function(camp)
     return camp.type == "large"
 end
-____exports.RefreshCamp = function(bot)
+____exports.RefreshCamp = function(_bot)
     local camps = GetNeutralSpawners()
     local allCampList = {}
-    local botLevel = bot:GetLevel()
     for ____, aCamp in ipairs(__TS__ObjectValues(camps)) do
         local camp = aCamp
-        if (botLevel <= 7 or bot:GetAttackDamage() <= 80) and not ____exports.IsEnemyCamp(camp) and not ____exports.IsLargeCamp(camp) and not ____exports.IsAncientCamp(camp) then
-            allCampList[#allCampList + 1] = {idx = camp.idx, cattr = camp}
-        elseif botLevel <= 11 and not ____exports.IsEnemyCamp(camp) and not ____exports.IsAncientCamp(camp) then
-            allCampList[#allCampList + 1] = {idx = camp.idx, cattr = camp}
-        elseif botLevel <= 14 and not ____exports.IsEnemyCamp(camp) then
-            allCampList[#allCampList + 1] = {idx = camp.idx, cattr = camp}
-        else
-            allCampList[#allCampList + 1] = {idx = camp.idx, cattr = camp}
-        end
+        allCampList[#allCampList + 1] = {idx = camp.idx, cattr = camp}
     end
     return allCampList, #allCampList
+end
+____exports.CanFarmCamp = function(bot, camp)
+    local botLevel = bot:GetLevel()
+    if botLevel <= 7 or bot:GetAttackDamage() <= 80 then
+        return not ____exports.IsEnemyCamp(camp) and not ____exports.IsLargeCamp(camp) and not ____exports.IsAncientCamp(camp)
+    end
+    if botLevel <= 11 then
+        return not ____exports.IsEnemyCamp(camp) and not ____exports.IsAncientCamp(camp)
+    end
+    if botLevel <= 14 then
+        return not ____exports.IsEnemyCamp(camp)
+    end
+    return true
 end
 ____exports.GetPosition = function(bot)
     if bot.assignedRole then
@@ -440,13 +444,15 @@ ____exports.GetClosestNeutralSpwan = function(bot, availableCampList)
     local minDist = 15000
     local closestCamp = nil
     for ____, camp in ipairs(availableCampList) do
-        local dist = GetUnitToLocationDistance(bot, camp.cattr.location)
-        if ____exports.IsEnemyCamp(camp) then
-            dist = dist * 1.5
-        end
-        if ____exports.IsTheClosestOne(bot, camp.cattr.location) and dist < minDist and (bot:GetLevel() >= 10 or not ____exports.IsAncientCamp(camp)) then
-            minDist = dist
-            closestCamp = camp
+        if ____exports.CanFarmCamp(bot, camp.cattr) then
+            local dist = GetUnitToLocationDistance(bot, camp.cattr.location)
+            if ____exports.IsEnemyCamp(camp.cattr) then
+                dist = dist * 1.5
+            end
+            if ____exports.IsTheClosestOne(bot, camp.cattr.location) and dist < minDist then
+                minDist = dist
+                closestCamp = camp
+            end
         end
     end
     return closestCamp
