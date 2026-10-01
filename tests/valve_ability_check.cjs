@@ -83,13 +83,12 @@ function refOf(arg) {
     return { unknown: true };
 }
 
-function checkHero(botName) {
+function checkHero(botName, file = `bots/BotLib/hero_${botName}.lua`, idPrefix = botName) {
     const heroName = HERO_DATA[botName] || botName;
     const hero = data.heroes[heroName];
-    const file = `bots/BotLib/hero_${botName}.lua`;
     const ast = parser.parse(fs.readFileSync(path.join(root, file), 'utf8'), { luaVersion: '5.2', locations: true });
     const findings = [];
-    const add = (kind, detail, line, message) => findings.push({ id: `${botName}|${kind}|${detail}`, line, message });
+    const add = (kind, detail, line, message) => findings.push({ id: `${idPrefix}|${kind}|${detail}`, line, message });
     const own = name => name in hero.abilities || hero.slots.some(([, n]) => n === name);
     const { list, trusted } = abilityList(hero);
     const talents = talentList(hero);
@@ -102,6 +101,24 @@ function checkHero(botName) {
             const arg = abilityArg(node.init[i]);
             const key = arg && targetKey(v);
             if (key) (handles.get(key) || handles.set(key, []).get(key)).push(refOf(arg));
+        });
+    });
+
+    // Rubick's per-hero copies take the stolen spell as a parameter:
+    // `if abilityName == '<name>' then Handle = ability`.
+    walk(ast, node => {
+        if (node.type !== 'IfClause' && node.type !== 'ElseifClause') return;
+        const c = node.condition;
+        if (c.type !== 'BinaryExpression' || c.operator !== '==') return;
+        const name = strOf(c.right) || strOf(c.left);
+        if (!name) return;
+        walk(node.body, inner => {
+            if (inner.type !== 'AssignmentStatement' && inner.type !== 'LocalStatement') return;
+            inner.variables.forEach((v, i) => {
+                const init = inner.init[i];
+                const key = init && init.type === 'Identifier' && init.name === 'ability' && targetKey(v);
+                if (key) (handles.get(key) || handles.set(key, []).get(key)).push({ name });
+            });
         });
     });
 
@@ -175,6 +192,18 @@ for (const h of heroes) {
         failures.push(`bots/BotLib/hero_${h}.lua:${f.line}: ${f.message}  [${f.id}]`);
     }
 }
+// Rubick's stolen-spell copies of the hero logic (FunLib/rubick_hero/<hero>.lua).
+const rubickDir = 'bots/FunLib/rubick_hero';
+const rubickFiles = fs.readdirSync(path.join(root, rubickDir)).filter(f => f.endsWith('.lua')).sort();
+for (const f of rubickFiles) {
+    const h = f.slice(0, -4);
+    if (!data.heroes[HERO_DATA[h] || h]) { failures.push(`${rubickDir}/${f}: no Valve data for ${h}`); continue; }
+    for (const finding of checkHero(h, `${rubickDir}/${f}`, `rubick/${h}`)) {
+        total++;
+        if (allowed.has(finding.id)) { used.add(finding.id); continue; }
+        failures.push(`${rubickDir}/${f}:${finding.line}: ${finding.message}  [${finding.id}]`);
+    }
+}
 for (const id of allowed.keys()) if (!used.has(id)) failures.push(`stale allowlist entry (no longer found): ${id}`);
 
 if (failures.length) {
@@ -182,4 +211,4 @@ if (failures.length) {
     console.error(`\nValve ability check failed: ${failures.length} problem(s). Fix them, or add intentional ones to tests/valve/allowlist.json with a reason.`);
     process.exit(1);
 }
-console.log(`Valve ability check passed: ${heroes.length} hero files, ${total} allowlisted finding(s), d2vpkr ${data.commit.slice(0, 7)}`);
+console.log(`Valve ability check passed: ${heroes.length} hero files, ${rubickFiles.length} Rubick copies, ${total} allowlisted finding(s), d2vpkr ${data.commit.slice(0, 7)}`);

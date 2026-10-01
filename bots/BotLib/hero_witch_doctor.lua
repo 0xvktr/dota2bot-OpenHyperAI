@@ -287,7 +287,7 @@ function X.ConsiderQ()
 	local nDamageType = DAMAGE_TYPE_MAGICAL
 	local nInRangeEnemyList = J.GetNearbyHeroes(bot, nCastRange + 50, true, BOT_MODE_NONE )
 
-	local nRadius = abilityR:GetSpecialValueInt( 'bounce_range' )/2
+	local nRadius = abilityQ:GetSpecialValueInt( 'bounce_range' )/2
 
 	--击杀
 	for _, npcEnemy in pairs( nInRangeEnemyList )

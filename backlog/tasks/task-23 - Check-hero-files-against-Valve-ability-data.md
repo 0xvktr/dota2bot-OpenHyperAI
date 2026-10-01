@@ -5,7 +5,7 @@ status: Needs In-Game Test
 assignee:
   - '@claude'
 created_date: '2026-09-30 13:58'
-updated_date: '2026-09-30 14:34'
+updated_date: '2026-10-01 10:05'
 labels:
   - tooling
   - hero
@@ -61,6 +61,8 @@ Recorded as intentional (allowlist): Witch Doctor Death Ward reads bounce_range 
 Needs lobby confirmation: Tidehunter Anchor Smash radius = attack range + additional_range (inferred from the key name and 7.41 data); talent GetSpecialValueInt('value') is accepted by the check as an engine convention but is not defined in 7.41 data for linked talents.
 
 Validation: node tests/valve_ability_check.cjs passed (128 hero files, 1 allowlisted); node tests/run-builds.cjs passed; a deliberately broken AA key (kill_percent) was reported, then restored.
+
+2026-10-01 follow-up after all 127 heroes were migrated (f785e83): re-ran the check, still clean at d2vpkr cf0d37a (latest). Fixed the deferred Witch Doctor finding and emptied the allowlist; the earlier note was wrong about it: the line is in Paralyzing Cask's logic and bounce_range is Cask's key, read through the Death Ward handle (abilityR), so Cask's bounce radius was 0. Now read from abilityQ. Extended the check to FunLib/rubick_hero/*.lua (21 copies; handles resolved from `if abilityName == '<name>' then Handle = ability`): no findings, and a deliberately broken key in the AA copy was reported. node tests/run-builds.cjs passes.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
