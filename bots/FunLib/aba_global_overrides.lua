@@ -311,9 +311,15 @@ local function probeMayCastHidden(bot, ability)
         and ability:GetName() == 'twin_gate_portal_warp'
 end
 
+local function highFiveMayCastHidden(bot, ability)
+    return ability ~= nil and bot.ohaHighFiveAbility == ability
+        and (ability:GetName() == 'plus_high_five' or ability:GetName() == 'high_five')
+end
+
 local originalAction_UseAbility = CDOTA_Bot_Script.Action_UseAbility
 function CDOTA_Bot_Script:Action_UseAbility(hAbility)
-    if hAbility == nil or (hAbility:IsHidden() and not probeMayCastHidden(self, hAbility)) then
+    if hAbility == nil or (hAbility:IsHidden() and not probeMayCastHidden(self, hAbility)
+        and not highFiveMayCastHidden(self, hAbility)) then
 		print("Action_UseAbility has been called on ability that's hidden")
 		print("Stack Trace:", safeTraceback())
 		return nil
@@ -329,6 +335,23 @@ function CDOTA_Bot_Script:ActionPush_UseAbility(hAbility)
 		return nil
 	end
     return originalActionPush_UseAbility(self, hAbility)
+end
+
+-- Cosmetic checks run after hero decisions. Engine action/casting state may
+-- update later in the frame, so an issued gameplay ability/item order wins
+-- immediately, including all queued cast shapes. Preserve every argument.
+for _, method in ipairs({
+    'Action_UseAbility', 'Action_UseAbilityOnEntity', 'Action_UseAbilityOnLocation', 'Action_UseAbilityOnTree',
+    'ActionQueue_UseAbility', 'ActionQueue_UseAbilityOnEntity', 'ActionQueue_UseAbilityOnLocation', 'ActionQueue_UseAbilityOnTree',
+    'ActionPush_UseAbility', 'ActionPush_UseAbilityOnEntity', 'ActionPush_UseAbilityOnLocation', 'ActionPush_UseAbilityOnTree',
+}) do
+    local original = CDOTA_Bot_Script[method]
+    if original then
+        CDOTA_Bot_Script[method] = function(self, ...)
+            if self.ohaHighFiveAbility == nil then self.ohaAbilityOrderTime = DotaTime() end
+            return original(self, ...)
+        end
+    end
 end
 
 -- local originalAction_AttackUnit = CDOTA_Bot_Script.Action_AttackUnit

@@ -26,12 +26,13 @@ const lua = [
     'bots/FretBots/NeutralItems.lua', 'bots/hero_selection.lua', 'bots/item_purchase_generic.lua',
     'bots/ability_item_usage_generic.lua', 'bots/FunLib/jmz_func.lua', 'bots/FunLib/power_treads.lua', 'bots/FunLib/item_cast_policy.lua',
     'bots/FunLib/early_lane_defense.lua', 'bots/FunLib/fight_response.lua', 'bots/FunLib/lane_rotation.lua',
+    'bots/FunLib/high_five.lua', 'bots/FunLib/aba_global_overrides.lua', 'bots/Customize/general.lua',
     ...fs.readdirSync('tests').filter(f => f.endsWith('.lua')).map(f => 'tests/' + f),
 ];
 for (const file of lua) parser.parse(read(file), {luaVersion: '5.2'});
 console.log(`Lua syntax passed for ${lua.length} files`);
 
-for (const file of ['creep_deny_spec.cjs', 'mask_disassembly_spec.cjs', 'valve_ability_check.cjs', 'power_treads_spec.cjs', 'item_cast_policy_spec.cjs']) {
+for (const file of ['creep_deny_spec.cjs', 'mask_disassembly_spec.cjs', 'valve_ability_check.cjs', 'power_treads_spec.cjs', 'item_cast_policy_spec.cjs', 'high_five_spec.cjs']) {
     const result = cp.spawnSync(process.execPath, [path.join('tests', file)], {stdio: 'inherit'});
     assert.strictEqual(result.status, 0, `${file} failed`);
 }

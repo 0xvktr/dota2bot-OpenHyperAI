@@ -13,7 +13,7 @@ const files = [
     'bots/FunLib/lane_rotation.lua', 'bots/FunLib/early_lane_defense.lua', 'bots/BotLib/hero_furion.lua',
     'bots/mode_defend_tower_top_generic.lua', 'bots/mode_defend_tower_mid_generic.lua', 'bots/mode_defend_tower_bot_generic.lua',
     'bots/FunLib/boss_combat.lua',
-    'bots/FunLib/lotus_usage.lua', 'bots/FunLib/fight_response.lua', 'bots/FunLib/objective_settings.lua',
+    'bots/FunLib/lotus_usage.lua', 'bots/FunLib/fight_response.lua', 'bots/FunLib/objective_settings.lua', 'bots/FunLib/high_five.lua',
     'bots/ability_item_usage_generic.lua', 'bots/item_purchase_generic.lua',
     'bots/FunLib/objectives.lua', 'bots/FunLib/objective_locations.lua',
     'bots/FunLib/jmz_func.lua', 'bots/mode_rune_generic.lua',
@@ -31,6 +31,8 @@ for (const file of files) {
 console.log(`${files.length} Lua files passed syntax checks`);
 const earlyDefense = cp.spawnSync(process.execPath, ['tests/early_lane_defense_spec.cjs'], {stdio: 'inherit'});
 if (earlyDefense.error || earlyDefense.status !== 0) process.exit(1);
+const highFive = cp.spawnSync(process.execPath, ['tests/high_five_spec.cjs'], {stdio: 'inherit'});
+if (highFive.error || highFive.status !== 0) process.exit(1);
 const run = cp.spawnSync(process.execPath, [lua, 'tests/objectives_spec.lua'], { encoding: 'utf8' });
 process.stdout.write(run.stdout || '');
 process.stderr.write(run.stderr || '');
@@ -106,6 +108,7 @@ const wrapperStart = overrides.indexOf('local function probeMayCastHidden(');
 const wrapperEnd = overrides.indexOf('-- local originalAction_AttackUnit',wrapperStart);
 if (traceStart<0 || wrapperStart<0 || wrapperEnd<0) throw new Error('Gate wrapper definitions missing');
 const wrapperSpec = `debug=nil
+function DotaTime()return 0 end
 local calls=0
 CDOTA_Bot_Script={Action_UseAbility=function()calls=calls+1 end,ActionPush_UseAbility=function()calls=calls+1 end}
 ${overrides.slice(traceStart,traceEnd)}

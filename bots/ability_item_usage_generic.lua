@@ -10,6 +10,7 @@ local DebugDumps = require(GetScriptDirectory()..'/FunLib/debug_dumps')
 local WardUtility = require(GetScriptDirectory()..'/FunLib/aba_ward_utility')
 local PowerTreads = require(GetScriptDirectory()..'/FunLib/power_treads')
 local ItemCastPolicy = require(GetScriptDirectory()..'/FunLib/item_cast_policy')
+local HighFive = require(GetScriptDirectory()..'/FunLib/high_five')
 local X = {}
 local bot = GetBot()
 local botName = bot:GetUnitName()
@@ -8330,7 +8331,11 @@ function AbilityUsageThink()
 	if bot.lastAbilityFrameProcessTime == nil then bot.lastAbilityFrameProcessTime = DotaTime() end
 	if DotaTime() > 30 and (DotaTime() - bot.lastAbilityFrameProcessTime < (bot.frameProcessTime * (1 + Customize.ThinkLess))) and bot.isBear == nil then return end
 	bot.lastAbilityFrameProcessTime = DotaTime()
-	if not J.IsNoAbilityIllution(bot) and not BossCombat.AbilityThink(bot) and BotBuild ~= nil then BotBuild.SkillsComplement() end
+    if not J.IsNoAbilityIllution(bot) then
+        if BossCombat.AbilityThink(bot) then return end
+        if BotBuild ~= nil then BotBuild.SkillsComplement() end
+        HighFive.Think(bot, J, J.Customize or Customize)
+    end
 end
 
 function BuybackUsageThink()

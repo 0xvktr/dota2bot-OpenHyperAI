@@ -85,6 +85,11 @@ Customize.Allow_AI_GPT_Response = true
 -- 1 => no trash talks from ally bots, no taunt from enemy after it gets a kill. 2 => ally bots also trash talk to you, allow taunt from enemy after it gets a kill.
 Customize.Trash_Talk_Level = 1
 
+-- Return nearby allied humans' High Fives and occasionally celebrate a fight/rescue.
+Customize.Allow_High_Fives = true
+-- Log cosmetic ability availability and attempts for lobby verification.
+Customize.Debug_High_Fives = false
+
 -- To set the names for the Radiant bots. Don't need to provide a value for all 5 bots, missing names will have a Random value.
 Customize.Radiant_Names = {
     'Random',
