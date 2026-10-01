@@ -136,9 +136,9 @@ function X.SkillsComplement()
 	then
 		J.SetReportMotive(bDebugMode,sMotive);		
 	
-		bot:Action_ClearActions( false )
+		J.SetQueuePtToINT(bot, false, abilityQ)
 	
-		bot:Action_UseAbility( abilityQ )
+		bot:ActionQueue_UseAbility( abilityQ )
 		return;
 	end
 	

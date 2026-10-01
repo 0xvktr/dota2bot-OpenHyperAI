@@ -147,6 +147,7 @@ function X.SkillsComplement()
 	castRDesire = X.ConsiderR()
 	if ( castRDesire > 0 )
 	then
+		J.SetQueuePtToINT(bot, false, abilityR)
 
 		if abilityArmlet ~= nil
 			and abilityArmlet:IsFullyCastable()

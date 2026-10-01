@@ -92,7 +92,8 @@ function X.SkillsComplement()
 	ConjureImageDesire = X.ConsiderConjureImage()
 	if (ConjureImageDesire > 0)
 	then
-		bot:Action_UseAbility(ConjureImage)
+		J.SetQueuePtToINT(bot, false, ConjureImage)
+		bot:ActionQueue_UseAbility(ConjureImage)
 		return
 	end
 

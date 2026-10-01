@@ -8,6 +8,7 @@ local tAllyHumanList = {}
 local RadiantFountain = Vector( -6619, -6336, 384 )
 local DireFountain = Vector( 6928, 6372, 392 )
 local ObjectiveLocations = require(GetScriptDirectory()..'/FunLib/objective_locations')
+local PowerTreads = require(GetScriptDirectory()..'/FunLib/power_treads')
 local RadiantTormentorLoc = ObjectiveLocations.tormentor.day
 local DireTormentorLoc = ObjectiveLocations.tormentor.night
 
@@ -2797,26 +2798,12 @@ end
 
 
 function J.SetQueueSwitchPtToINT( bot )
-
-	local pt = J.IsItemAvailable( "item_power_treads" )
-	if pt ~= nil and pt:IsFullyCastable()
-	then
-		if pt:GetPowerTreadsStat() == ATTRIBUTE_INTELLECT
-		then
-			bot:ActionQueue_UseAbility( pt )
-			bot:ActionQueue_UseAbility( pt )
-			return
-		elseif pt:GetPowerTreadsStat() == ATTRIBUTE_STRENGTH
-			then
-				bot:ActionQueue_UseAbility( pt )
-				return
-		end
-	end
-
+    return PowerTreads.Queue(bot, ATTRIBUTE_INTELLECT)
 end
 
 
 function J.SetQueueUseSoulRing( bot )
+    if PowerTreads.ActionLocked(bot) or bot:IsMuted() then return end
 
 	local sr = J.IsItemAvailable( "item_soul_ring" )
 
@@ -2837,76 +2824,29 @@ function J.SetQueueUseSoulRing( bot )
 end
 
 
-function J.SetQueuePtToINT( bot, bSoulRingUsed )
-
-	bot:Action_ClearActions(false)
-
-	if bSoulRingUsed then J.SetQueueUseSoulRing( bot ) end
-
-	if not J.IsPTReady( bot, ATTRIBUTE_INTELLECT )
-	then
-		J.SetQueueSwitchPtToINT( bot )
-	end
-
+function J.SetQueuePtToINT( bot, bSoulRingUsed, ability )
+    -- Keep the historical entry point used by hero scripts, but never clear
+    -- a live channel, cast phase or an existing combo queue for optimization.
+    if PowerTreads.ActionLocked(bot) then return end
+    bot:Action_ClearActions(false)
+    if PowerTreads.Threatened(bot, J) then return end
+    local attribute = PowerTreads.AbilityStat(bot, ability)
+    if attribute == nil then return end
+    if bSoulRingUsed then J.SetQueueUseSoulRing(bot) end
+    -- Soul Ring may have just added an action owned by this helper.
+    PowerTreads.Queue(bot, attribute, true)
 end
 
 -- 动力鞋/假腿状态
 function J.IsPTReady( bot, status )
-
-	if not bot:IsAlive()
-		or bot:IsMuted()
-		or bot:IsChanneling()
-		or bot:IsInvisible()
-		or bot:GetHealth() / bot:GetMaxHealth() < 0.2
-	then
-		return true
-	end
-
-	if status == ATTRIBUTE_INTELLECT
-	then
-		status = ATTRIBUTE_AGILITY
-	elseif status == ATTRIBUTE_AGILITY
-		then
-			status = ATTRIBUTE_INTELLECT
-	end
-
-	local pt = J.IsItemAvailable( "item_power_treads" )
-	if pt ~= nil and pt:IsFullyCastable()
-	then
-		if pt:GetPowerTreadsStat() ~= status
-		then
-			return false
-		end
-	end
-
-	return true
-
+    if not PowerTreads.CanSwitch(bot) or PowerTreads.Threatened(bot, J) then return true end
+    local pt = PowerTreads.Find(bot)
+    return pt == nil or PowerTreads.Stat(pt) == status
 end
 
 
 function J.ShouldSwitchPTStat( bot, pt )
-
-	local ptStatus = pt:GetPowerTreadsStat()
-	local botAttribute = bot:GetPrimaryAttribute()
-	
-	
-	if ptStatus == ATTRIBUTE_INTELLECT
-	then
-		ptStatus = ATTRIBUTE_AGILITY
-	elseif ptStatus == ATTRIBUTE_AGILITY
-		then
-			ptStatus = ATTRIBUTE_INTELLECT
-	end
-	
-	if botAttribute ~= ATTRIBUTE_INTELLECT
-		and botAttribute ~= ATTRIBUTE_STRENGTH
-		and botAttribute ~= ATTRIBUTE_AGILITY
-	then
-		return ptStatus ~= ATTRIBUTE_STRENGTH
-	end
-
-	return botAttribute ~= ptStatus
-
+    return PowerTreads.Stat(pt) ~= PowerTreads.OffensiveStat(bot)
 end
 
 

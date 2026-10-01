@@ -118,7 +118,7 @@ function X.SkillsComplement()
 	then
 		J.SetReportMotive( bDebugMode, sMotive )
 
-		J.SetQueuePtToINT( bot, true )
+		J.SetQueuePtToINT( bot, true, abilityR )
 
 		bot:ActionQueue_UseAbility( abilityR )
 		return
@@ -130,7 +130,7 @@ function X.SkillsComplement()
 	then
 		J.SetReportMotive( bDebugMode, sMotive )
 
-		J.SetQueuePtToINT( bot, true )
+		J.SetQueuePtToINT( bot, true, abilityQ )
 
 		bot:ActionQueue_UseAbilityOnEntity( abilityQ, castQTarget )
 		return
@@ -141,7 +141,7 @@ function X.SkillsComplement()
 	then
 		J.SetReportMotive( bDebugMode, sMotive )
 
-		J.SetQueuePtToINT( bot, true )
+		J.SetQueuePtToINT( bot, true, abilityW )
 
 		bot:ActionQueue_UseAbilityOnEntity( abilityW, castWTarget )
 		return

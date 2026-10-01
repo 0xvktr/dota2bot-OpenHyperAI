@@ -7,6 +7,7 @@ local LotusUsage = require(GetScriptDirectory()..'/FunLib/lotus_usage')
 local FightResponse = require(GetScriptDirectory()..'/FunLib/fight_response')
 local DebugDumps = require(GetScriptDirectory()..'/FunLib/debug_dumps')
 local WardUtility = require(GetScriptDirectory()..'/FunLib/aba_ward_utility')
+local PowerTreads = require(GetScriptDirectory()..'/FunLib/power_treads')
 local X = {}
 local bot = GetBot()
 local botName = bot:GetUnitName()
@@ -970,7 +971,6 @@ local fLastStashItemTimeList = {}
 local aetherRange = 0
 local lastAmuletTime = 0
 local thereBeMonkey = false
-local lastSwitchPtTime = -90
 local hNearbyEnemyHeroList = {}
 local hNearbyEnemyTowerList = {}
 local botTarget = nil
@@ -1018,6 +1018,7 @@ local function ItemUsageComplement()
 	end
 
 	local nItemSlot = { 5, 4, 3, 2, 1, 0, 15, 16 }
+	local hPowerTreads, nPowerTreadsSlot
 
 	for _, nSlot in pairs( nItemSlot )
 	do
@@ -1025,7 +1026,9 @@ local function ItemUsageComplement()
 		if J.CanCastAbility(hItem)
 		then
 			local sItemName = hItem:GetName()
-			if	X.ConsiderItemDesire[sItemName] ~= nil
+			if sItemName == 'item_power_treads' then
+				hPowerTreads, nPowerTreadsSlot = hItem, nSlot
+			elseif X.ConsiderItemDesire[sItemName] ~= nil
 				and not X.IsItemInStash( sItemName )
 			then
 				local nItemDesire, hItemTarget, sCastType, sMotive = BossCombat.ItemDesire(bot, hItem)
@@ -1050,31 +1053,55 @@ local function ItemUsageComplement()
 		end
 	end
 
+    -- Inventory slot order must not let idle Treads micro delay a Wand,
+    -- defensive item or interrupt. Optimize only after other usable items.
+    if hPowerTreads ~= nil and not X.IsItemInStash('item_power_treads') then
+        local desire, target, castType = X.ConsiderItemDesire['item_power_treads'](hPowerTreads)
+        if desire > 0 then
+            X.SetUseItem(hPowerTreads, target, castType)
+            return nPowerTreadsSlot + 1
+        end
+    end
+
 	return BOT_ACTION_DESIRE_NONE
 
 end
 
 function X.SetUseItem( hItem, hItemTarget, sCastType )
+    if PowerTreads.ActionLocked(bot) then return false end
     if hItem:GetName() == 'item_tpscroll' and sCastType == 'ground' then
         if not FightResponse.CanTeleportTo(bot, hItemTarget) then return false end
         FightResponse.RecordTeleport(bot, hItemTarget)
     end
 
+    -- Validate the action before queuing preparation. In particular, feeding
+    -- an ally must retain its original target and Tango sharing is a unit cast.
+    local ground = sCastType == 'ground' or (hItemTarget and type(hItemTarget) ~= 'number'
+        and type(hItemTarget) ~= 'table' and hItemTarget.x ~= nil)
+    if sCastType ~= 'none' and sCastType ~= 'twice' and sCastType ~= 'tree'
+        and not ground and not (sCastType == 'unit' and type(hItemTarget) == 'table') then return false end
+    local queued = PowerTreads.PrepareItem(bot, hItem, hItemTarget, sCastType, J)
+
+    if hItem:GetName() == 'item_power_treads' then PowerTreads.RecordSwitch(bot) end
+
 	if sCastType == 'none'
 	then
-		bot:Action_UseAbility( hItem )
+        if queued then bot:ActionQueue_UseAbility(hItem) else bot:Action_UseAbility(hItem) end
 		return
 	elseif sCastType == 'unit' and type(hItemTarget) == 'table'
 	then
-		bot:Action_UseAbilityOnEntity( hItem, hItemTarget )
+        if queued then bot:ActionQueue_UseAbilityOnEntity(hItem, hItemTarget)
+        else bot:Action_UseAbilityOnEntity(hItem, hItemTarget) end
 		return
-	elseif sCastType == 'ground' or (hItemTarget and type(hItemTarget) ~= 'number' and type(hItemTarget) ~= 'table' and hItemTarget.x ~= nil) -- in case target is a location
+	elseif ground
 	then
-		bot:Action_UseAbilityOnLocation( hItem, hItemTarget )
+        if queued then bot:ActionQueue_UseAbilityOnLocation(hItem, hItemTarget)
+        else bot:Action_UseAbilityOnLocation(hItem, hItemTarget) end
 		return
 	elseif sCastType == 'tree'
 	then
-		bot:Action_UseAbilityOnTree( hItem, hItemTarget )
+        if queued then bot:ActionQueue_UseAbilityOnTree(hItem, hItemTarget)
+        else bot:Action_UseAbilityOnTree(hItem, hItemTarget) end
 		return
 	elseif sCastType == 'twice'
 	then
@@ -3838,91 +3865,9 @@ X.ConsiderItemDesire["item_pipe"] = function( hItem )
 end
 
 --假腿
-X.ConsiderItemDesire["item_power_treads"] = function( hItem )
-
-	if bDeafaultItemHero then return 0 end
-
-	local nCastRange = 1000
-	local sCastType = 'none'
-	local hEffectTarget = nil
-	local sCastMotive = nil
-	local nInRangeEnmyList = J.GetNearbyHeroes(bot, nCastRange, true, BOT_MODE_NONE )
-
-
-	local nPtStat = hItem:GetPowerTreadsStat()
-	if nPtStat == ATTRIBUTE_INTELLECT
-	then
-		nPtStat = ATTRIBUTE_AGILITY
-	elseif nPtStat == ATTRIBUTE_AGILITY
-	then
-		nPtStat = ATTRIBUTE_INTELLECT
-	end
-
-	if ( bot:HasModifier( "modifier_flask_healing" )
-		 or bot:HasModifier( "modifier_clarity_potion" )
-		 or bot:HasModifier( "modifier_item_urn_heal" )
-		 or bot:HasModifier( "modifier_item_spirit_vessel_heal" )
-		 or bot:HasModifier( "modifier_bottle_regeneration" ) )
-		and nMode ~= BOT_MODE_ATTACK
-		and nMode ~= BOT_MODE_RETREAT
-	then
-		if nPtStat ~= ATTRIBUTE_AGILITY
-		then
-			--切换敏捷腿回复
-			lastSwitchPtTime = DotaTime()
-			if nPtStat == ATTRIBUTE_STRENGTH
-			then
-				sCastMotive = '力量腿切敏捷回复'
-				return BOT_ACTION_DESIRE_HIGH, bot, 'twice', sCastMotive
-			else
-				sCastMotive = '智力腿切敏捷回复'
-				return BOT_ACTION_DESIRE_HIGH, bot, sCastType, sCastMotive
-			end
-
-		end
-	elseif ( nMode == BOT_MODE_RETREAT and bot:GetActiveModeDesire() > BOT_MODE_DESIRE_MODERATE )
-			or nMode == BOT_MODE_EVASIVE_MANEUVERS
-			or ( J.IsNotAttackProjectileIncoming( bot, 1200 ) )
-			or ( bot:HasModifier( "modifier_sniper_assassinate" ) )
-			or ( bot:GetHealth() / bot:GetMaxHealth() < 0.2 )
-			or ( nPtStat == ATTRIBUTE_STRENGTH and bot:GetHealth() / bot:GetMaxHealth() < 0.3 )
-			or ( nMode ~= BOT_MODE_LANING and bot:GetLevel() <= 10 and J.IsEnemyFacingUnit( bot, 800, 20 ) )
-		then
-			if nPtStat ~= ATTRIBUTE_STRENGTH
-			then
-				--切换力量腿吃伤害
-				lastSwitchPtTime = DotaTime()
-				if nPtStat == ATTRIBUTE_AGILITY
-				then
-					sCastMotive = '敏捷腿切换力量吃伤害'
-					return BOT_ACTION_DESIRE_HIGH, bot, sCastType, sCastMotive
-				else
-					sCastMotive = '智力腿切换力量吃伤害'
-					return BOT_ACTION_DESIRE_HIGH, bot, 'twice', sCastMotive
-				end
-
-			end
-	elseif nMode == BOT_MODE_ATTACK
-			or nMode == BOT_MODE_TEAM_ROAM
-		then
-			if J.ShouldSwitchPTStat( bot, hItem )
-				and lastSwitchPtTime < DotaTime() - 0.2
-			then
-				--切换主属性腿攻击
-				sCastMotive = '切换主属性腿攻击'
-				return BOT_ACTION_DESIRE_HIGH, bot, sCastType, sCastMotive
-			end
-	elseif J.ShouldSwitchPTStat( bot, hItem )
-			and lastSwitchPtTime < DotaTime() - 0.2
-		then
-			--默认为主属性腿
-			sCastMotive = '默认为主属性腿'
-			return BOT_ACTION_DESIRE_HIGH, bot, sCastType, sCastMotive
-	end
-
-
-	return BOT_ACTION_DESIRE_NONE
-
+X.ConsiderItemDesire["item_power_treads"] = function(hItem)
+    if bDeafaultItemHero then return 0 end
+    return PowerTreads.Consider(bot, hItem, J)
 end
 
 --补刀斧

@@ -72,6 +72,9 @@ const castStart = itemUsage.indexOf('function X.SetUseItem(');
 const castEnd = itemUsage.indexOf('function X.IsWithoutSpellShield(', castStart);
 if (castStart < 0 || castEnd < 0) throw new Error('Could not locate item cast boundary');
 const castSpec = `X = {}; local allowed = false; local casts = 0; local records = 0
+local J = {}
+-- Treads behavior has its own real-policy suite; isolate this TP gate check.
+local PowerTreads = { ActionLocked=function() return false end, PrepareItem=function() return false end }
 local FightResponse = {
  CanTeleportTo=function() return allowed end,
  RecordTeleport=function() records=records+1 end

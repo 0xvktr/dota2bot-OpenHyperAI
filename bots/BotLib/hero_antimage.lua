@@ -97,7 +97,7 @@ function X.SkillsComplement()
 	CounterSpellDesire = X.ConsiderCounterSpell()
 	if CounterSpellDesire > 0
 	then
-		J.SetQueuePtToINT(bot, false)
+		J.SetQueuePtToINT(bot, false, CounterSpell)
 		bot:ActionQueue_UseAbility(CounterSpell)
 		return
 	end
@@ -128,7 +128,7 @@ function X.SkillsComplement()
 	CounterSpellAllyDesire, CounterSpellAllyTarget = X.ConsiderCounterSpellAlly()
 	if CounterSpellAllyDesire > 0
 	then
-		J.SetQueuePtToINT(bot, false)
+		J.SetQueuePtToINT(bot, false, CounterSpellAlly)
 		bot:ActionQueue_UseAbilityOnEntity(CounterSpellAlly, CounterSpellAllyTarget)
 		return
 	end

@@ -163,7 +163,7 @@ function X.SkillsComplement()
 	then
 		J.SetReportMotive( bDebugMode, sMotive )
 
-		J.SetQueuePtToINT( bot, true )
+		J.SetQueuePtToINT( bot, true, abilityW )
 
 		if J.CheckBitfieldFlag(abilityW:GetBehavior(), ABILITY_BEHAVIOR_POINT)
 		then
