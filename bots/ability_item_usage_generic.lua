@@ -8291,6 +8291,7 @@ end
 function ItemUsageThink()
 	if RefreshBotHandle() then return end
 	DebugDumps.DumpNeutralSpawners(bot)
+	DebugDumps.RecordPings(bot)
     if GateProbe.Active(bot) then return end
     if FightResponse.CancelUnsafeTeleport(bot) then return end
 	if bot:IsInvulnerable() or not bot:IsHero() or not bot:IsAlive() or not string.find(botName, "hero") or bot:IsIllusion() then return end

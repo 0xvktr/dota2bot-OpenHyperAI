@@ -154,6 +154,7 @@ for (const [, body] of read('bots/BotLib/hero_invoker.lua').matchAll(/^\s*\{([\d
 }
 run(['tests/inventory_upkeep_spec.lua'], 'Inventory upkeep scenarios passed');
 run(['tests/ward_spawn_box_spec.lua'], 'Ward spawn box scenarios passed');
+run(['tests/ping_recorder_spec.lua'], 'Ping recorder scenarios passed');
 
 // 5. Shared logic the build migration changed, executed from the real source.
 // Draft scoring with controlled positive/negative matchups.
