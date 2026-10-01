@@ -1,5 +1,12 @@
 local J = require(GetScriptDirectory()..'/FunLib/jmz_func')
+local EarlyDefense = require(GetScriptDirectory()..'/FunLib/early_lane_defense')
 local F = {}
+
+local function towerLane(id)
+    if id == TOWER_TOP_1 or id == TOWER_TOP_2 or id == TOWER_TOP_3 then return LANE_TOP end
+    if id == TOWER_MID_1 or id == TOWER_MID_2 or id == TOWER_MID_3 then return LANE_MID end
+    return LANE_BOT
+end
 
 local function outerTowers()
     return { TOWER_TOP_1, TOWER_MID_1, TOWER_BOT_1, TOWER_TOP_2, TOWER_MID_2, TOWER_BOT_2 }
@@ -62,24 +69,41 @@ function F.CanDefendTower(bot, tower, id, arriving)
     return true
 end
 
-function F.CanTeleportTo(bot, loc)
+function F.CanTeleportTo(bot, loc, purpose)
+    if purpose == nil and EarlyDefense.Active() and EarlyDefense.IsDefenseMode(bot) then purpose = 'defense' end
     for _, id in ipairs(outerTowers()) do
         local tower = GetTower(GetTeam(), id)
         if tower and tower:IsAlive() and J.GetDistance(loc, tower:GetLocation()) < 1800 then
+            local defensive = purpose == 'defense'
+            if purpose == 'fight' then local _, enemies = situation(tower); defensive = enemies > 0 end
+            if defensive and not EarlyDefense.Allow(bot, towerLane(id), tower:GetLocation()) then return false end
             return F.CanDefendTower(bot, tower, id, true)
         end
+    end
+    if purpose == 'defense' and EarlyDefense.Active() then
+        -- An ally-save TP may target a creep, not a tower. Such a destination
+        -- must not evade the early role gate. Home-lane and base returns stay
+        -- available; foreign rescues require a live allied outer tower above.
+        if J.GetDistance(loc, GetAncient(GetTeam()):GetLocation()) < 2500 then return true end
+        for _, id in ipairs({TOWER_TOP_3, TOWER_MID_3, TOWER_BOT_3}) do
+            local tower = GetTower(GetTeam(), id)
+            if tower and tower:IsAlive() and J.GetDistance(loc, tower:GetLocation()) < 1800 then return true end
+        end
+        local lane = bot:GetAssignedLane()
+        return lane ~= nil and lane ~= LANE_NONE and GetAmountAlongLane(lane, loc).distance < 1800
     end
     return true -- Base defense and safe farming destinations keep their own rules.
 end
 
-function F.RecordTeleport(bot, loc)
+function F.RecordTeleport(bot, loc, purpose)
     bot.ohaDefenseTP = nil -- A later farming/base TP must not inherit an old defense.
     for _, id in ipairs(outerTowers()) do
         local tower = GetTower(GetTeam(), id)
         if tower and tower:IsAlive() and J.GetDistance(loc, tower:GetLocation()) < 1800 then
             local _, enemies = situation(tower)
             if enemies > 0 then
-                bot.ohaDefenseTP = { id = id, expires = DotaTime() + 8 }
+                if purpose == 'fight' then purpose = 'defense' end
+                bot.ohaDefenseTP = { id = id, expires = DotaTime() + 8, purpose = purpose }
                 if J.IsInLaningPhase() and not bot.ohaLaneRotation
                     and GetUnitToLocationDistance(bot, loc) > 3000 then
                     bot.ohaLaneRotation = { home = bot:GetAssignedLane(), destination = loc,
@@ -97,7 +121,9 @@ function F.CancelUnsafeTeleport(bot)
     local ability = bot:GetCurrentActiveAbility()
     if not ability or (ability:GetName() ~= 'item_tpscroll' and ability:GetName() ~= 'furion_teleportation') then return false end
     local tower = GetTower(GetTeam(), reservation.id)
-    if not F.CanDefendTower(bot, tower, reservation.id, true) then
+    if not F.CanDefendTower(bot, tower, reservation.id, true)
+        or (reservation.purpose == 'defense' and tower
+            and not EarlyDefense.Allow(bot, towerLane(reservation.id), tower:GetLocation())) then
         bot:Action_ClearActions(true)
         bot.ohaDefenseTP, bot.ohaLaneRotation = nil, nil
         return true
@@ -112,6 +138,8 @@ function F.DefendDesire(bot, lane, desire)
     for index, id in ipairs(ids) do
         local tower = GetTower(GetTeam(), id)
         if tower and tower:IsAlive() then
+            if index < 3 and GetUnitToUnitDistance(bot, tower) > 1800
+                and not EarlyDefense.Allow(bot, lane, tower:GetLocation()) then return 0 end
             if index < 3 and not F.CanDefendTower(bot, tower, id, false) then return 0 end
             break
         end
@@ -139,13 +167,16 @@ function F.TeleportLocation(bot)
                 end
             end
             -- Reinforce an actual fight, not an abandoned tower or a lost 1v5.
-            if enemies >= 2 and allies >= 2 and fighting > 0 and allies + 1 >= enemies then
+            local outer = id ~= TOWER_TOP_3 and id ~= TOWER_MID_3 and id ~= TOWER_BOT_3
+            local minimum = outer and EarlyDefense.Active() and 1 or 2
+            if enemies >= minimum and allies >= minimum and fighting > 0 and allies + 1 >= enemies then
                 local ancient = GetAncient(GetTeam()):GetLocation()
                 local direction = ancient - loc
                 local landing = loc + direction:Normalized() * 450
                 if #J.GetEnemiesNearLoc(landing, 700) == 0 then
-                    local score = allies - enemies + fighting
-                    if score > bestScore and F.CanTeleportTo(bot, landing) then best, bestScore = landing, score end
+                    local lane = towerLane(id)
+                    local score = allies - enemies + fighting + EarlyDefense.Priority(bot, lane, loc)
+                    if score > bestScore and F.CanTeleportTo(bot, landing, 'defense') then best, bestScore = landing, score end
                 end
             end
         end

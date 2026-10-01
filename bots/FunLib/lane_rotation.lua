@@ -1,4 +1,5 @@
 local J = require(GetScriptDirectory()..'/FunLib/jmz_func')
+local EarlyDefense = require(GetScriptDirectory()..'/FunLib/early_lane_defense')
 local R = {}
 
 local function clear(bot)
@@ -10,6 +11,7 @@ local function laneTower(lane, team)
 end
 
 local function homeNeedsHelp(bot, r)
+    if EarlyDefense.Active() and J.GetPosition(bot) >= 4 then return not EarlyDefense.HomeSafe(bot) end
     for i = 1, #GetTeamPlayers(GetTeam()) do
         local h = GetTeamMember(i)
         if h and h ~= bot and h:IsAlive() and J.IsCore(h) and h:GetAssignedLane() == r.home then

@@ -27,6 +27,8 @@ local function unit(x,y)
     function h:IsIllusion()return false end
     function h:IsInvulnerable()return false end
     function h:GetAssignedLane()return self.lane end
+    function h:GetActiveMode()return 0 end
+    function h:WasRecentlyDamagedByTower()return false end
     function h:WasRecentlyDamagedByAnyHero()return self.damaged end
     function h:IsChanneling()return self.channeling end
     function h:GetCurrentActiveAbility()return self.ability end
@@ -47,6 +49,10 @@ function J.GetMP()return 1 end
 function J.IsValidHero(h)return h~=nil end
 function J.IsCore(h)return h.pos<=3 end
 function J.IsInLaningPhase()return laning end
+function J.IsModeTurbo()return false end
+function J.GetPosition(h)return h.pos end
+function J.IsSuspiciousIllusion()return false end
+function J.IsRetreating()return false end
 function J.CanNotUseAction(h)return h.channeling end
 function J.GetAlliesNearLoc(loc,radius)return near(heroes,loc,radius)end
 function J.GetEnemiesNearLoc(loc,radius)return visible and near(enemies,loc,radius)or {}end
@@ -63,6 +69,7 @@ local function reset()
     now,laning,visible=470,true,true
     heroes={unit(-5000),unit(5000),unit(5100),unit(-8000),unit(-8500)}
     heroes[1].lane=LANE_TOP
+    heroes[4].lane=LANE_TOP;heroes[4].pos=3 -- A safe home core exists for the support's bounded push.
     enemies={unit(5000,500),unit(5100,500)}
     towers={[2]={[TOWER_BOT_1]=unit(5000),[TOWER_TOP_1]=unit(-5000)},[3]={}}
     creeps={}
@@ -142,6 +149,12 @@ end)
 test('unsafe home core prevents extending rotation for a tower',function()
     local h=arrive();wave();heroes[4].lane=LANE_TOP;heroes[4].pos=1;heroes[4].hp=0.4
     assert(R.Get(h).phase=='return')
+end)
+
+test('ordinary home harassment does not prematurely end a safe bounded push',function()
+    local h=arrive();wave();assert(R.Get(h).phase=='push')
+    now=482;heroes[4].hp=0.95;heroes[4].damaged=true
+    assert(R.Get(h).phase=='push')
 end)
 test('ongoing fight does not force a return order',function()
     local h=arrive();h.damaged=true;assert(not R.Get(h));assert(not R.ThinkReturn(h))

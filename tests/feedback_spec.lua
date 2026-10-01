@@ -24,6 +24,7 @@ function J.GetDistance(a,b)return math.abs(a.x-b.x)end
 function J.GetLastSeenEnemiesNearLoc(loc,radius)return J.GetEnemiesNearLoc(loc,radius)end
 function J.GetNumOfAliveHeroes()return 5 end
 function J.GetMP(h)return h.mp/1000 end
+function J.IsModeTurbo()return false end
 function J.IsValidHero(h)return h~=nil end
 function J.IsCore(h)return h.core or false end
 function J.IsValid(h)return h~=nil end
@@ -102,6 +103,7 @@ test('active lotus prevents repeated backpack swaps',function()
     L.Prepare(h);assert(not h.swaps)
 end)
 local function fight()
+    now=700 -- Existing unrestricted reinforcement behavior after the early cutoff.
     local h=hero(-5000);tower=hero(0);allies={hero(),hero()};allies[1].damaged=true;fightEnemies={1,2,3}
     return h
 end

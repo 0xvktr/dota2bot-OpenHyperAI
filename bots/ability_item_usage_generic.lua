@@ -5,6 +5,7 @@ local LaneRotation = require(GetScriptDirectory()..'/FunLib/lane_rotation')
 local BossCombat = require(GetScriptDirectory()..'/FunLib/boss_combat')
 local LotusUsage = require(GetScriptDirectory()..'/FunLib/lotus_usage')
 local FightResponse = require(GetScriptDirectory()..'/FunLib/fight_response')
+local EarlyDefense = require(GetScriptDirectory()..'/FunLib/early_lane_defense')
 local DebugDumps = require(GetScriptDirectory()..'/FunLib/debug_dumps')
 local WardUtility = require(GetScriptDirectory()..'/FunLib/aba_ward_utility')
 local PowerTreads = require(GetScriptDirectory()..'/FunLib/power_treads')
@@ -1032,9 +1033,9 @@ local function ItemUsageComplement()
 			elseif X.ConsiderItemDesire[sItemName] ~= nil
 				and not X.IsItemInStash( sItemName )
 			then
-				local nItemDesire, hItemTarget, sCastType, sMotive = BossCombat.ItemDesire(bot, hItem)
+                local nItemDesire, hItemTarget, sCastType, sMotive, tpPurpose = BossCombat.ItemDesire(bot, hItem)
                 if nItemDesire == BOT_ACTION_DESIRE_NONE then
-                    nItemDesire, hItemTarget, sCastType, sMotive = X.ConsiderItemDesire[sItemName]( hItem )
+                    nItemDesire, hItemTarget, sCastType, sMotive, tpPurpose = X.ConsiderItemDesire[sItemName]( hItem )
                 end
 
 				if nItemDesire > 0
@@ -1048,7 +1049,7 @@ local function ItemUsageComplement()
 						J.SetReportMotive( bDebugMode, sItemName..'→'..sMotive )
 					end
 
-					if X.SetUseItem( hItem, hItemTarget, sCastType ) ~= false then return nSlot + 1 end
+					if X.SetUseItem( hItem, hItemTarget, sCastType, tpPurpose ) ~= false then return nSlot + 1 end
 				end
 			end
 		end
@@ -1068,11 +1069,11 @@ local function ItemUsageComplement()
 
 end
 
-function X.SetUseItem( hItem, hItemTarget, sCastType )
+function X.SetUseItem( hItem, hItemTarget, sCastType, tpPurpose )
     if PowerTreads.ActionLocked(bot) then return false end
     if hItem:GetName() == 'item_tpscroll' and sCastType == 'ground' then
-        if not FightResponse.CanTeleportTo(bot, hItemTarget) then return false end
-        FightResponse.RecordTeleport(bot, hItemTarget)
+        if not FightResponse.CanTeleportTo(bot, hItemTarget, tpPurpose) then return false end
+        FightResponse.RecordTeleport(bot, hItemTarget, tpPurpose)
     end
 
     -- Validate the action before queuing preparation. In particular, feeding
@@ -4930,7 +4931,7 @@ end
 if bot.useProphetTP == nil then bot.useProphetTP = false end
 if bot.ProphetTPLocation == nil then bot.ProphetTPLocation = bot:GetLocation() end
 X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
-
+    local tpPurpose = nil
 	if ( bot:IsRooted() )
 		or ( bot:HasModifier( "modifier_item_armlet_unholy_strength" ) )
 		or ( bot:HasModifier( "modifier_kunkka_x_marks_the_spot" ) )
@@ -4960,11 +4961,11 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 
     local returnLoc = LaneRotation.ReturnTP(bot)
     if returnLoc and FightResponse.CanTeleportTo(bot, returnLoc) then
-        return BOT_ACTION_DESIRE_HIGH, returnLoc, 'ground', 'Return to lane after rescue'
+        return BOT_ACTION_DESIRE_HIGH, returnLoc, 'ground', 'Return to lane after rescue', 'return'
     end
     local reinforcement = FightResponse.TeleportLocation(bot)
     if reinforcement then
-        return BOT_ACTION_DESIRE_HIGH, reinforcement, 'ground', 'Reinforce fight at allied tower'
+        return BOT_ACTION_DESIRE_HIGH, reinforcement, 'ground', 'Reinforce fight at allied tower', 'defense'
     end
 
     if nMode == BOT_MODE_RUNE or (J.IsDoingRoshan(bot)
@@ -5003,6 +5004,7 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 				then
 					bot.useProphetTP = true
 					bot.ProphetTPLocation = hEffectTarget
+					bot.ProphetTPPurpose = tpPurpose
 					return BOT_ACTION_DESIRE_NONE
 				end
 			end
@@ -5029,6 +5031,7 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 			then
 				bot.useProphetTP = true
 				bot.ProphetTPLocation = hEffectTarget
+				bot.ProphetTPPurpose = tpPurpose
 				return BOT_ACTION_DESIRE_NONE
 			end
 		end
@@ -5059,6 +5062,7 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 				then
 					bot.useProphetTP = true
 					bot.ProphetTPLocation = targetLoc
+					bot.ProphetTPPurpose = tpPurpose
 					return BOT_ACTION_DESIRE_NONE
 				end
 			end
@@ -5088,6 +5092,7 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 					then
 						bot.useProphetTP = true
 						bot.ProphetTPLocation = hEffectTarget
+						bot.ProphetTPPurpose = tpPurpose
 						return BOT_ACTION_DESIRE_NONE
 					end
 				end
@@ -5115,9 +5120,11 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 
 		if tpLoc ~= nil
 			and GetUnitToLocationDistance( bot, tpLoc ) > nMinTPDistance - 500
+			and FightResponse.CanTeleportTo(bot, tpLoc, 'defense')
 		then
 			hEffectTarget = tpLoc
 			sCastMotive = '前往守塔:'..sLane
+            tpPurpose = 'defense'
 
 			if botName == 'npc_dota_hero_furion'
 			then
@@ -5127,11 +5134,12 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 				then
 					bot.useProphetTP = true
 					bot.ProphetTPLocation = hEffectTarget
+					bot.ProphetTPPurpose = tpPurpose
 					return BOT_ACTION_DESIRE_NONE
 				end
 			end
 
-			return BOT_ACTION_DESIRE_ABSOLUTE, hEffectTarget, sCastType, sCastMotive
+			return BOT_ACTION_DESIRE_ABSOLUTE, hEffectTarget, sCastType, sCastMotive, tpPurpose
 		end
 	end
 
@@ -5167,6 +5175,7 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 				then
 					bot.useProphetTP = true
 					bot.ProphetTPLocation = hEffectTarget
+					bot.ProphetTPPurpose = tpPurpose
 					return BOT_ACTION_DESIRE_NONE
 				end
 			end
@@ -5179,7 +5188,7 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 	--保人
 	if nMode == BOT_MODE_DEFEND_ALLY
 		and nModeDesire >= BOT_MODE_DESIRE_MODERATE
-		and J.Role.CanBeSupport( botName )
+		and (EarlyDefense.Active() or J.Role.CanBeSupport( botName ))
 		and nEnemyCount == 0
 	then
 		local target = bot:GetTarget()
@@ -5190,6 +5199,8 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 			local bestTpLoc = J.GetNearbyLocationToTp( target:GetLocation() )
 			if bestTpLoc ~= nil
 				and GetUnitToLocationDistance( bot, bestTpLoc ) > nMinTPDistance - 800
+                and FightResponse.CanTeleportTo(bot, bestTpLoc, 'defense')
+                and (not EarlyDefense.Active() or EarlyDefense.Pressured(target, bestTpLoc))
 			then
 				tpLoc = bestTpLoc
 			end
@@ -5199,6 +5210,7 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 		then
 			hEffectTarget = tpLoc
 			sCastMotive = '支援队友:'..J.Chat.GetNormName( target )
+            tpPurpose = 'defense'
 
 			if botName == 'npc_dota_hero_furion'
 			then
@@ -5208,11 +5220,12 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 				then
 					bot.useProphetTP = true
 					bot.ProphetTPLocation = hEffectTarget
+					bot.ProphetTPPurpose = tpPurpose
 					return BOT_ACTION_DESIRE_NONE
 				end
 			end
 
-			return BOT_ACTION_DESIRE_HIGH, hEffectTarget, sCastType, sCastMotive
+			return BOT_ACTION_DESIRE_HIGH, hEffectTarget, sCastType, sCastMotive, tpPurpose
 		end
 	end
 
@@ -5227,6 +5240,7 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 		and bot:GetLevel() >= 3
 		and not bot:HasModifier( "modifier_arc_warden_tempest_double" )
 	then
+        tpPurpose = 'escape'
 
 		--第一种情况:无敌人无大药回家恢复
 		if botHP < 0.19
@@ -5253,6 +5267,7 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 				then
 					bot.useProphetTP = true
 					bot.ProphetTPLocation = hEffectTarget
+					bot.ProphetTPPurpose = tpPurpose
 					return BOT_ACTION_DESIRE_NONE
 				end
 			end
@@ -5288,6 +5303,7 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 				then
 					bot.useProphetTP = true
 					bot.ProphetTPLocation = hEffectTarget
+					bot.ProphetTPPurpose = tpPurpose
 					return BOT_ACTION_DESIRE_NONE
 				end
 			end
@@ -5328,6 +5344,7 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 				then
 					bot.useProphetTP = true
 					bot.ProphetTPLocation = hEffectTarget
+					bot.ProphetTPPurpose = tpPurpose
 					return BOT_ACTION_DESIRE_NONE
 				end
 			end
@@ -5371,6 +5388,7 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 				then
 					bot.useProphetTP = true
 					bot.ProphetTPLocation = hEffectTarget
+					bot.ProphetTPPurpose = tpPurpose
 					return BOT_ACTION_DESIRE_NONE
 				end
 			end
@@ -5427,6 +5445,7 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 						then
 							bot.useProphetTP = true
 							bot.ProphetTPLocation = tpLoc
+							bot.ProphetTPPurpose = tpPurpose
 							return BOT_ACTION_DESIRE_NONE
 						end
 					end
@@ -5454,6 +5473,7 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 					then
 						bot.useProphetTP = true
 						bot.ProphetTPLocation = bestTpLoc
+						bot.ProphetTPPurpose = tpPurpose
 						return BOT_ACTION_DESIRE_NONE
 					end
 				end
@@ -5501,6 +5521,7 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 			if isTravelBootsAvailable
 			then
 				sCastMotive = '飞鞋支援团战距离:'..GetUnitToLocationDistance( bot, nTeamFightLocation )
+                tpPurpose = 'fight'
 
 				if botName == 'npc_dota_hero_furion'
 				then
@@ -5510,11 +5531,12 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 					then
 						bot.useProphetTP = true
 						bot.ProphetTPLocation = nTeamFightLocation
+						bot.ProphetTPPurpose = tpPurpose
 						return BOT_ACTION_DESIRE_NONE
 					end
 				end
 
-				return BOT_ACTION_DESIRE_HIGH, nTeamFightLocation, sCastType, sCastMotive
+				return BOT_ACTION_DESIRE_HIGH, nTeamFightLocation, sCastType, sCastMotive, tpPurpose
 			end
 
 			local bestTpLoc = J.GetNearbyLocationToTp( nTeamFightLocation )
@@ -5523,6 +5545,7 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 				and GetUnitToLocationDistance( bot, bestTpLoc ) > nMinTPDistance - 1200
 			then
 				sCastMotive = '支援团战:'..GetUnitToLocationDistance( bot, nTeamFightLocation )
+                tpPurpose = 'fight'
 
 				if botName == 'npc_dota_hero_furion'
 				then
@@ -5532,11 +5555,12 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 					then
 						bot.useProphetTP = true
 						bot.ProphetTPLocation = bestTpLoc
+						bot.ProphetTPPurpose = tpPurpose
 						return BOT_ACTION_DESIRE_NONE
 					end
 				end
 
-				return BOT_ACTION_DESIRE_HIGH, bestTpLoc, sCastType, sCastMotive
+				return BOT_ACTION_DESIRE_HIGH, bestTpLoc, sCastType, sCastMotive, tpPurpose
 			end
 		end
 
@@ -5565,6 +5589,7 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 					then
 						bot.useProphetTP = true
 						bot.ProphetTPLocation = nAncient:GetLocation()
+						bot.ProphetTPPurpose = tpPurpose
 						return BOT_ACTION_DESIRE_NONE
 					end
 				end
@@ -5595,6 +5620,7 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 							then
 								bot.useProphetTP = true
 								bot.ProphetTPLocation = nAncient:GetLocation()
+								bot.ProphetTPPurpose = tpPurpose
 								return BOT_ACTION_DESIRE_NONE
 							end
 						end
@@ -5646,6 +5672,7 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 				then
 					bot.useProphetTP = true
 					bot.ProphetTPLocation = hEffectTarget
+					bot.ProphetTPPurpose = tpPurpose
 					return BOT_ACTION_DESIRE_NONE
 				end
 			end
@@ -5677,6 +5704,7 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 				then
 					bot.useProphetTP = true
 					bot.ProphetTPLocation = hEffectTarget
+					bot.ProphetTPPurpose = tpPurpose
 					return BOT_ACTION_DESIRE_NONE
 				end
 			end
@@ -5699,6 +5727,7 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 			then
 				bot.useProphetTP = true
 				bot.ProphetTPLocation = tpLoc
+				bot.ProphetTPPurpose = tpPurpose
 				return BOT_ACTION_DESIRE_NONE
 			end
 		end
@@ -5720,6 +5749,7 @@ X.ConsiderItemDesire["item_tpscroll"] = function( hItem )
 			then
 				bot.useProphetTP = true
 				bot.ProphetTPLocation = tpLoc
+				bot.ProphetTPPurpose = tpPurpose
 				return BOT_ACTION_DESIRE_NONE
 			end
 		end

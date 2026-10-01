@@ -25,6 +25,7 @@ const lua = [
     'bots/FunLib/aba_hero_pos_weights.lua', 'bots/FretBots/BonusTimers.lua', 'bots/Buff/NeutralItems.lua',
     'bots/FretBots/NeutralItems.lua', 'bots/hero_selection.lua', 'bots/item_purchase_generic.lua',
     'bots/ability_item_usage_generic.lua', 'bots/FunLib/jmz_func.lua', 'bots/FunLib/power_treads.lua', 'bots/FunLib/item_cast_policy.lua',
+    'bots/FunLib/early_lane_defense.lua', 'bots/FunLib/fight_response.lua', 'bots/FunLib/lane_rotation.lua',
     ...fs.readdirSync('tests').filter(f => f.endsWith('.lua')).map(f => 'tests/' + f),
 ];
 for (const file of lua) parser.parse(read(file), {luaVersion: '5.2'});

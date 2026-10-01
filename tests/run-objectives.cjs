@@ -10,7 +10,7 @@ const files = [
     'bots/FunLib/support_last_hits.lua',
     'bots/FunLib/aba_global_overrides.lua',
     'bots/FunLib/twin_gate_probe.lua',
-    'bots/FunLib/lane_rotation.lua', 'bots/BotLib/hero_furion.lua',
+    'bots/FunLib/lane_rotation.lua', 'bots/FunLib/early_lane_defense.lua', 'bots/BotLib/hero_furion.lua',
     'bots/mode_defend_tower_top_generic.lua', 'bots/mode_defend_tower_mid_generic.lua', 'bots/mode_defend_tower_bot_generic.lua',
     'bots/FunLib/boss_combat.lua',
     'bots/FunLib/lotus_usage.lua', 'bots/FunLib/fight_response.lua', 'bots/FunLib/objective_settings.lua',
@@ -29,6 +29,8 @@ for (const file of files) {
     parser.parse(text, { luaVersion: file.includes('/objective') ? '5.1' : '5.2' });
 }
 console.log(`${files.length} Lua files passed syntax checks`);
+const earlyDefense = cp.spawnSync(process.execPath, ['tests/early_lane_defense_spec.cjs'], {stdio: 'inherit'});
+if (earlyDefense.error || earlyDefense.status !== 0) process.exit(1);
 const run = cp.spawnSync(process.execPath, [lua, 'tests/objectives_spec.lua'], { encoding: 'utf8' });
 process.stdout.write(run.stdout || '');
 process.stderr.write(run.stderr || '');

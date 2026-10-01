@@ -102,13 +102,15 @@ function X.SkillsComplement()
     and bot.ProphetTPLocation ~= nil
     and J.CanCastAbility(Teleportation)
     then
-        if not FightResponse.CanTeleportTo(bot, bot.ProphetTPLocation) then
+        if not FightResponse.CanTeleportTo(bot, bot.ProphetTPLocation, bot.ProphetTPPurpose) then
             bot.useProphetTP = false
+            bot.ProphetTPPurpose = nil
             return
         end
-        FightResponse.RecordTeleport(bot, bot.ProphetTPLocation)
+        FightResponse.RecordTeleport(bot, bot.ProphetTPLocation, bot.ProphetTPPurpose)
         bot:Action_UseAbilityOnLocation(Teleportation, bot.ProphetTPLocation)
         bot.useProphetTP = false
+        bot.ProphetTPPurpose = nil
         return
     end
 
@@ -122,9 +124,9 @@ function X.SkillsComplement()
         return
     end
 
-    local tpDesire, tpLoc = X.ConsiderTeleportation()
-    if tpDesire > 0 and FightResponse.CanTeleportTo(bot, tpLoc) then
-        FightResponse.RecordTeleport(bot, tpLoc)
+    local tpDesire, tpLoc, tpPurpose = X.ConsiderTeleportation()
+    if tpDesire > 0 and FightResponse.CanTeleportTo(bot, tpLoc, tpPurpose) then
+        FightResponse.RecordTeleport(bot, tpLoc, tpPurpose)
         J.SetQueuePtToINT(bot, false)
         bot:ActionQueue_UseAbilityOnLocation(Teleportation, tpLoc)
         bot.useProphetTP = false
@@ -265,7 +267,7 @@ function X.ConsiderTeleportation()
         if walkTime > nChannelTime + 2 then
             local allies = J.GetAlliesNearLoc(nTeamFightLocation, 1200)
             if allies ~= nil and #allies >= 1 and J.IsValidHero(allies[#allies]) then
-                return BOT_ACTION_DESIRE_HIGH, J.GetCorrectLoc(allies[#allies], nChannelTime)
+                return BOT_ACTION_DESIRE_HIGH, J.GetCorrectLoc(allies[#allies], nChannelTime), 'fight'
             end
         end
     end
@@ -332,7 +334,7 @@ function X.ConsiderTeleportation()
             local dist = GetUnitToLocationDistance(bot, defendLoc)
             local walkTime = dist / nMoveSpeed
             if walkTime > nChannelTime * 2 and IsLocationPassable(defendLoc) then
-                return BOT_ACTION_DESIRE_MODERATE, defendLoc
+                return BOT_ACTION_DESIRE_MODERATE, defendLoc, 'defense'
             end
         end
     end

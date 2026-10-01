@@ -55,8 +55,12 @@ here. Its hero bans and unrelated laning changes are not included.
   an exhaustive verified list of every spell that affects current Roshan.
 - Fight reinforcement: before routine TP destinations, healthy bots consider
   an ongoing fight near a surviving friendly tower, including tier one.
-  At least two allies and two visible enemies must be present; the arriving
-  hero must bring allied numbers to parity. Nearby danger, a collapsing tower,
+  Before 10:00 normal / 8:00 Turbo, cross-lane outer-tower rescues use actual
+  support positions, require a safe home core, and prioritize a pressured carry.
+  A solo core can qualify for support rescue in this window. See
+  [early lane-defense policy and lobby checks](EARLY_LANE_DEFENSE.md).
+  Later, at least two allies and two visible enemies must be present; the
+  arriving hero must bring allied numbers to parity. Nearby danger, a collapsing tower,
   or an unsafe landing blocks the TP. Existing root/channel safety checks remain.
 - Push: a numerical opportunity (at least two more allies alive, at most three
   enemies alive) selects one lane for the whole group. Three heroes assemble,
