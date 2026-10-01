@@ -14,11 +14,15 @@ local nMP, nHP, nLV, hEnemyList, hAllyList
 
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
+    local abilityName = ability:GetName()
+    if abilityName ~= 'bounty_hunter_wind_walk'
+    and abilityName ~= 'bounty_hunter_wind_walk_ally'
+    and abilityName ~= 'bounty_hunter_track'
+    and abilityName ~= 'bounty_hunter_shuriken_toss' then return nil end
 
-    if J.CanNotUseAbility(bot) then return end
+    if J.CanNotUseAbility(bot) then return false end
 
     botTarget = J.GetProperTarget(bot)
-    local abilityName = ability:GetName()
 
 	nLV = bot:GetLevel()
 	nMP = bot:GetMana()/bot:GetMaxMana()
@@ -33,7 +37,7 @@ function X.ConsiderStolenSpell(ability)
         if ShadowWalkDesire > 0
         then
             bot:Action_UseAbility(ShadowWalk)
-            return
+            return true
         end
     end
 
@@ -44,7 +48,7 @@ function X.ConsiderStolenSpell(ability)
         if FriendlyShadowDesire > 0
         then
             bot:Action_UseAbilityOnEntity(FriendlyShadow, FriendlyShadowTarget)
-            return
+            return true
         end
     end
 
@@ -55,7 +59,7 @@ function X.ConsiderStolenSpell(ability)
         if TrackDesire > 0
         then
             bot:Action_UseAbilityOnEntity(Track, TrackTarget)
-            return
+            return true
         end
     end
 
@@ -65,10 +69,11 @@ function X.ConsiderStolenSpell(ability)
         ShurikenTossDesire, ShurikenTossTarget = X.ConsiderShurikenToss()
         if ShurikenTossDesire > 0
         then
-            bot:ActionQueue_UseAbilityOnEntity(ShurikenToss, ShurikenToss)
-            return
+            bot:ActionQueue_UseAbilityOnEntity(ShurikenToss, ShurikenTossTarget)
+            return true
         end
     end
+    return false
 end
 
 function X.ConsiderShurikenToss()

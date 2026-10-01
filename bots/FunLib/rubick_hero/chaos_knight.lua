@@ -12,11 +12,14 @@ local botTarget
 
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
+    local abilityName = ability:GetName()
+    if abilityName ~= 'chaos_knight_phantasm'
+    and abilityName ~= 'chaos_knight_reality_rift'
+    and abilityName ~= 'chaos_knight_chaos_bolt' then return nil end
 
-    if J.CanNotUseAbility(bot) then return end
+    if J.CanNotUseAbility(bot) then return false end
 
     botTarget = J.GetProperTarget(bot)
-    local abilityName = ability:GetName()
 
 	nHP = bot:GetHealth()/bot:GetMaxHealth()
 	hEnemyHeroList = J.GetNearbyHeroes(bot, 1600, true, BOT_MODE_NONE )
@@ -28,7 +31,7 @@ function X.ConsiderStolenSpell(ability)
         if PhantasmDesire > 0
         then
             bot:ActionQueue_UseAbility(Phantasm)
-            return
+            return true
         end
     end
 
@@ -39,7 +42,7 @@ function X.ConsiderStolenSpell(ability)
         if RealityRiftDesire > 0
         then
             bot:Action_UseAbilityOnEntity(RealityRift, RealityRiftTarget)
-            return
+            return true
         end
     end
 
@@ -50,9 +53,10 @@ function X.ConsiderStolenSpell(ability)
         if ChaosBoltDesire > 0
         then
             bot:Action_UseAbilityOnEntity(ChaosBolt, ChaosBoltTarget)
-            return
+            return true
         end
     end
+    return false
 end
 
 function X.ConsiderChaosBolt()

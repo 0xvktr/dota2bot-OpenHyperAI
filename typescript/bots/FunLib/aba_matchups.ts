@@ -2044,27 +2044,27 @@ const heroes: HeroMatchups = {
         ],
     },
 
+    // D2PT 7.41f, 2026-10-01; source role: Support; All roles, Normalized.
     npc_dota_hero_rubick: {
         synergy: [
-            "npc_dota_hero_oracle",
-            "npc_dota_hero_naga_siren",
-            "npc_dota_hero_beastmaster",
-            "npc_dota_hero_life_stealer",
-            "npc_dota_hero_broodmother",
-            "npc_dota_hero_keeper_of_the_light",
-            "npc_dota_hero_visage",
+            "npc_dota_hero_omniknight", // n=324, normalized +11.70 pp
+            "npc_dota_hero_elder_titan", // n=238, normalized +7.73 pp
+            "npc_dota_hero_troll_warlord", // n=252, normalized +7.70 pp
+            "npc_dota_hero_enigma", // n=1342, normalized +7.36 pp
+            "npc_dota_hero_riki", // n=291, normalized +7.31 pp
+            "npc_dota_hero_visage", // n=396, normalized +6.16 pp
+            "npc_dota_hero_lycan", // n=490, normalized +6.08 pp
+            "npc_dota_hero_clinkz", // n=626, normalized +5.53 pp
         ],
         counter: [
-            "npc_dota_hero_abyssal_underlord",
-            "npc_dota_hero_enigma",
-            "npc_dota_hero_jakiro",
-            "npc_dota_hero_obsidian_destroyer",
-            "npc_dota_hero_beastmaster",
-            "npc_dota_hero_crystal_maiden",
-            "npc_dota_hero_weaver",
-            "npc_dota_hero_medusa",
-            "npc_dota_hero_phantom_lancer",
-            "npc_dota_hero_skeleton_king",
+            "npc_dota_hero_abyssal_underlord", // n=814, normalized +11.40 pp
+            "npc_dota_hero_weaver", // n=484, normalized +9.70 pp
+            "npc_dota_hero_tiny", // n=985, normalized +7.26 pp
+            "npc_dota_hero_jakiro", // n=577, normalized +7.24 pp
+            "npc_dota_hero_shadow_demon", // n=438, normalized +6.49 pp
+            "npc_dota_hero_venomancer", // n=394, normalized +5.90 pp
+            "npc_dota_hero_sniper", // n=951, normalized +5.88 pp
+            "npc_dota_hero_bristleback", // n=341, normalized +5.70 pp
         ],
     },
 

@@ -16,11 +16,17 @@ local botTarget
 
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
+    local abilityName = ability:GetName()
+    if abilityName ~= 'rattletrap_overclocking'
+    and abilityName ~= 'rattletrap_hookshot'
+    and abilityName ~= 'rattletrap_power_cogs'
+    and abilityName ~= 'rattletrap_battery_assault'
+    and abilityName ~= 'rattletrap_rocket_flare'
+    and abilityName ~= 'rattletrap_jetpack' then return nil end
 
-    if J.CanNotUseAbility(bot) then return end
+    if J.CanNotUseAbility(bot) then return false end
 
     botTarget = J.GetProperTarget(bot)
-    local abilityName = ability:GetName()
 
     if abilityName == 'rattletrap_overclocking'
     then
@@ -29,7 +35,7 @@ function X.ConsiderStolenSpell(ability)
         if OverclockingDesire > 0
         then
             bot:Action_UseAbility(Overclocking)
-            return
+            return true
         end
     end
 
@@ -40,7 +46,7 @@ function X.ConsiderStolenSpell(ability)
         if HookshotDesire > 0
         then
             bot:Action_UseAbilityOnLocation(Hookshot, HookshotTarget)
-            return
+            return true
         end
     end
 
@@ -52,7 +58,7 @@ function X.ConsiderStolenSpell(ability)
         then
             bot:Action_UseAbility(PowerCogs)
             cogsTime = DotaTime()
-            return
+            return true
         end
     end
 
@@ -63,7 +69,7 @@ function X.ConsiderStolenSpell(ability)
         if BatteryAssaultDesire > 0
         then
             bot:Action_UseAbility(BatteryAssault)
-            return
+            return true
         end
     end
 
@@ -74,7 +80,7 @@ function X.ConsiderStolenSpell(ability)
         if RocketFlareDesire > 0
         then
             bot:Action_UseAbilityOnLocation(RocketFlare, RocketFlareLocation)
-            return
+            return true
         end
     end
 
@@ -85,9 +91,10 @@ function X.ConsiderStolenSpell(ability)
         if JetpackDesire > 0
         then
             bot:Action_UseAbility(Jetpack)
-            return
+            return true
         end
     end
+    return false
 end
 
 function X.ConsiderBatteryAssault()

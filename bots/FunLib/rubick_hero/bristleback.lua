@@ -13,11 +13,15 @@ local nMP, nLV, hEnemyList
 
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
+    local abilityName = ability:GetName()
+    if abilityName ~= 'bristleback_hairball'
+    and abilityName ~= 'bristleback_bristleback'
+    and abilityName ~= 'bristleback_viscous_nasal_goo'
+    and abilityName ~= 'bristleback_quill_spray' then return nil end
 
-    if J.CanNotUseAbility(bot) then return end
+    if J.CanNotUseAbility(bot) then return false end
 
     botTarget = J.GetProperTarget(bot)
-    local abilityName = ability:GetName()
 
 	nMP = bot:GetMana()/bot:GetMaxMana()
 	nLV = bot:GetLevel()
@@ -30,7 +34,7 @@ function X.ConsiderStolenSpell(ability)
         if HairBallDesire > 0
         then
             bot:Action_UseAbilityOnLocation(HairBall, HairBallLocation)
-            return
+            return true
         end
     end
 
@@ -41,7 +45,7 @@ function X.ConsiderStolenSpell(ability)
         if BristlebackDesire > 0
         then
             bot:Action_UseAbilityOnLocation(Bristleback, BristlebackLocation)
-            return
+            return true
         end
     end
 
@@ -52,7 +56,7 @@ function X.ConsiderStolenSpell(ability)
         if ViscousNasalGooDesire > 0
         then
             bot:Action_UseAbilityOnEntity(ViscousNasalGoo, ViscousNasalGooTarget)
-            return
+            return true
         end
     end
 
@@ -63,9 +67,10 @@ function X.ConsiderStolenSpell(ability)
         if QuillSprayDesire > 0
         then
             bot:Action_UseAbility(QuillSpray)
-            return
+            return true
         end
     end
+    return false
 end
 
 function X.ConsiderViscousNasalGoo()
@@ -74,8 +79,8 @@ function X.ConsiderViscousNasalGoo()
 		return BOT_ACTION_DESIRE_NONE, 0
 	end
 
-	local nRadius = ViscousNasalGoo:GetSpecialValueInt( 'radius_scepter' )
 	local nCastRange = J.GetProperCastRange(false, bot, ViscousNasalGoo:GetCastRange())
+	local nRadius = nCastRange
 	local nManaCost = ViscousNasalGoo:GetManaCost()
 
 	local tableNearbyEnemyHeroes = J.GetNearbyHeroes(bot, nRadius, true, BOT_MODE_NONE )
@@ -86,11 +91,6 @@ function X.ConsiderViscousNasalGoo()
 		local npcEnemy = tableNearbyEnemyHeroes[1]
 		if J.IsValid( npcEnemy )
 		then
-			if bot:HasScepter()
-			then
-				return BOT_ACTION_DESIRE_LOW, npcEnemy
-			end
-
 			if J.CanCastOnNonMagicImmune( npcEnemy )
 				and J.CanCastOnTargetAdvanced( npcEnemy )
 				and ( bot:IsFacingLocation( npcEnemy:GetLocation(), 10 ) or #nEnemyHeroes <= 1 )
@@ -109,7 +109,7 @@ function X.ConsiderViscousNasalGoo()
 		end
 	end
 
-	if J.IsInTeamFight( bot, 1400 ) and bot:HasScepter()
+	if J.IsInTeamFight( bot, 1400 )
 	then
 		if tableNearbyEnemyHeroes ~= nil
 			and #tableNearbyEnemyHeroes >= 1

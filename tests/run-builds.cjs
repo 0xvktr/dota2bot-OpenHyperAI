@@ -17,6 +17,8 @@ for (const name of heroNames) {
 
 // 1. Lua syntax: every migrated hero, its build data, and the shared infrastructure.
 const lua = [
+    'bots/FunLib/rubick_utility.lua', 'bots/FunLib/spell_prob_list.lua',
+    ...fs.readdirSync('bots/FunLib/rubick_hero').filter(f => f.endsWith('.lua')).map(f => 'bots/FunLib/rubick_hero/' + f),
     'bots/FunLib/lone_druid_items.lua', 'bots/BotLib/hero_lone_druid_bear.lua',
     ...heroNames.flatMap(n => [`bots/BotLib/hero_${n}.lua`, `${buildsDir}/${n}.lua`]),
     'bots/FunLib/hero_build_preferences.lua', 'bots/FunLib/alchemist_scepter.lua', 'bots/FunLib/inventory_upkeep.lua', 'bots/FunLib/debug_dumps.lua', 'bots/FunLib/aba_ward_utility.lua', 'bots/mode_ward_generic.lua', 'bots/FunLib/aba_item.lua',
@@ -137,6 +139,9 @@ run(['tests/neutral_consumers_spec.lua'], 'Neutral consumer wiring passed');
 run(['tests/alchemist_scepter_spec.lua'], 'Alchemist Scepter gift scenarios passed');
 run(['tests/axe_culling_blade_spec.lua'], 'Axe Culling Blade talent scenario passed');
 run(['tests/ancient_apparition_combo_spec.lua'], 'Ancient Apparition combo scenarios passed');
+run(['tests/rubick_handlers_spec.lua'], 'Rubick specialized handler scenarios passed');
+run(['tests/rubick_stolen_spec.lua'], 'Rubick stolen dispatcher, cast shapes, target masks, radii, support intent and channel safety passed');
+run(['tests/rubick_hero_spec.lua'], 'Rubick hero behavior checks passed:');
 run(['tests/invoker_skill_spec.lua'], 'Invoker skill order scenarios passed');
 run(['tests/invoker_meteor_spec.lua'], 'Invoker Meteor Hammer scenarios passed');
 run(['tests/lone_druid_items_spec.lua'], 'Lone Druid ownership scenarios passed');

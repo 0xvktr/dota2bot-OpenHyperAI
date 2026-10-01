@@ -16,11 +16,16 @@ local ConcoctionThrowTime = 0
 
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
+    local abilityName = ability:GetName()
+    if abilityName ~= 'alchemist_chemical_rage'
+    and abilityName ~= 'alchemist_unstable_concoction_throw'
+    and abilityName ~= 'alchemist_unstable_concoction'
+    and abilityName ~= 'alchemist_acid_spray'
+    and abilityName ~= 'alchemist_berserk_potion' then return nil end
 
-    if J.CanNotUseAbility(bot) then return end
+    if J.CanNotUseAbility(bot) then return false end
 
     botTarget = J.GetProperTarget(bot)
-    local abilityName = ability:GetName()
 
     if abilityName == 'alchemist_chemical_rage'
     then
@@ -29,7 +34,7 @@ function X.ConsiderStolenSpell(ability)
         if ChemicalRageDesire > 0
         then
             bot:Action_UseAbility(ChemicalRage)
-            return
+            return true
         end
     end
 
@@ -40,7 +45,7 @@ function X.ConsiderStolenSpell(ability)
         if UnstableConcoctionThrowDesire > 0
         then
             bot:Action_UseAbilityOnEntity(UnstableConcoctionThrow, UnstableConcoctionThrowTarget)
-            return
+            return true
         end
     end
 
@@ -52,7 +57,7 @@ function X.ConsiderStolenSpell(ability)
         then
             bot:Action_UseAbility(UnstableConcoction)
             ConcoctionThrowTime = DotaTime()
-            return
+            return true
         end
     end
 
@@ -64,7 +69,7 @@ function X.ConsiderStolenSpell(ability)
         then
             J.SetQueuePtToINT(bot, false)
             bot:Action_UseAbilityOnLocation(AcidSpray, AcidSprayLocation)
-            return
+            return true
         end
     end
 
@@ -75,9 +80,10 @@ function X.ConsiderStolenSpell(ability)
         if BerserkPotionDesire > 0
         then
             bot:Action_UseAbilityOnEntity(BerserkPotion, BerserkPotionTarget)
-            return
+            return true
         end
     end
+    return false
 end
 
 function X.ConsiderAcidSpray()
@@ -334,7 +340,7 @@ function X.ConsiderUnstableConcoctionThrow()
 	end
 
 	local nCastRange = J.GetProperCastRange(false, bot, UnstableConcoctionThrow:GetCastRange())
-	local nDamage = UnstableConcoction:GetSpecialValueInt("max_damage")
+	local nDamage = UnstableConcoctionThrow:GetSpecialValueInt("max_damage")
 
 	local nEnemyHeroes = J.GetNearbyHeroes(bot,nCastRange, true, BOT_MODE_NONE)
 	for _, enemyHero in pairs(nEnemyHeroes)

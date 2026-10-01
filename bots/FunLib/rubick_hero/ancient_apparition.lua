@@ -16,6 +16,11 @@ local botTarget
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
     local abilityName = ability:GetName()
+    if abilityName ~= 'ancient_apparition_ice_blast_release'
+    and abilityName ~= 'ancient_apparition_ice_blast'
+    and abilityName ~= 'ancient_apparition_ice_vortex'
+    and abilityName ~= 'ancient_apparition_cold_feet'
+    and abilityName ~= 'ancient_apparition_chilling_touch' then return nil end
 
     -- Release ignores silence, so it is checked before the generic can-cast gate; a missed release
     -- sends the tracer off the map.
@@ -31,11 +36,13 @@ function X.ConsiderStolenSpell(ability)
         and not bot:IsChanneling()
         then
             bot:Action_UseAbility(IceBlastRelease)
+            IceBlastCast = nil
+            return true
         end
-        return
+        return false
     end
 
-    if J.CanNotUseAbility(bot) then return end
+    if J.CanNotUseAbility(bot) then return false end
 
     botTarget = J.GetProperTarget(bot)
 
@@ -46,8 +53,8 @@ function X.ConsiderStolenSpell(ability)
         if IceBlastDesire > 0
         then
             bot:Action_UseAbilityOnLocation(IceBlast, IceBlastLocation)
-            IceBlastCast = { origin = bot:GetLocation(), target = IceBlastLocation, time = DotaTime() }
-            return
+            IceBlastCast = { origin = bot:GetLocation(), target = IceBlastLocation, time = DotaTime(), speed = X.GetIceBlastSpeed() }
+            return true
         end
     end
 
@@ -58,7 +65,7 @@ function X.ConsiderStolenSpell(ability)
         if IceVortexDesire > 0
         then
             bot:Action_UseAbilityOnLocation(IceVortex, IceVortextLocation)
-            return
+            return true
         end
     end
 
@@ -70,7 +77,7 @@ function X.ConsiderStolenSpell(ability)
         then
             -- Can't get AoE AA talent; so just entity
             bot:Action_UseAbilityOnEntity(ColdFeet, ColdFeetTarget)
-            return
+            return true
         end
     end
 
@@ -81,9 +88,10 @@ function X.ConsiderStolenSpell(ability)
         if ChillingTouchDesire > 0
         then
             bot:Action_UseAbilityOnEntity(ChillingTouch, ChillingTouchTarget)
-            return
+            return true
         end
     end
+    return false
 end
 
 function X.ConsiderColdFeet()
@@ -541,14 +549,13 @@ function X.ConsiderIceBlastRelease()
     if IceBlastRelease:IsHidden()
     or not IceBlastRelease:IsFullyCastable()
     or IceBlastCast == nil
-    or IceBlast == nil
     then
         return BOT_ACTION_DESIRE_NONE
     end
 
     local nTargetDistance = J.GetLocationToLocationDistance(IceBlastCast.origin, IceBlastCast.target)
     -- Without a visible tracer, estimate its progress from the flight time.
-    local nTravelled = (DotaTime() - IceBlastCast.time) * X.GetIceBlastSpeed()
+    local nTravelled = (DotaTime() - IceBlastCast.time) * IceBlastCast.speed
     for _, p in pairs(GetLinearProjectiles())
     do
         if p ~= nil and p.ability ~= nil and p.location ~= nil

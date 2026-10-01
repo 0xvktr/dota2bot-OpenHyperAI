@@ -9,156 +9,63 @@ local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
 local sRole   = J.Item.GetRoleItemsBuyList( bot )
 
-local tTalentTreeList = {--pos4,5
-                        ['t25'] = {10, 0},
-                        ['t20'] = {0, 10},
-                        ['t15'] = {0, 10},
-                        ['t10'] = {10, 0},
-}
+-- Updated to 7.41f from D2PT: support/hard support/mid; forced carry/offlane use support.
+local BuildData = require(GetScriptDirectory()..'/BotLib/Builds/rubick')
+X.buildMetadata = BuildData
+X.neutralPreferences = BuildData.neutrals[sRole]
+-- [1] Telekinesis, [2] Fade Bolt, [3] Arcane Supremacy, [6] Spell Steal.
+local nAbilityBuildList = {2,1,2,3,2,6,2,3,3,3,6,1,1,1,6}
+local nTalentBuildList = J.Skill.GetTalentBuild({
+    t10={10,0}, -- +200 Health
+    t15={0,10}, -- -40% Stolen Spells Mana Cost
+    t20={10,0}, -- Telekinesis Landing Deals 300 Damage
+    t25={10,0}, -- +40% Spell Amp For Stolen Spells
+})
+local defaultAbilityBuild, defaultTalentBuild = nAbilityBuildList, nTalentBuildList
+if sRole == 'pos_2' then
+    -- Omit the observed ward: core bots do not place wards.
+    X.sBuyList = {
+        'item_double_branches','item_double_branches','item_tango','item_faerie_fire',
+        'item_bottle','item_magic_wand','item_power_treads','item_phylactery','item_kaya',
+        'item_blink','item_ultimate_scepter','item_aghanims_shard','item_yasha_and_kaya',
+        -- Bot policy: survival, natural upgrades and consumed Scepter keep six major slots.
+        'item_black_king_bar','item_angels_demise','item_ultimate_scepter_2','item_octarine_core','item_arcane_blink',
+    }
+    X.sSellList = {'item_black_king_bar','item_magic_wand','item_ultimate_scepter','item_bottle'}
+else
+    X.sBuyList = {'item_double_branches','item_magic_stick','item_tango','item_faerie_fire','item_blood_grenade'}
+    if sRole == 'pos_4' then
+        -- Observed dispenser charges do not identify ward types; bot policy buys one of each.
+        table.insert(X.sBuyList,'item_ward_observer')
+        table.insert(X.sBuyList,'item_ward_sentry')
+    elseif sRole == 'pos_5' then
+        table.insert(X.sBuyList,'item_ward_sentry')
+    end
+    local core = {'item_magic_wand'}
+    if sRole ~= 'pos_5' then
+        table.insert(core,'item_urn_of_shadows')
+    end
+    table.insert(core,'item_arcane_boots')
+    if sRole ~= 'pos_5' then table.insert(core,'item_essence_distiller') end
+    local progression = {'item_blink','item_aether_lens','item_aghanims_shard','item_glimmer_cape','item_ultimate_scepter'}
+    for _, item in ipairs(progression) do table.insert(core,item) end
+    -- Bot policy: a late disable, consumed Scepter and Blink/Eul upgrades fit six major slots.
+    local late = {'item_ultimate_scepter_2','item_cyclone'}
+    if sRole == 'pos_5' then table.insert(late,'item_octarine_core') end
+    table.insert(late,'item_wind_waker')
+    table.insert(late,'item_arcane_blink')
+    for _, item in ipairs(late) do table.insert(core,item) end
+    for _, item in ipairs(core) do table.insert(X.sBuyList,item) end
+    X.sSellList = {'item_ultimate_scepter','item_magic_wand'}
+end
 
-local tAllAbilityBuildList = {
-						{2,1,2,3,2,6,2,3,3,3,1,6,1,1,6},--pos4,5
-}
-
-local nAbilityBuildList = J.Skill.GetRandomBuild(tAllAbilityBuildList)
-
-local nTalentBuildList = J.Skill.GetTalentBuild(tTalentTreeList)
-
-local sRoleItemsBuyList = {}
-
-sRoleItemsBuyList['pos_2'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_faerie_fire",
-
-    "item_bottle",
-    "item_boots",
-    "item_magic_wand",
-    "item_dagon_2",
-    "item_travel_boots",
-    "item_cyclone",
-    "item_ultimate_scepter",
-    "item_octarine_core",--
-    "item_dagon_5",--
-    "item_aghanims_shard",
-    "item_ultimate_scepter_2",
-    "item_shivas_guard",
-    "item_travel_boots_2",--
-    "item_wind_waker",--
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_5'] = {
-    "item_double_tango",
-    "item_double_branches",
-    "item_blood_grenade",
-    "item_magic_stick",
-
-    "item_boots",
-    "item_magic_wand",
-    "item_arcane_boots",
-	"item_glimmer_cape",--
-	'item_pipe',--
-    "item_aether_lens",
-    "item_blink",
-    "item_ancient_janggo",
-    "item_aghanims_shard",
-    "item_force_staff",--
-    "item_ultimate_scepter",
-    "item_octarine_core",--
-    -- "item_cyclone",
-    -- "item_wind_waker",--
-    "item_arcane_blink",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-    "item_travel_boots_2",--
-}
-
-sRoleItemsBuyList['pos_4'] = {
-    "item_double_tango",
-    "item_double_branches",
-    "item_blood_grenade",
-    "item_magic_stick",
-
-    "item_boots",
-    "item_magic_wand",
-    "item_arcane_boots",
-	"item_glimmer_cape",--
-    "item_aether_lens",
-    "item_blink",
-    "item_mekansm",
-    "item_guardian_greaves",--
-    "item_force_staff",--
-    "item_aghanims_shard",
-    "item_ultimate_scepter",
-    "item_octarine_core",--
-    "item_cyclone",
-    -- "item_wind_waker",--
-    "item_arcane_blink",--
-    "item_ultimate_scepter_2",
-    "item_moon_shard",
-}
-sRoleItemsBuyList['pos_1'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_faerie_fire",
-
-    "item_boots",
-    "item_magic_wand",
-    "item_dagon_2",
-    "item_travel_boots",
-    "item_cyclone",
-    "item_ultimate_scepter",
-    "item_octarine_core",--
-    "item_dagon_5",--
-    "item_aghanims_shard",
-    "item_ultimate_scepter_2",
-    "item_shivas_guard",
-    "item_travel_boots_2",--
-    "item_wind_waker",--
-    "item_moon_shard",
-}
-
-sRoleItemsBuyList['pos_3'] = {
-    "item_tango",
-    "item_double_branches",
-    "item_magic_stick",
-    "item_ring_of_protection",
-
-    "item_helm_of_iron_will",
-    "item_boots",
-    "item_magic_wand",
-    "item_phase_boots",
-    "item_veil_of_discord",
-    "item_glimmer_cape",--
-    "item_ultimate_scepter",
-    "item_blink",
-    "item_shivas_guard",--
-    "item_black_king_bar",--
-    "item_travel_boots",
-    "item_overwhelming_blink",--
-    "item_ultimate_scepter_2",
-    "item_travel_boots_2",--
-    "item_aghanims_shard",
-    "item_moon_shard",
-}
-
-
-X['sBuyList'] = sRoleItemsBuyList[sRole]
-
-X['sSellList'] = {
-
-	"item_black_king_bar",
-	"item_quelling_blade",
-
-}
-
-if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_antimage' }, {} end
-
-nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit( nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] )
-
-X['sSkillList'] = J.Skill.GetSkillList( sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList )
-
+if J.Role.IsPvNMode() or J.Role.IsAllShadow() then X['sBuyList'], X['sSellList'] = { 'PvN_mage' }, {} end
+nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'] = J.SetUserHeroInit(nAbilityBuildList, nTalentBuildList, X['sBuyList'], X['sSellList'])
+X['sSkillList'] = J.Skill.GetSkillList(sAbilityList, nAbilityBuildList, sTalentList, nTalentBuildList)
+-- Fourth Arcane Supremacy point at 10, first talent at 11; preserve custom progressions.
+if nAbilityBuildList == defaultAbilityBuild and nTalentBuildList == defaultTalentBuild then
+    X.sSkillList[10], X.sSkillList[11] = X.sSkillList[11], X.sSkillList[10]
+end
 X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
 
@@ -169,7 +76,6 @@ end
 local Telekinesis       = bot:GetAbilityByName('rubick_telekinesis')
 local TelekinesisLand   = bot:GetAbilityByName('rubick_telekinesis_land')
 local FadeBolt          = bot:GetAbilityByName('rubick_fade_bolt')
--- local ArcaneSupremacy   = bot:GetAbilityByName('rubick_null_field')
 local StolenSpell1      = bot:GetAbilityByName('rubick_empty1')
 local StolenSpell2      = bot:GetAbilityByName('rubick_empty2')
 local SpellSteal        = bot:GetAbilityByName('rubick_spell_steal')
@@ -180,35 +86,45 @@ local FadeBoltDesire, FadeBoltTarget
 local SpellStealDesire, SpellStealTarget
 
 local botTarget
-local lastTimeStealSpell = 0
+local lastTimeStealSpell = -90
 
 if bot.shouldBlink == nil then bot.shouldBlink = false end
 
-function X.SkillsComplement()
-	if J.CanNotUseAbility(bot) then return end
-
-    -- if Rubick is in good health condition and is casting an ability with some enmey still nearby, don't consider any other spells.
-    if J.GetHP(bot) > 0.3
-    and not J.IsRetreating(bot)
-    and (bot:IsChanneling()
-    or bot:IsUsingAbility()
-    or bot:IsCastingAbility())
-    then
-        local nEnemyHeroes = J.GetNearbyHeroes(bot,nRadius + 300, true, BOT_MODE_NONE)
-        if nEnemyHeroes ~= nil and #nEnemyHeroes > 0 then
-            return
+local linkedSlots = {7,8,19,20,21}
+local function considerLinkedSpells(releaseOnly)
+    for _, slot in ipairs(linkedSlots) do
+        local ability = bot:GetAbilityInSlot(slot)
+        if ability ~= nil and (not releaseOnly or ability:GetName() == 'ancient_apparition_ice_blast_release')
+            and R.ConsiderStolenSpell(ability)
+        then
+            return true
         end
+    end
+    return false
+end
+
+function X.SkillsComplement()
+    if bot:IsChanneling() or bot:IsUsingAbility() or bot:IsCastingAbility() then return end
+    if J.CanNotUseAbility(bot) then
+        -- Ice Blast Release ignores silence; other stolen spells retain the normal cast gate.
+        if bot:IsSilenced() and not J.HasQueuedAction(bot) then considerLinkedSpells(true) end
+        return
     end
 
     botTarget = J.GetProperTarget(bot)
     StolenSpell1 = bot:GetAbilityInSlot(3)
     StolenSpell2 = bot:GetAbilityInSlot(4)
 
-    -- consider using whatever it has first
-    X.ConsiderStolenSpell1()
-    X.ConsiderStolenSpell2()
+    TelekinesisLandDesire, TelekinesisLandLocation = X.ConsiderTelekinesisLand()
+    if TelekinesisLandDesire > 0 then
+        bot:Action_UseAbilityOnLocation(TelekinesisLand, TelekinesisLandLocation)
+        bot.isChannelLand, bot.isSaveUltLand, bot.isEngagingLand = false, false, false
+        bot.isRetreatLand, bot.isSaveAllyLand = false, false
+        return
+    end
+    if considerLinkedSpells(false) or X.ConsiderStolenSpell1() or X.ConsiderStolenSpell2() then return end
 
-    -- consdier stealing
+    -- Consider stealing after using the spells already available.
     SpellStealDesire, SpellStealTarget = X.ConsiderSpellSteal()
     if SpellStealDesire > 0
     then
@@ -222,18 +138,6 @@ function X.SkillsComplement()
     then
         bot.teleTarget = TelekinesisTarget
         bot:Action_UseAbilityOnEntity(Telekinesis, TelekinesisTarget)
-        return
-    end
-
-    TelekinesisLandDesire, TelekinesisLandLocation = X.ConsiderTelekinesisLand()
-    if TelekinesisLandDesire > 0
-    then
-        bot:Action_UseAbilityOnLocation(TelekinesisLand, TelekinesisLandLocation)
-        bot.isChannelLand = false
-        bot.isSaveUltLand= false
-        bot.isEngagingLand = false
-        bot.isRetreatLand = false
-        bot.isSaveAllyLand = false
         return
     end
 
@@ -252,12 +156,15 @@ function X.ConsiderTelekinesis()
         return BOT_ACTION_DESIRE_NONE, nil
     end
 
-    local nCastRange = J.GetProperCastRange(false, bot, Telekinesis:GetCastRange())
+    bot.isChannelLand, bot.isSaveUltLand, bot.isEngagingLand = false, false, false
+    bot.isRetreatLand, bot.isSaveAllyLand = false, false
+    local nCastRange = Telekinesis:GetCastRange()
 
 	local nEnemyHeroes = J.GetNearbyHeroes(bot,nCastRange + 300, true, BOT_MODE_NONE)
 	for _, enemyHero in pairs(nEnemyHeroes)
 	do
 		if J.IsValidHero(enemyHero)
+        and J.IsInRange(bot, enemyHero, nCastRange)
         and J.CanCastOnNonMagicImmune(enemyHero)
         and J.CanCastOnTargetAdvanced(enemyHero)
         and not J.IsSuspiciousIllusion(enemyHero)
@@ -277,6 +184,8 @@ function X.ConsiderTelekinesis()
         for _, allyHero in pairs(nInRangeAlly)
         do
             if J.IsValidHero(allyHero)
+            and bot:HasShard()
+            and J.IsInRange(bot, allyHero, nCastRange)
             and J.IsCore(allyHero)
             and not J.IsSuspiciousIllusion(allyHero)
             and not allyHero:IsInvulnerable()
@@ -297,7 +206,7 @@ function X.ConsiderTelekinesis()
 		if J.IsValidTarget(botTarget)
         and J.CanCastOnNonMagicImmune(botTarget)
         and J.CanCastOnTargetAdvanced(botTarget)
-        and J.IsInRange(bot, botTarget, nCastRange + 150)
+        and J.IsInRange(bot, botTarget, nCastRange)
         and not J.IsSuspiciousIllusion(botTarget)
         and not J.IsDisabled(botTarget)
         and not botTarget:HasModifier('modifier_furion_sprout_damage')
@@ -398,11 +307,12 @@ function X.ConsiderTelekinesisLand()
         return BOT_ACTION_DESIRE_NONE, 0
     end
 
-    local nDistance = TelekinesisLand:GetSpecialValueInt('radius')
-    local nTalent8 = bot:GetAbilityByName('special_bonus_unique_rubick_8')
-    if nTalent8:IsTrained()
-    then
-        nDistance = nDistance + nTalent8:GetSpecialValueInt('value')
+    if not J.IsValid(bot.teleTarget) then return BOT_ACTION_DESIRE_NONE, nil end
+    local nDistance = Telekinesis:GetSpecialValueInt('max_land_distance')
+    local function landingTowards(location)
+        local distance = GetUnitToLocationDistance(bot.teleTarget, location)
+        if distance <= nDistance then return location end
+        return J.Site.GetXUnitsTowardsLocation(bot.teleTarget, location, nDistance)
     end
 
     local nInRangeAlly = J.GetAlliesNearLoc(bot:GetLocation(), 1200)
@@ -423,45 +333,37 @@ function X.ConsiderTelekinesisLand()
         then
             if #nInRangeAlly >= #nInRangeEnemy
             then
-                if J.IsInRange(bot, bot.teleTarget, nDistance)
-                then
-                    return BOT_ACTION_DESIRE_HIGH, bot:GetLocation()
-                end
-
-                if not J.IsInRange(bot, bot.teleTarget, nDistance)
-                then
-                    return BOT_ACTION_DESIRE_HIGH, J.Site.GetXUnitsTowardsLocation(bot, bot:GetLocation(), nDistance)
-                end
+                return BOT_ACTION_DESIRE_HIGH, landingTowards(bot:GetLocation())
             end
 
             if #nInRangeEnemy > #nInRangeAlly
             then
-                return BOT_ACTION_DESIRE_HIGH, J.Site.GetXUnitsTowardsLocation(bot, J.GetEnemyFountain(), nDistance)
+                return BOT_ACTION_DESIRE_HIGH, landingTowards(J.GetEnemyFountain())
             end
         end
 
         if bot.isSaveUltLand ~= nil
         and bot.isSaveUltLand == true
         then
-            return BOT_ACTION_DESIRE_HIGH, J.Site.GetXUnitsTowardsLocation(bot, J.GetTeamFountain(), nDistance)
+            return BOT_ACTION_DESIRE_HIGH, landingTowards(J.GetTeamFountain())
         end
 
         if bot.isEngagingLand ~= nil
         and bot.isEngagingLand == true
         then
-            return BOT_ACTION_DESIRE_HIGH, bot:GetLocation()
+            return BOT_ACTION_DESIRE_HIGH, landingTowards(bot:GetLocation())
         end
 
         if bot.isRetreatLand ~= nil
         and bot.isRetreatLand == true
         then
-            return BOT_ACTION_DESIRE_HIGH, J.Site.GetXUnitsTowardsLocation(bot, J.GetEnemyFountain(), nDistance)
+            return BOT_ACTION_DESIRE_HIGH, landingTowards(J.GetEnemyFountain())
         end
 
         if bot.isSaveAllyLand ~= nil
         and bot.isSaveAllyLand == true
         then
-            return BOT_ACTION_DESIRE_HIGH, J.Site.GetXUnitsTowardsLocation(bot, J.GetTeamFountain(), nDistance)
+            return BOT_ACTION_DESIRE_HIGH, landingTowards(J.GetEnemyFountain())
         end
     end
 
@@ -694,96 +596,61 @@ function X.ConsiderFadeBolt()
 end
 
 function X.ConsiderStolenSpell1()
-    if StolenSpell1:GetName() == 'rubick_empty1'
-    or not StolenSpell1:IsFullyCastable()
-    then
-        return BOT_ACTION_DESIRE_HIGH, 0, ''
-    end
-
-    R.ConsiderStolenSpell(StolenSpell1)
-
-    return BOT_ACTION_DESIRE_HIGH, 0, ''
+    return R.ConsiderStolenSpell(StolenSpell1)
 end
 
 function X.ConsiderStolenSpell2()
-    if StolenSpell2:GetName() == 'rubick_empty2'
-    or not StolenSpell2:IsFullyCastable()
-    then
-        return BOT_ACTION_DESIRE_HIGH, 0, ''
-    end
+    return R.ConsiderStolenSpell(StolenSpell2)
+end
 
-    R.ConsiderStolenSpell(StolenSpell2)
+local function hasStolenSpell(ability)
+    return ability ~= nil and not ability:IsNull() and ability:GetName() ~= 'rubick_empty1'
+        and ability:GetName() ~= 'rubick_empty2' and not ability:IsHidden() and not ability:IsPassive()
+end
 
-    return BOT_ACTION_DESIRE_HIGH, 0, ''
+local function canReplaceSpell(ability)
+    if not hasStolenSpell(ability) then return true end
+    if DotaTime() - lastTimeStealSpell < 60 and ability:IsFullyCastable() and ability:IsUltimate() then return false end
+    if ability:GetCooldownTimeRemaining() < 5 and ability:GetAbilityDamage() >= 280 then return false end
+    return SPL.GetSpellReplaceWeight(ability:GetName()) * 100 >= RandomInt(1,100)
 end
 
 function X.ConsiderSpellSteal()
-    if not SpellSteal:IsFullyCastable()
-    then
-        return BOT_ACTION_DESIRE_NONE, nil
-    end
-    if DotaTime() - lastTimeStealSpell < 60 then
-        -- or low cd high dmg spells
-        if StolenSpell1:IsFullyCastable() and StolenSpell1:IsUltimate() and not bot:HasScepter() then
-            return BOT_ACTION_DESIRE_NONE, nil
-        end
-        if StolenSpell2:IsFullyCastable() and StolenSpell2:IsUltimate() then
-            return BOT_ACTION_DESIRE_NONE, nil
-        end
-    end
-    if StolenSpell1:GetCooldownTimeRemaining() < 5 and StolenSpell1:GetAbilityDamage() >= 280 then
-        return BOT_ACTION_DESIRE_NONE, nil
-    end
-    if StolenSpell2:GetCooldownTimeRemaining() < 5 and StolenSpell2:GetAbilityDamage() >= 280 then
-        return BOT_ACTION_DESIRE_NONE, nil
-    end
-
-    local nCastRange = J.GetProperCastRange(false, bot, SpellSteal:GetCastRange())
-
-    local nInRangeEnemy = J.GetEnemiesNearLoc(bot:GetLocation(), nCastRange + 300)
-    for _, enemyHero in pairs(nInRangeEnemy)
-    do
-        -- print("Rubick considering spell steal on an enemy...")
-        if J.IsValidHero(enemyHero)
-        and J.CanCastOnTargetAdvanced(enemyHero)
-        and not J.IsSuspiciousIllusion(enemyHero)
-        and not J.IsMeepoClone(enemyHero)
+    if not SpellSteal:IsFullyCastable() then return BOT_ACTION_DESIRE_NONE, nil end
+    -- Keep pending projectile release/brew throws until their linked handler finishes.
+    for _, slot in ipairs(linkedSlots) do
+        local ability = bot:GetAbilityInSlot(slot)
+        if ability ~= nil and not ability:IsNull() and not ability:IsHidden() and ability:IsFullyCastable()
+            and (ability:GetName() == 'ancient_apparition_ice_blast_release'
+                or ability:GetName() == 'alchemist_unstable_concoction_throw')
         then
-            -- print("Rubick considering spell steal on a valid target enemy...")
-            if enemyHero:IsUsingAbility()
-            or enemyHero:IsCastingAbility()
-            or J.IsCastingUltimateAbility(enemyHero)
-            or enemyHero:GetLevel() > 10
-            then
-                -- print("Rubick considering spell steal on a valid target enemy that casted an ability...")
-                local ss1Weight = SPL.GetSpellReplaceWeight(StolenSpell1) * 100
-                local ranInt = RandomInt(1, 70)
-                -- print("Rubick considering spell steal on a valid target enemy that casted an ability: weight="..ss1Weight..", random int="..ranInt)
-
-                if bot:HasScepter()
-                then
-                    local ss2Weight = SPL.GetSpellReplaceWeight(StolenSpell2) * 100
-
-                    if ss1Weight * 100 >= ranInt
-                    and ss2Weight * 100 >= RandomInt(1, 70)
-                    then
-                        return BOT_ACTION_DESIRE_HIGH, enemyHero
-                    end
-
-                    if ss2Weight * 100 >= ranInt
-                    then
-                        return BOT_ACTION_DESIRE_HIGH, enemyHero
-                    end
-                else
-                    if ss1Weight * 100 >= ranInt
-                    then
-                        return BOT_ACTION_DESIRE_HIGH, enemyHero
-                    end
-                end
-            end
+            return BOT_ACTION_DESIRE_NONE, nil
         end
     end
 
+    local hasFirst, hasSecond = hasStolenSpell(StolenSpell1), hasStolenSpell(StolenSpell2)
+    if bot:HasScepter() then
+        -- Fill an empty slot; with two retained spells, protect both until eviction order is verified.
+        if hasFirst and hasSecond and (not canReplaceSpell(StolenSpell1) or not canReplaceSpell(StolenSpell2)) then
+            return BOT_ACTION_DESIRE_NONE, nil
+        end
+    elseif not canReplaceSpell(StolenSpell1) then
+        return BOT_ACTION_DESIRE_NONE, nil
+    end
+
+    local nCastRange = SpellSteal:GetCastRange()
+    for _, enemyHero in pairs(J.GetEnemiesNearLoc(bot:GetLocation(), nCastRange)) do
+        if J.IsValidHero(enemyHero)
+            and J.IsInRange(bot, enemyHero, nCastRange)
+            and J.CanCastOnTargetAdvanced(enemyHero)
+            and not J.IsSuspiciousIllusion(enemyHero)
+            and not J.IsMeepoClone(enemyHero)
+            and (enemyHero:IsUsingAbility() or enemyHero:IsCastingAbility()
+                or J.IsCastingUltimateAbility(enemyHero) or enemyHero:GetLevel() > 10)
+        then
+            return BOT_ACTION_DESIRE_HIGH, enemyHero
+        end
+    end
     return BOT_ACTION_DESIRE_NONE, nil
 end
 

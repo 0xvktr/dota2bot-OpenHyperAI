@@ -11,11 +11,15 @@ local botTarget
 
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
+    local abilityName = ability:GetName()
+    if abilityName ~= 'broodmother_spawn_spiderlings'
+    and abilityName ~= 'broodmother_spin_web'
+    and abilityName ~= 'broodmother_silken_bola'
+    and abilityName ~= 'broodmother_insatiable_hunger' then return nil end
 
-    if J.CanNotUseAbility(bot) then return end
+    if J.CanNotUseAbility(bot) then return false end
 
     botTarget = J.GetProperTarget(bot)
-    local abilityName = ability:GetName()
 
     if abilityName == 'broodmother_spawn_spiderlings'
     then
@@ -24,7 +28,7 @@ function X.ConsiderStolenSpell(ability)
         if SpawnSpiderlingsDesire > 0
         then
             bot:Action_UseAbilityOnEntity(SpawnSpiderlings, SpirderlingsTarget)
-            return
+            return true
         end
     end
 
@@ -35,7 +39,7 @@ function X.ConsiderStolenSpell(ability)
         if SpinWebDesire > 0
         then
             bot:Action_UseAbilityOnLocation(SpinWeb, SpinWebLocation)
-            return
+            return true
         end
     end
 
@@ -46,7 +50,7 @@ function X.ConsiderStolenSpell(ability)
         if SilkenBolaDesire > 0
         then
             bot:Action_UseAbilityOnEntity(SilkenBola, SilkenBolaTarget)
-            return
+            return true
         end
     end
 
@@ -57,9 +61,10 @@ function X.ConsiderStolenSpell(ability)
         if InsatiableHungerDesire > 0
         then
             bot:Action_UseAbility(InsatiableHunger)
-            return
+            return true
         end
     end
+    return false
 end
 
 function X.ConsiderInsatiableHunger()

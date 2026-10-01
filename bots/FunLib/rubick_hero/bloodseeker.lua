@@ -12,11 +12,15 @@ local nHP
 
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
+    local abilityName = ability:GetName()
+    if abilityName ~= 'bloodseeker_blood_mist'
+    and abilityName ~= 'bloodseeker_rupture'
+    and abilityName ~= 'bloodseeker_bloodrage'
+    and abilityName ~= 'bloodseeker_blood_bath' then return nil end
 
-    if J.CanNotUseAbility(bot) then return end
+    if J.CanNotUseAbility(bot) then return false end
 
     botTarget = J.GetProperTarget(bot)
-    local abilityName = ability:GetName()
 
 	nHP = bot:GetHealth()/bot:GetMaxHealth()
 
@@ -27,7 +31,7 @@ function X.ConsiderStolenSpell(ability)
         if BloodMistDesire > 0
         then
             bot:Action_UseAbility(BloodMist)
-            return
+            return true
         end
     end
 
@@ -38,7 +42,7 @@ function X.ConsiderStolenSpell(ability)
         if RuptureDesire > 0
         then
             bot:Action_UseAbilityOnEntity(Rupture, RuptureTarget)
-            return
+            return true
         end
     end
 
@@ -48,8 +52,8 @@ function X.ConsiderStolenSpell(ability)
         BloodrageDesire, BloodrageTarget = X.ConsiderBloodrage()
         if BloodrageDesire > 0
         then
-            bot:Action_UseAbilityOnEntity(Bloodrage, BloodrageTarget)
-            return
+            bot:Action_UseAbility(Bloodrage)
+            return true
         end
     end
 
@@ -60,48 +64,28 @@ function X.ConsiderStolenSpell(ability)
         if BloodRiteDesire > 0
         then
             bot:Action_UseAbilityOnLocation(BloodRite, BloodRiteLocation)
-            return
+            return true
         end
     end
+    return false
 end
 
 function X.ConsiderBloodrage()
 
+	-- 7.41: Bloodrage is now a no-target self-buff (no longer unit-target)
 	if not Bloodrage:IsFullyCastable() then return 0 end
 
-	local nCastRange = J.GetProperCastRange(false, bot, Bloodrage:GetCastRange())
+	if bot:HasModifier( 'modifier_bloodseeker_bloodrage' ) then return 0 end
+
 	local nDamage = bot:GetAttackDamage()
 
+	--团战
 	if J.IsInTeamFight( bot, 1200 ) or J.IsPushing( bot ) or J.IsDefending( bot )
 	then
 		local tableNearbyEnemyHeroes = J.GetNearbyHeroes(bot, 1200, true, BOT_MODE_NONE )
-
 		if #tableNearbyEnemyHeroes >= 1 then
-			local tableNearbyAllyHeroes = J.GetNearbyHeroes(bot, nCastRange + 200, false, BOT_MODE_NONE )
-			local highesAD = 0
-			local highesADUnit = nil
-
-			for _, npcAlly in pairs( tableNearbyAllyHeroes )
-			do
-				local AllyAD = npcAlly:GetAttackDamage()
-				if ( J.IsValid( npcAlly )
-					and npcAlly:GetAttackTarget() ~= nil
-					and J.CanCastOnNonMagicImmune( npcAlly )
-					and ( J.GetHP( npcAlly ) > 0.18 or J.GetHP( npcAlly:GetAttackTarget() ) < 0.18 )
-					and not npcAlly:HasModifier( 'modifier_bloodseeker_bloodrage' )
-					and AllyAD > highesAD )
-				then
-					highesAD = AllyAD
-					highesADUnit = npcAlly
-				end
-			end
-
-			if highesADUnit ~= nil then
-				return BOT_ACTION_DESIRE_HIGH, highesADUnit
-			end
-
+			return BOT_ACTION_DESIRE_HIGH
 		end
-
 	end
 
 	if J.IsGoingOnSomeone( bot )
@@ -110,37 +94,44 @@ function X.ConsiderBloodrage()
 			and J.CanCastOnMagicImmune( botTarget )
 			and J.IsInRange( botTarget, bot, 600 )
 		then
-			if not bot:HasModifier( 'modifier_bloodseeker_bloodrage' )
-			then
-				return BOT_ACTION_DESIRE_HIGH, bot
-			end
+			return BOT_ACTION_DESIRE_HIGH
 		end
 	end
 
+	--打野时加速
 	if J.IsValid( botTarget ) and botTarget:GetTeam() == TEAM_NEUTRAL
-		and not bot:HasModifier( 'modifier_bloodseeker_bloodrage' )
 	then
 		local tableNearbyCreeps = bot:GetNearbyCreeps( 1000, true )
 		for _, ECreep in pairs( tableNearbyCreeps )
 		do
-			if J.IsValid( ECreep ) and not J.CanKillTarget( ECreep, nDamage, DAMAGE_TYPE_PHYSICAL ) 
+			if J.IsValid( ECreep ) and not J.CanKillTarget( ECreep, nDamage, DAMAGE_TYPE_PHYSICAL )
 			then
-				return BOT_ACTION_DESIRE_HIGH, bot
+				return BOT_ACTION_DESIRE_HIGH
 			end
 		end
 	end
 
-	if ( bot:GetActiveMode() == BOT_MODE_ROSHAN )
+	if J.IsDoingRoshan(bot)
 	then
-		if not bot:HasModifier( 'modifier_bloodseeker_bloodrage' )
-			and bot:GetAttackTarget() ~= nil
+		if J.IsRoshan(botTarget)
+        and J.IsInRange(bot, botTarget, bot:GetAttackRange())
+        and J.IsAttacking(bot)
 		then
-			return BOT_ACTION_DESIRE_HIGH, bot
+			return BOT_ACTION_DESIRE_HIGH
 		end
 	end
 
+    if J.IsDoingTormentor(bot)
+	then
+		if J.IsTormentor(botTarget)
+        and J.IsInRange(bot, botTarget, bot:GetAttackRange())
+        and J.IsAttacking(bot)
+		then
+			return BOT_ACTION_DESIRE_HIGH
+		end
+	end
 
-	return BOT_ACTION_DESIRE_NONE, 0
+	return BOT_ACTION_DESIRE_NONE
 
 end
 

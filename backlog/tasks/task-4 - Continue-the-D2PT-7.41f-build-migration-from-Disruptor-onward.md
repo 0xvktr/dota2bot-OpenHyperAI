@@ -1,11 +1,11 @@
 ---
 id: TASK-4
 title: Continue the D2PT 7.41f build migration from Disruptor onward
-status: In Progress
+status: Needs In-Game Test
 assignee:
   - '@codex'
 created_date: '2026-09-29 21:29'
-updated_date: '2026-09-30 20:44'
+updated_date: '2026-10-01 09:55'
 labels:
   - builds
 dependencies: []
@@ -23,9 +23,9 @@ BotLib builds, talents and skill orders were outdated. Heroes are being rebuilt 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Each migrated hero has a BotLib/Builds file, 7.41f annotations and weights in both TS and Lua
-- [ ] #2 Roles without enough D2PT evidence have weight 0
-- [ ] #3 node tests/run-builds.cjs passes after each hero
+- [x] #1 Each migrated hero has a BotLib/Builds file, 7.41f annotations and weights in both TS and Lua
+- [x] #2 Roles without enough D2PT evidence have weight 0
+- [x] #3 node tests/run-builds.cjs passes after each hero
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -52,6 +52,8 @@ BotLib builds, talents and skill orders were outdated. Heroes are being rebuilt 
 Invoker compatibility decision: omit automated Shard/Scepter/Blessing purchases until the new upgrade-choice action is verified for bots; retain observed Wex-Shard/Exort-Scepter preferences in metadata. Add conservative hero-local Meteor Hammer use and guard empty invoked slots. Preserve the existing combo system and disabled Cataclysm path pending lobby validation.
 
 Review Lone Druid carry only for 7.41f. Separate hero and Spirit Bear inventories using D2PT observations and DotaCoach ownership guidance; inspect current bear transfer and ability mappings, preserve concurrent work, update build data/weights/normalized matchups, and validate purchases, skills and ownership with targeted offline checks.
+
+2026-10-01: Complete Rubick pos4/5 and eligible optional mid from coherent D2PT builds, current-tier neutrals, paired weights and primary-role matchups. Audit stolen spell selection, dispatch and specialized handlers in parallel with separate file ownership; fix verified failures and add behavioral regressions. Validate source skills/talents, inventory continuation, full builds and matchup checks; record remaining lobby coverage.
 <!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
@@ -76,4 +78,12 @@ Review Lone Druid carry only for 7.41f. Separate hero and Spirit Bear inventorie
 2026-09-30: Invoker mid migrated from D2PT 7.41f most-played QE build (13601 build matches; 8029 overview matches, rating 79, weight 100). All other roles zero by user request. Added per-tier neutral/enchantment observations and paired normalized matchups. Replaced random QE/QW selection with coherent QE progression, actual talent slots and legal 24-point orb continuation. Added safe Meteor Hammer farming/pushing/long-disable casting, fixed Forge Spirit fallback target assignment, guarded unknown invoked spell cooldown records, and made Cataclysm capability depend on its selected upgrade effect. Shard/Scepter/Blessing purchases intentionally omitted: new upgrade-choice UI has no verified bot action; observed preferred variants recorded, Cataclysm remains disabled. Verified current installed Invoker definitions from Valve VPK. Full build suite passed 125 heroes / 249 roles including shipped Invoker skill/talent/custom layout, empty slots and Hammer safety scenarios; matchup suite and git diff --check passed. Preserved unrelated concurrent edits. Lobby channel/combo behavior and upgrade selection remain unverified; broader TASK-4 remains In Progress.
 
 Lone Druid carry migrated on 2026-09-30: overview 1956 matches/rating 44 gives weight 74; skipped roles zeroed by request. Build 1 has 3402 matches; most-played skills 483; top opening 421 of 3398 observed. DotaCoach ownership labels corroborate the bear-first Treads/Mjollnir/Scepter/Silver Edge progression; BKB/Butterfly finish bear slots and Glimmer Cape is later hero survival policy. Added default-only inventory ownership, safe tracked transfers, recipe-base reuse without counting components locked in unrelated completed items, recovery of lost upgrade components, starting-branch quantity checks, bear active-item hooks and inherited-skill handling. Carry All/Normalized displayed matchup rows aggregated by hero in TS/Lua; neutrals registered with current-tier filtering and attack T5 profile. Required checks pass: run-builds (126 heroes/250 roles plus ownership/purchase tests), matchups_spec and diff --check. Hero/bear purchases, transfers, item actives, Scepter effects and separate bear neutral crafting still need lobby work. Remote was current before starting; unrelated lane-pull/ping/debug work preserved. Rubick remains deferred; broader task remains In Progress.
+
+2026-10-01: Rubick pos2/4/5 completes the 127-hero roster (253 roles). Overview 1252/8667/2532 matches, ratings 34/61/51, weights 57/91/81; carry/offlane zero with support fallback. Verified coherent first-ten skills, popular talents against real engine slots, observed openings, current recipes and six-major-slot continuations. Registered per-role current-tier neutral/enchantment picks and primary-support All/Normalized matchups. Stolen-spell audit fixed action overwrite, replacement name/scaling/empty-slot guards, pending linked release/throw retention, helper-slot discovery, Shard ally lifts and target-relative landing geometry/stale flags. Updated all 21 specialized handlers to report cast/refusal/unrecognized status and corrected verified wrong targets, nil linked handles, stale spell names/fields and cast shapes. Added 82 reviewed fallback spells; complex unreviewed/vector effects deliberately remain unused. Required checks passed after final changes: run-builds 127 heroes/253 roles including 84 specialized dispatches and 57 hero cases plus generic dispatcher regressions; matchup suite under Node24; git diff --check. Other heroes weights/matchups/neutral registrations preserved byte-for-byte; WeakHeroes/global pools unchanged. Research tab closed. Changes remain uncommitted. Purchases, actives, talents, stolen combinations, dynamic cast ranges and Scepter eviction order need lobby verification.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+D2PT 7.41f migration implemented for all 127 heroes / 253 roles. Rubick pos2/4/5 added with verified sources and scoped spell-steal/casting fixes. Full build, matchup and diff checks pass; gameplay and complex stolen-spell coverage remain for in-game verification.
+<!-- SECTION:FINAL_SUMMARY:END -->

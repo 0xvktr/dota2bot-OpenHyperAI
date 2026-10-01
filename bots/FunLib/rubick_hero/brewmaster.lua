@@ -9,11 +9,13 @@ local botTarget
 
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
+    local abilityName = ability:GetName()
+    if abilityName ~= 'brewmaster_cinder_brew'
+    and abilityName ~= 'brewmaster_thunder_clap' then return nil end
 
-    if J.CanNotUseAbility(bot) then return end
+    if J.CanNotUseAbility(bot) then return false end
 
     botTarget = J.GetProperTarget(bot)
-    local abilityName = ability:GetName()
 
     if abilityName == 'brewmaster_cinder_brew'
     then
@@ -22,7 +24,7 @@ function X.ConsiderStolenSpell(ability)
         if CinderBrewDesire > 0
         then
             bot:Action_UseAbilityOnLocation(CinderBrew, CinderBrewLocation)
-            return
+            return true
         end
     end
 
@@ -33,9 +35,10 @@ function X.ConsiderStolenSpell(ability)
         if ThunderClapDesire > 0
         then
             bot:Action_UseAbility(ThunderClap)
-            return
+            return true
         end
     end
+    return false
 end
 
 function X.ConsiderThunderClap()

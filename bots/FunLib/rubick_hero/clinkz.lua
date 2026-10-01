@@ -13,11 +13,17 @@ local botTarget
 
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
+    local abilityName = ability:GetName()
+    if abilityName ~= 'clinkz_wind_walk'
+    and abilityName ~= 'clinkz_tar_bomb'
+    and abilityName ~= 'clinkz_burning_barrage'
+    and abilityName ~= 'clinkz_strafe'
+    and abilityName ~= 'clinkz_death_pact'
+    and abilityName ~= 'clinkz_burning_army' then return nil end
 
-    if J.CanNotUseAbility(bot) then return end
+    if J.CanNotUseAbility(bot) then return false end
 
     botTarget = J.GetProperTarget(bot)
-    local abilityName = ability:GetName()
 
     if abilityName == 'clinkz_wind_walk'
     then
@@ -26,7 +32,7 @@ function X.ConsiderStolenSpell(ability)
         if SkeletonWalkDesire > 0
         then
             bot:Action_UseAbility(SkeletonWalk)
-            return
+            return true
         end
     end
 
@@ -37,18 +43,18 @@ function X.ConsiderStolenSpell(ability)
         if TarBombDesire > 0
         then
             bot:Action_UseAbilityOnEntity(TarBomb, TarBombTarget)
-            return
+            return true
         end
     end
 
     if abilityName == 'clinkz_burning_barrage'
     then
-        BurningArmy = ability
+        BurningBarrage = ability
         BurningBarrageDesire, BurningBarrageLocation = X.ConsiderBurningBarrage()
         if BurningBarrageDesire > 0
         then
             bot:Action_UseAbilityOnLocation(BurningBarrage, BurningBarrageLocation)
-            return
+            return true
         end
     end
 
@@ -59,7 +65,7 @@ function X.ConsiderStolenSpell(ability)
         if StrafeDesire > 0
         then
             bot:Action_UseAbility(Strafe)
-            return
+            return true
         end
     end
 
@@ -70,20 +76,12 @@ function X.ConsiderStolenSpell(ability)
         if DeathPactDesire > 0
         then
             bot:Action_UseAbilityOnEntity(DeathPact, DeathPactTarget)
-            return
+            return true
         end
     end
 
-    if abilityName == 'clinkz_burning_army'
-    then
-        BurningArmy = ability
-        BurningArmyDesire, BurningArmyLocation = X.ConsiderBurningArmy()
-        if BurningArmyDesire > 0
-        then
-            bot:Action_UseAbilityOnLocation(BurningArmy, BurningArmyLocation)
-            return
-        end
-    end
+    -- Burning Army needs vector direction; no verified bot vector cast API.
+    return false
 end
 
 function X.ConsiderStrafe()
@@ -531,7 +529,7 @@ function X.ConsiderBurningBarrage()
     end
 
     local nCastRange = J.GetProperCastRange(false, bot, BurningBarrage:GetCastRange())
-    local nRadius = BurningBarrage:GetSpecialValueInt('radius')
+    local nRadius = BurningBarrage:GetSpecialValueInt('projectile_width')
 
     if J.IsGoingOnSomeone(bot)
 	then

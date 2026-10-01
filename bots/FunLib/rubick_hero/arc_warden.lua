@@ -11,11 +11,14 @@ local botTarget
 
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
+    local abilityName = ability:GetName()
+    if abilityName ~= 'arc_warden_flux'
+    and abilityName ~= 'arc_warden_magnetic_field'
+    and abilityName ~= 'arc_warden_spark_wraith' then return nil end
 
-    if J.CanNotUseAbility(bot) then return end
+    if J.CanNotUseAbility(bot) then return false end
 
     botTarget = J.GetProperTarget(bot)
-    local abilityName = ability:GetName()
 
     if abilityName == 'arc_warden_flux'
     then
@@ -24,7 +27,7 @@ function X.ConsiderStolenSpell(ability)
         if FluxDesire > 0
         then
             bot:Action_UseAbilityOnEntity(Flux, FluxTarget)
-            return
+            return true
         end
     end
 
@@ -35,7 +38,7 @@ function X.ConsiderStolenSpell(ability)
         if MagneticFieldDesire > 0
         then
             bot:Action_UseAbilityOnLocation(MagneticField, MagneticFieldLocation)
-            return
+            return true
         end
     end
 
@@ -46,9 +49,10 @@ function X.ConsiderStolenSpell(ability)
         if SparkWraithDesire > 0
         then
             bot:Action_UseAbilityOnLocation(SparkWraith, SparkWraithLocation)
-            return
+            return true
         end
     end
+    return false
 end
 
 function X.ConsiderFlux()
@@ -232,8 +236,8 @@ function X.ConsiderSparkWraith()
 
 	local nRadius = SparkWraith:GetSpecialValueInt( "radius" )
 	local nCastRange = J.GetProperCastRange(false, bot, SparkWraith:GetCastRange())
-	local nDamage = SparkWraith:GetSpecialValueInt( "spark_damage" )
-	local nDelay = SparkWraith:GetSpecialValueInt( "activation_delay" ) + 0.1
+	local nDamage = SparkWraith:GetSpecialValueInt( "spark_damage_base" )
+	local nDelay = SparkWraith:GetSpecialValueFloat( "base_activation_delay" ) + SparkWraith:GetCastPoint()
 
 	if J.IsValidHero( botTarget )
 		and J.CanCastOnNonMagicImmune( botTarget )

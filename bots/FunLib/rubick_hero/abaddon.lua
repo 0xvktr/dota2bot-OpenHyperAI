@@ -9,11 +9,13 @@ local AphoticShield
 
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
+    local abilityName = ability:GetName()
+    if abilityName ~= 'abaddon_aphotic_shield'
+    and abilityName ~= 'abaddon_death_coil' then return nil end
 
-    if J.CanNotUseAbility(bot) then return end
+    if J.CanNotUseAbility(bot) then return false end
 
     botTarget = J.GetProperTarget(bot)
-    local abilityName = ability:GetName()
 
     if abilityName == 'abaddon_aphotic_shield'
     then
@@ -22,7 +24,7 @@ function X.ConsiderStolenSpell(ability)
         if AphoticShieldDesire > 0
         then
             bot:Action_UseAbilityOnEntity(AphoticShield, AphoticShieldTarget)
-            return
+            return true
         end
     end
 
@@ -33,9 +35,10 @@ function X.ConsiderStolenSpell(ability)
         if MistCoilDesire > 0
         then
             bot:Action_UseAbilityOnEntity(MistCoil, MistCoilTarget)
-            return
+            return true
         end
     end
+    return false
 end
 
 function X.ConsiderMistCoil()
@@ -45,14 +48,14 @@ function X.ConsiderMistCoil()
 	end
 
     local nCastRange  = J.GetProperCastRange(false, bot, MistCoil:GetCastRange())
-	local nDamage = MistCoil:GetSpecialValueInt('target_damage')
+	local nDamage = MistCoil:GetSpecialValueInt('damage_heal')
     local nDamageType = DAMAGE_TYPE_MAGICAL
 
     local nEnemyHeroes = J.GetNearbyHeroes(bot,nCastRange, true, BOT_MODE_NONE)
     for _, enemyHero in pairs(nEnemyHeroes)
     do
         if J.IsValidHero(enemyHero)
-        and J.CanCastOnMagicImmune(enemyHero)
+        and J.CanCastOnNonMagicImmune(enemyHero)
         and J.CanKillTarget(enemyHero, nDamage, nDamageType)
         and not J.IsSuspiciousIllusion(enemyHero)
         and not enemyHero:HasModifier('modifier_dazzle_shallow_grave')

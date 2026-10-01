@@ -42,8 +42,8 @@ const SpellList: { [key: string]: number } = {
     batrider_flaming_lasso: 0.1,
 
     beastmaster_wild_axes: 0.4,
-    beastmaster_call_of_the_wild_razorback: 1, // 7.41: renamed from boar
-    beastmaster_call_of_the_wild_raptor: 1, // 7.41: renamed from hawk
+    beastmaster_summon_razorback: 1, // 7.41: renamed from boar
+    beastmaster_summon_raptor: 1, // 7.41: renamed from hawk
     beastmaster_primal_roar: 0,
 
     bloodseeker_bloodrage: 1,

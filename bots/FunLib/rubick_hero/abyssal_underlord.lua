@@ -10,11 +10,14 @@ local botTarget
 
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
+    local abilityName = ability:GetName()
+    if abilityName ~= 'abyssal_underlord_pit_of_malice'
+    and abilityName ~= 'abyssal_underlord_firestorm'
+    and abilityName ~= 'abyssal_underlord_dark_portal' then return nil end
 
-    if J.CanNotUseAbility(bot) then return end
+    if J.CanNotUseAbility(bot) then return false end
 
     botTarget = J.GetProperTarget(bot)
-    local abilityName = ability:GetName()
 
     if abilityName == 'abyssal_underlord_pit_of_malice'
     then
@@ -23,7 +26,7 @@ function X.ConsiderStolenSpell(ability)
         if PitOfMaliceDesire > 0
         then
             bot:Action_UseAbilityOnLocation(PitOfMalice, PitOfMaliceLocation)
-            return
+            return true
         end
     end
 
@@ -34,7 +37,7 @@ function X.ConsiderStolenSpell(ability)
         if FirestormDesire > 0
         then
             bot:Action_UseAbilityOnLocation(Firestorm, FirestormLocation)
-            return
+            return true
         end
     end
 
@@ -45,9 +48,10 @@ function X.ConsiderStolenSpell(ability)
         if FiendsGateDesire > 0
         then
             bot:Action_UseAbilityOnLocation(FiendsGate, FiendsGateLocation)
-            return
+            return true
         end
     end
+    return false
 end
 
 function X.ConsiderFirestorm()

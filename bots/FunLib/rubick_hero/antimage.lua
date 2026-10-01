@@ -12,11 +12,16 @@ local botTarget
 
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
+    local abilityName = ability:GetName()
+    if abilityName ~= 'antimage_counterspell'
+    and abilityName ~= 'antimage_mana_overload'
+    and abilityName ~= 'antimage_blink'
+    and abilityName ~= 'antimage_mana_void'
+    and abilityName ~= 'antimage_counterspell_ally' then return nil end
 
-    if J.CanNotUseAbility(bot) then return end
+    if J.CanNotUseAbility(bot) then return false end
 
     botTarget = J.GetProperTarget(bot)
-    local abilityName = ability:GetName()
 
     if abilityName == 'antimage_counterspell'
     then
@@ -26,7 +31,7 @@ function X.ConsiderStolenSpell(ability)
         then
             J.SetQueuePtToINT(bot, false)
             bot:ActionQueue_UseAbility(CounterSpell)
-            return
+            return true
         end
     end
 
@@ -37,7 +42,7 @@ function X.ConsiderStolenSpell(ability)
         if BlinkFragmentDesire > 0
         then
             bot:Action_UseAbilityOnLocation(BlinkFragment, BlinkFragmentLocation)
-            return
+            return true
         end
     end
 
@@ -49,7 +54,7 @@ function X.ConsiderStolenSpell(ability)
         then
             J.SetQueuePtToINT(bot, false)
             bot:ActionQueue_UseAbilityOnLocation(Blink, BlinkLocation)
-            return
+            return true
         end
     end
 
@@ -61,7 +66,7 @@ function X.ConsiderStolenSpell(ability)
         then
             J.SetQueuePtToINT(bot, false)
             bot:ActionQueue_UseAbilityOnEntity(ManaVoid, ManaVoidTarget)
-            return
+            return true
         end
     end
 
@@ -73,9 +78,10 @@ function X.ConsiderStolenSpell(ability)
         then
             J.SetQueuePtToINT(bot, false)
             bot:ActionQueue_UseAbilityOnEntity(CounterSpellAlly, CounterSpellAllyTarget)
-            return
+            return true
         end
     end
+    return false
 end
 
 function X.ConsiderBlink()

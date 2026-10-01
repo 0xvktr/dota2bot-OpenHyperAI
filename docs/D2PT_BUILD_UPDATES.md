@@ -107,7 +107,7 @@ Ogre Magi, Omniknight, Oracle and Pangolier were refreshed on 2026-09-30.
 Phantom Assassin, Phantom Lancer, Phoenix, Primal Beast, Puck, Pudge, Pugna,
 Queen of Pain, Clockwerk and Razor were refreshed on 2026-09-30.
 Riki, Sand King, Shadow Demon, Shadow Shaman, Timbersaw, Silencer, Wraith King,
-Skywrath Mage, Slardar and Slark were refreshed on 2026-09-30. Rubick remains deferred.
+Skywrath Mage, Slardar and Slark were refreshed on 2026-09-30.
 Snapfire, Sniper, Spectre, Spirit Breaker, Storm Spirit, Sven, Techies,
 Templar Assassin, Terrorblade and Tidehunter were refreshed on 2026-09-30.
 Tinker, Tiny, Treant Protector, Troll Warlord, Tusk, Undying, Ursa,
@@ -115,7 +115,8 @@ Vengeful Spirit, Venomancer and Viper were refreshed on 2026-09-30.
 Visage, Void Spirit, Warlock, Weaver, Windranger, Winter Wyvern, Io,
 Witch Doctor and Zeus were refreshed on 2026-09-30.
 Lone Druid carry was refreshed on 2026-09-30; other roles use its carry fallback.
-Unmarked heroes retain their older lists and can be refreshed as their builds are updated.
+Rubick support/hard support/mid were refreshed on 2026-10-01, completing the 127-hero roster.
+
 Source pages are `https://dota2protracker.com/hero/<hero>?section=matchups`. Both the builds and matchups
 sections take `&role=carry|mid|offlane|support|hard-support` (hyphen); an unrecognised value such as
 `hard_support` silently shows the hero's most popular role, so check the selected role tab.
@@ -141,7 +142,7 @@ Tinker/Viper use mid, Tiny/Troll Warlord/Ursa use carry, and
 Treant Protector/Tusk/Undying/Vengeful Spirit/Venomancer use hard support.
 Visage uses offlane, Void Spirit uses mid, Weaver/Windranger/Zeus use support,
 and Warlock/Winter Wyvern/Io/Witch Doctor use hard support.
-Select **All** opponent/ally
+Rubick uses support. Select **All** opponent/ally
 roles and enable **Normalized** for both tables. Collapse the displayed role rows
 by hero using a match-count-weighted mean of their normalized values; this is an
 approximation from rounded UI values, not an independently calculated all-role
@@ -232,3 +233,9 @@ minion hooks; separate bear skill leveling is disabled because its abilities inh
 Custom item lists do not enable this ownership policy. Neutral preferences use the existing hero
 distributors; separate Spirit Bear neutral crafting is not implemented. Two-inventory recipes,
 handoffs, Scepter effects and bear actives still require lobby verification.
+
+Rubick stolen spells use specialized handlers for 21 hero families and a reviewed fallback for
+simple effects from other heroes. Complex unreviewed effects and vector casts are skipped.
+Linked release/throw slots are checked, and an issued cast ends the current think cycle.
+Offline regressions cover dispatch, replacement, channel preservation and Telekinesis landing;
+stolen combinations, Scepter eviction order and dynamic cast-range bonuses still need lobby testing.

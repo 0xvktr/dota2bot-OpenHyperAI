@@ -13,11 +13,15 @@ local nChenCreeps = {}
 
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
+    local abilityName = ability:GetName()
+    if abilityName ~= 'chen_hand_of_god'
+    and abilityName ~= 'chen_penitence'
+    and abilityName ~= 'chen_holy_persuasion'
+    and abilityName ~= 'chen_divine_favor' then return nil end
 
-    if J.CanNotUseAbility(bot) then return end
+    if J.CanNotUseAbility(bot) then return false end
 
     botTarget = J.GetProperTarget(bot)
-    local abilityName = ability:GetName()
 
     if abilityName == 'chen_hand_of_god'
     then
@@ -26,7 +30,7 @@ function X.ConsiderStolenSpell(ability)
         if HandOfGodDesire > 0
         then
             bot:Action_UseAbility(HandOfGod)
-            return
+            return true
         end
     end
 
@@ -37,7 +41,7 @@ function X.ConsiderStolenSpell(ability)
         if PenitenceDesire > 0
         then
             bot:Action_UseAbilityOnEntity(Penitence, PenitenceTarget)
-            return
+            return true
         end
     end
 
@@ -48,7 +52,7 @@ function X.ConsiderStolenSpell(ability)
         if HolyPersuasionDesire > 0
         then
             bot:Action_UseAbilityOnEntity(HolyPersuasion, HolyPersuasionTarget)
-            return
+            return true
         end
     end
 
@@ -59,9 +63,10 @@ function X.ConsiderStolenSpell(ability)
         if DivineFavorDesire > 0
         then
             bot:Action_UseAbilityOnEntity(DivineFavor, DivineFavorTarget)
-            return
+            return true
         end
     end
+    return false
 end
 
 function X.ConsiderPenitence()
@@ -186,12 +191,14 @@ function X.ConsiderHolyPersuasion()
     do
         if string.find(unit:GetUnitName(), 'neutral')
         and unit:HasModifier('modifier_chen_holy_persuasion')
+        and unit:GetPlayerID() == bot:GetPlayerID()
         then
             table.insert(unitTable, unit)
         end
     end
 
-    nChenCreeps = unitTable
+    local nChenCreeps = unitTable
+    if #nChenCreeps >= nMaxUnit then return BOT_ACTION_DESIRE_NONE, nil end
 
     local nGoodCreep = {
         "npc_dota_neutral_alpha_wolf",
@@ -208,6 +215,8 @@ function X.ConsiderHolyPersuasion()
         for _, creep in pairs(nNeutralCreeps)
         do
             if J.IsValid(creep)
+            and not creep:IsAncientCreep()
+            and creep:GetLevel() <= nMaxLevel
             then
                 return BOT_ACTION_DESIRE_HIGH, creep
             end
@@ -218,6 +227,7 @@ function X.ConsiderHolyPersuasion()
             for _, creep in pairs(nNeutralCreeps)
             do
                 if J.IsValid(creep)
+                and not creep:IsAncientCreep()
                 and creep:GetLevel() <= nMaxLevel
                 then
                     for _, gCreep in pairs(nGoodCreep)

@@ -16,11 +16,15 @@ local BlackKingBar
 
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
+    local abilityName = ability:GetName()
+    if abilityName ~= 'batrider_flaming_lasso'
+    and abilityName ~= 'batrider_firefly'
+    and abilityName ~= 'batrider_flamebreak'
+    and abilityName ~= 'batrider_sticky_napalm' then return nil end
 
-    if J.CanNotUseAbility(bot) then return end
+    if J.CanNotUseAbility(bot) then return false end
 
     botTarget = J.GetProperTarget(bot)
-    local abilityName = ability:GetName()
 
     if X.HasBlink()
     and abilityName == 'batrider_flaming_lasso'
@@ -31,7 +35,8 @@ function X.ConsiderStolenSpell(ability)
         then
             bot:Action_ClearActions(false)
 
-            FireflyDesire = X.ConsiderFirefly()
+            Firefly = bot:GetAbilityByName('batrider_firefly')
+            FireflyDesire = Firefly ~= nil and X.ConsiderFirefly() or 0
             if FireflyDesire > 0
             then
                 bot:ActionQueue_UseAbility(Firefly)
@@ -47,7 +52,7 @@ function X.ConsiderStolenSpell(ability)
             bot:ActionQueue_UseAbilityOnLocation(Blink, BlinkLassoTarget:GetLocation())
             bot:ActionQueue_Delay(0.1)
             bot:ActionQueue_UseAbilityOnEntity(FlamingLasso, BlinkLassoTarget)
-            return
+            return true
         end
     end
 
@@ -58,7 +63,7 @@ function X.ConsiderStolenSpell(ability)
         if FireflyDesire > 0
         then
             bot:Action_UseAbility(Firefly)
-            return
+            return true
         end
     end
 
@@ -69,7 +74,7 @@ function X.ConsiderStolenSpell(ability)
         if FlamingLassoDesire > 0
         then
             bot:Action_UseAbilityOnEntity(FlamingLasso, FlamingLassoTarget)
-            return
+            return true
         end
     end
 
@@ -80,7 +85,7 @@ function X.ConsiderStolenSpell(ability)
         if FlamebreakDesire > 0
         then
             bot:Action_UseAbilityOnLocation(Flamebreak, FlamebreakLocation)
-            return
+            return true
         end
     end
 
@@ -91,9 +96,10 @@ function X.ConsiderStolenSpell(ability)
         if StickyNapalmDesire > 0
         then
             bot:Action_UseAbilityOnLocation(StickyNapalm, StickyNapalmLocation)
-            return
+            return true
         end
     end
+    return false
 end
 
 function X.ConsiderStickyNapalm()

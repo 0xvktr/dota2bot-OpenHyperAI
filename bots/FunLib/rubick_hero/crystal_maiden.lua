@@ -14,27 +14,31 @@ local botTarget
 
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
+    local abilityName = ability:GetName()
+    if abilityName ~= 'crystal_maiden_crystal_clone'
+    and abilityName ~= 'crystal_maiden_crystal_nova'
+    and abilityName ~= 'crystal_maiden_frostbite'
+    and abilityName ~= 'crystal_maiden_freezing_field' then return nil end
 
-    if J.CanNotUseAbility(bot) then return end
+    if J.CanNotUseAbility(bot) then return false end
 
     botTarget = J.GetProperTarget(bot)
-    local abilityName = ability:GetName()
 
     nKeepMana = 220
 	nMP = bot:GetMana()/bot:GetMaxMana()
 	nHP = bot:GetHealth()/bot:GetMaxHealth()
 	nLV = bot:GetLevel()
 
-    X.ConsiderCombo()
+    if X.ConsiderCombo() then return true end
 
     if abilityName == 'crystal_maiden_crystal_clone'
     then
 		CrystalClone = ability
-        CrystalCloneDesire = X.ConsiderCrystalClone()
+        CrystalCloneDesire, CrystalCloneLocation = X.ConsiderCrystalClone()
         if CrystalCloneDesire > 0
         then
-            bot:Action_UseAbility(CrystalClone)
-            return
+            bot:Action_UseAbilityOnLocation(CrystalClone, CrystalCloneLocation)
+            return true
         end
     end
 
@@ -45,7 +49,7 @@ function X.ConsiderStolenSpell(ability)
         if CrystalNovaDesire > 0
         then
             bot:Action_UseAbilityOnLocation(CrystalNova, CrystalNovaLocation)
-            return
+            return true
         end
     end
 
@@ -56,7 +60,7 @@ function X.ConsiderStolenSpell(ability)
         if FrostbiteDesire > 0
         then
             bot:Action_UseAbilityOnEntity(Frostbite, FrostbiteTarget )
-            return
+            return true
         end
     end
 
@@ -67,9 +71,10 @@ function X.ConsiderStolenSpell(ability)
         if FreezingFieldDesire > 0
         then
             bot:Action_UseAbility(FreezingField)
-            return
+            return true
         end
     end
+    return false
 end
 
 function X.ConsiderCombo()
@@ -79,14 +84,14 @@ function X.ConsiderCombo()
 	then
 		local nEnemyTowers = bot:GetNearbyTowers( 880, true )
 
-		if nEnemyTowers[1] ~= nil then return end
+		if nEnemyTowers[1] ~= nil then return false end
 
 		local amulet = J.IsItemAvailable( 'item_shadow_amulet' )
 		if amulet~=nil and amulet:IsFullyCastable() and amuletTime < DotaTime()- 10
 		then
 			amuletTime = DotaTime()
 			bot:Action_UseAbilityOnEntity( amulet, bot )
-			return
+			return true
 		end
 
 		if not bot:HasModifier( 'modifier_teleporting' )
@@ -95,24 +100,25 @@ function X.ConsiderCombo()
 			if glimer ~= nil and glimer:IsFullyCastable()
 			then
 				bot:Action_UseAbilityOnEntity( glimer, bot )
-				return
+				return true
 			end
 
 			local invissword = J.IsItemAvailable( 'item_invis_sword' )
 			if invissword ~= nil and invissword:IsFullyCastable()
 			then
 				bot:Action_UseAbility( invissword )
-				return
+				return true
 			end
 
 			local silveredge = J.IsItemAvailable( 'item_silver_edge' )
 			if silveredge ~= nil and silveredge:IsFullyCastable()
 			then
 				bot:Action_UseAbility( silveredge )
-				return
+				return true
 			end
 		end
 	end
+    return false
 end
 
 function X.ConsiderCrystalNova()
@@ -739,7 +745,7 @@ function X.ConsiderCrystalClone()
 	and bot:DistanceFromFountain() > 600
 	and bot:WasRecentlyDamagedByAnyHero(4.0)
 	then
-		return BOT_ACTION_DESIRE_MODERATE
+		return BOT_ACTION_DESIRE_MODERATE, J.Site.GetXUnitsTowardsLocation(bot, J.GetTeamFountain(), CrystalClone:GetSpecialValueInt('hop_distance'))
 	end
 
 	if J.IsGoingOnSomeone(bot)
@@ -749,7 +755,7 @@ function X.ConsiderCrystalClone()
 		and J.CanCastOnNonMagicImmune(botTarget)
 		and bot:IsFacingLocation(botTarget:GetLocation(), 30)
 		then
-			return BOT_ACTION_DESIRE_HIGH
+			return BOT_ACTION_DESIRE_HIGH, J.Site.GetXUnitsTowardsLocation(bot, J.GetTeamFountain(), CrystalClone:GetSpecialValueInt('hop_distance'))
 		end
 	end
 

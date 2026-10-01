@@ -92,13 +92,7 @@ local HeroPositions = {
     [HeroName.Clockwerk] = {0, 0, 0, 61, 71}, -- D2PT 7.41f
     [HeroName.Razor] = {51, 40, 63, 0, 0}, -- D2PT 7.41f
     [HeroName.Riki] = {52, 51, 0, 0, 0}, -- D2PT 7.41f
-    [HeroName.Rubick] = {
-        0,
-        35,
-        20,
-        40,
-        45
-    },
+    [HeroName.Rubick] = {0, 57, 0, 91, 81}, -- D2PT 7.41f
     [HeroName.SandKing] = {0, 43, 46, 0, 0}, -- D2PT 7.41f
     [HeroName.ShadowDeamon] = {0, 0, 0, 46, 38}, -- D2PT 7.41f
     [HeroName.ShadowShaman] = {0, 0, 0, 57, 83}, -- D2PT 7.41f

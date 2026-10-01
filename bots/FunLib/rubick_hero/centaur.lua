@@ -12,11 +12,16 @@ local botTarget
 
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
+    local abilityName = ability:GetName()
+    if abilityName ~= 'centaur_mount'
+    and abilityName ~= 'centaur_work_horse'
+    and abilityName ~= 'centaur_stampede'
+    and abilityName ~= 'centaur_hoof_stomp'
+    and abilityName ~= 'centaur_double_edge' then return nil end
 
-    if J.CanNotUseAbility(bot) then return end
+    if J.CanNotUseAbility(bot) then return false end
 
     botTarget = J.GetProperTarget(bot)
-    local abilityName = ability:GetName()
 
     if abilityName == 'centaur_mount'
     then
@@ -25,7 +30,7 @@ function X.ConsiderStolenSpell(ability)
         if HitchARideDesire > 0
         then
             bot:Action_UseAbilityOnEntity(HitchARide, HitchARideTarget)
-            return
+            return true
         end
     end
 
@@ -36,7 +41,7 @@ function X.ConsiderStolenSpell(ability)
         if WorkHorseDesire > 0
         then
             bot:Action_UseAbility(WorkHorse)
-            return
+            return true
         end
     end
 
@@ -47,18 +52,19 @@ function X.ConsiderStolenSpell(ability)
         if StampedeDesire > 0
         then
             bot:Action_UseAbility(Stampede)
-            return
+            return true
         end
     end
 
     if abilityName == 'centaur_hoof_stomp'
     then
         HoofStomp = ability
+        Stampede = bot:GetAbilityByName('centaur_stampede')
         HoofStompDesire = X.ConsiderHoofStomp()
         if HoofStompDesire > 0
         then
             bot:Action_UseAbility(HoofStomp)
-            return
+            return true
         end
     end
 
@@ -69,9 +75,10 @@ function X.ConsiderStolenSpell(ability)
         if DoubleEdgeDesire > 0
         then
             bot:Action_UseAbilityOnEntity(DoubleEdge, DoubleEdgeTarget)
-            return
+            return true
         end
     end
+    return false
 end
 
 function X.ConsiderHoofStomp()
@@ -122,7 +129,7 @@ function X.ConsiderHoofStomp()
             if nInRangeAlly ~= nil and nInRangeEnemy ~= nil
             and #nInRangeAlly >= #nInRangeEnemy
             then
-                if Stampede:IsTrained()
+                if Stampede ~= nil and Stampede:IsTrained()
                 and Stampede:IsFullyCastable()
                 then
                     if bot:GetMana() - HoofStomp:GetManaCost() > Stampede:GetManaCost()

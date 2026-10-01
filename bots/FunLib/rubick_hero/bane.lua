@@ -14,11 +14,15 @@ local nMP, nLV, hEnemyList, hAllyList
 
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
+    local abilityName = ability:GetName()
+    if abilityName ~= 'bane_enfeeble'
+    and abilityName ~= 'bane_brain_sap'
+    and abilityName ~= 'bane_fiends_grip'
+    and abilityName ~= 'bane_nightmare' then return nil end
 
-    if J.CanNotUseAbility(bot) then return end
+    if J.CanNotUseAbility(bot) then return false end
 
     botTarget = J.GetProperTarget(bot)
-    local abilityName = ability:GetName()
 
 	nLV = bot:GetLevel()
 	nMP = bot:GetMana() / bot:GetMaxMana()
@@ -33,7 +37,7 @@ function X.ConsiderStolenSpell(ability)
         if EnfeebleDesire > 0
         then
             bot:ActionQueue_UseAbilityOnEntity(Enfeeble, EnfeebleTarget)
-            return
+            return true
         end
     end
 
@@ -43,22 +47,8 @@ function X.ConsiderStolenSpell(ability)
         BrainSapDesire, BrainSapTarget = X.ConsiderBrainSap()
         if BrainSapDesire > 0
         then
-            BrainSap = ability
-
-            if abilityWFirstType == nil
-            and BrainSap:IsTrained()
-            then
-                abilityWFirstType = BrainSap:GetTargetType()
-            end
-
-            if abilityWFirstType ~= nil
-                and abilityWFirstType ~= BrainSap:GetTargetType()
-            then
-                bot:ActionQueue_UseAbilityOnEntity(BrainSap, BrainSap:GetLocation())
-            else
-                bot:ActionQueue_UseAbilityOnEntity(BrainSap, BrainSapTarget)
-            end
-            return
+            bot:ActionQueue_UseAbilityOnEntity(BrainSap, BrainSapTarget)
+            return true
         end
     end
 
@@ -70,7 +60,7 @@ function X.ConsiderStolenSpell(ability)
         then
             J.SetQueueToInvisible(bot)
             bot:ActionQueue_UseAbilityOnEntity(FiendsGrip, FiendsGripTarget)
-            return
+            return true
         end
     end
 
@@ -81,9 +71,10 @@ function X.ConsiderStolenSpell(ability)
         if NightmareDesire > 0
         then
             bot:ActionQueue_UseAbilityOnEntity(Nightmare, NightmareTarget)
-            return
+            return true
         end
     end
+    return false
 end
 
 function X.ConsiderEnfeeble()

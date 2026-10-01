@@ -14,11 +14,15 @@ local BlackKingBar
 
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
+    local abilityName = ability:GetName()
+    if abilityName ~= 'beastmaster_primal_roar'
+    and abilityName ~= 'beastmaster_summon_razorback'
+    and abilityName ~= 'beastmaster_summon_raptor'
+    and abilityName ~= 'beastmaster_wild_axes' then return nil end
 
-    if J.CanNotUseAbility(bot) then return end
+    if J.CanNotUseAbility(bot) then return false end
 
     botTarget = J.GetProperTarget(bot)
-    local abilityName = ability:GetName()
 
     if X.HasBlink()
     and abilityName == 'beastmaster_primal_roar'
@@ -38,7 +42,7 @@ function X.ConsiderStolenSpell(ability)
             bot:ActionQueue_UseAbilityOnLocation(Blink, BlinkLocation)
             bot:ActionQueue_Delay(0.1)
             bot:ActionQueue_UseAbilityOnEntity(PrimalRoar, BlinkRoarTarget)
-            return
+            return true
         end
     end
 
@@ -49,29 +53,29 @@ function X.ConsiderStolenSpell(ability)
         if PrimalRoarDesire > 0
         then
             bot:Action_UseAbilityOnEntity(PrimalRoar, PrimalRoarTarget)
-            return
+            return true
         end
     end
 
-    if abilityName == 'beastmaster_call_of_the_wild_razorback'
+    if abilityName == 'beastmaster_summon_razorback'
     then
         CallOfTheWildBoar = ability
         CallOfTheWildBoarDesire = X.ConsiderCallOfTheWildBoar()
         if CallOfTheWildBoarDesire > 0
         then
             bot:Action_UseAbility(CallOfTheWildBoar)
-            return
+            return true
         end
     end
 
-    if abilityName == 'beastmaster_call_of_the_wild_raptor'
+    if abilityName == 'beastmaster_summon_raptor'
     then
         CallOfTheWildHawk = ability
         CallOfTheWildHawkDesire = X.ConsiderCallOfTheWildHawk()
         if CallOfTheWildHawkDesire > 0
         then
             bot:Action_UseAbility(CallOfTheWildHawk)
-            return
+            return true
         end
     end
 
@@ -82,9 +86,10 @@ function X.ConsiderStolenSpell(ability)
         if WildAxesDesire > 0
         then
             bot:Action_UseAbilityOnLocation(WildAxes, WildAxesLocation)
-            return
+            return true
         end
     end
+    return false
 end
 
 function X.ConsiderWildAxes()

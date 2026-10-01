@@ -12,15 +12,18 @@ local nMP, hEnemyList, hAllyList
 
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
+    local abilityName = ability:GetName()
+    if abilityName ~= 'axe_culling_blade'
+    and abilityName ~= 'axe_berserkers_call'
+    and abilityName ~= 'axe_battle_hunger' then return nil end
 
-    if J.CanNotUseAbility(bot) then return end
+    if J.CanNotUseAbility(bot) then return false end
 
     nMP = bot:GetMana() / bot:GetMaxMana()
     hEnemyList = J.GetNearbyHeroes(bot, 1600, true, BOT_MODE_NONE )
 	hAllyList = J.GetAlliesNearLoc( bot:GetLocation(), 1600 )
 
     botTarget = J.GetProperTarget(bot)
-    local abilityName = ability:GetName()
 
     if abilityName == 'axe_culling_blade'
     then
@@ -29,7 +32,7 @@ function X.ConsiderStolenSpell(ability)
         if CullingBladeDesire > 0
         then
             bot:Action_UseAbilityOnEntity(CullingBlade, CullingBladeTarget)
-            return
+            return true
         end
     end
 
@@ -40,7 +43,7 @@ function X.ConsiderStolenSpell(ability)
         if BerserkersCallDesire > 0
         then
             bot:Action_UseAbility(BerserkersCall)
-            return
+            return true
         end
     end
 
@@ -51,9 +54,10 @@ function X.ConsiderStolenSpell(ability)
         if BattleHungerDesire > 0
         then
             bot:Action_UseAbilityOnEntity(BattleHunger, BattleHungerTarget)
-            return
+            return true
         end
     end
+    return false
 end
 
 function X.ConsiderBerserkersCall()
@@ -251,7 +255,7 @@ function X.ConsiderCullingBlade()
 	local nSkillLV = CullingBlade:GetLevel()
 	local nCastRange = J.GetProperCastRange(false, bot, CullingBlade:GetCastRange())
 
-	local nKillDamage = 150 + 100 * nSkillLV
+	local nKillDamage = CullingBlade:GetSpecialValueInt('damage')
 
 	local nInBonusEnemyList = J.GetAroundEnemyHeroList( nCastRange + 200 )
 
