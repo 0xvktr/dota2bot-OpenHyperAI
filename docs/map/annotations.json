@@ -1,0 +1,14 @@
+{
+  "note": "Measured in 7.41f lobbies with the ping recorder (FunLib/debug_dumps.lua). Seconds are within each minute.",
+  "pulls": [
+    { "camp": 1, "team": "radiant", "lane": "bot", "hit": [4090, -5390], "drag": [3830, -6250], "seconds": [16, 46],
+      "note": "Measured on a melee hero; neutrals meet the wave 5.6-6.3 s after the hit." },
+    { "camp": 26, "team": "dire", "lane": "top", "hit": [-4040, 5200], "drag": [-3840, 5930], "seconds": [17, 47],
+      "note": "Camp is closer to the lane; neutrals meet the wave 2.6-3.7 s after the hit." }
+  ],
+  "stacks": [],
+  "pings": [
+    { "label": "equilibrium (user estimate)", "x": 6225, "y": -4282 },
+    { "label": "equilibrium (user estimate)", "x": -6321, "y": 4220 }
+  ]
+}

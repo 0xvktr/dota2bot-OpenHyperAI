@@ -1,0 +1,419 @@
+<title>Bot Route Map</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a square survey chart in world coordinates on the left, an instrument panel (layers, selection, paths) on the right; stacks on narrow screens. */
+:root {
+  --bg: #e9ece4; --panel: #f6f7f2; --ink: #1c2521; --muted: #5a6860; --line: #c5cdc3;
+  --ground: #dbe2d3; --tree: #a3b99d; --lane: #b3955a; --grid: #c9d1c4;
+  --radiant: #2c7a4c; --dire: #b03a3a; --neutral: #6b7780;
+  --small: #4f86b5; --medium: #b98a1c; --large: #c25a1e; --ancient: #7a54b0;
+  --path: #cf2f6a; --focus: #1f5fd0;
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111714; --panel: #19211d; --ink: #e3eae4; --muted: #93a199; --line: #2d3a33;
+  --ground: #1a2420; --tree: #2f4d3b; --lane: #a58c57; --grid: #26322c;
+  --radiant: #59c486; --dire: #e8716f; --neutral: #9aa6ad;
+  --small: #74acd9; --medium: #dcb043; --large: #ec8a4d; --ancient: #b08fe2;
+  --path: #ff6f9f; --focus: #7fb0ff; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #111714; --panel: #19211d; --ink: #e3eae4; --muted: #93a199; --line: #2d3a33;
+  --ground: #1a2420; --tree: #2f4d3b; --lane: #a58c57; --grid: #26322c;
+  --radiant: #59c486; --dire: #e8716f; --neutral: #9aa6ad;
+  --small: #74acd9; --medium: #dcb043; --large: #ec8a4d; --ancient: #b08fe2;
+  --path: #ff6f9f; --focus: #7fb0ff; color-scheme: dark }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 14px; line-height: 1.45; }
+.page { max-width: 1500px; margin: 0 auto; padding-inline: 16px; padding-block: 14px 28px; display: flex; flex-direction: column; gap: 12px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; }
+h1 { font-family: var(--display); font-weight: 600; font-size: 30px; letter-spacing: .02em; margin: 0; text-transform: uppercase; }
+.sub { color: var(--muted); }
+.readout { margin-left: auto; font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; color: var(--ink); min-width: 0; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 14px; align-items: start; }
+@media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+.chart { position: relative; background: var(--ground); border: 1px solid var(--line); aspect-ratio: 1; max-width: 100%; max-height: calc(100vh - 110px); margin-inline: auto; width: 100%; }
+@media (min-width: 901px) { .chart { width: min(100%, calc(100vh - 110px)); } }
+svg#map { width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; user-select: none; }
+.zoom { position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 4px; }
+.zoom button { width: 32px; height: 32px; padding: 0; font-size: 17px; }
+.mode { position: absolute; left: 8px; top: 8px; font-family: var(--display); font-size: 15px; letter-spacing: .06em; text-transform: uppercase; background: var(--path); color: var(--panel); padding: 2px 9px; }
+
+button { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 3px; padding: 5px 10px; cursor: pointer; }
+button:hover { border-color: var(--muted); }
+button.on { background: var(--path); border-color: var(--path); color: var(--panel); }
+button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+input[type="text"], textarea { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 3px; padding: 5px 7px; width: 100%; min-width: 0; }
+textarea { font-family: var(--mono); font-size: 12px; resize: vertical; }
+
+.panel { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+section { background: var(--panel); border: 1px solid var(--line); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 17px; letter-spacing: .07em; text-transform: uppercase; margin: 0; color: var(--muted); }
+.layers { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; }
+.layers label { display: flex; align-items: center; gap: 6px; min-width: 0; cursor: pointer; }
+.sw { width: 11px; height: 11px; flex: none; border-radius: 2px; }
+.kv { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 12px; margin: 0; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; font-family: var(--mono); font-size: 12.5px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.paths { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.paths li { display: flex; gap: 6px; align-items: center; min-width: 0; }
+.paths li button.name { flex: 1; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.paths li button.name.current { border-color: var(--path); }
+.hint { color: var(--muted); font-size: 13px; margin: 0; }
+.status { color: var(--muted); font-size: 12.5px; min-height: 1.2em; }
+
+/* map marks: all colors from tokens */
+#map text { font-family: var(--display); fill: var(--ink); paint-order: stroke; stroke: var(--ground); stroke-linejoin: round; }
+.tree { fill: var(--tree); }
+.grid { stroke: var(--grid); fill: none; }
+.frame { fill: none; stroke: var(--muted); stroke-dasharray: 6 5; }
+.lane { fill: none; stroke: var(--lane); stroke-linejoin: round; stroke-linecap: round; opacity: .75; }
+.lane.dire { stroke-dasharray: 1 7; opacity: .9; }
+.t-radiant { fill: var(--radiant); stroke: var(--radiant); } .t-dire { fill: var(--dire); stroke: var(--dire); } .t-neutral { fill: var(--neutral); stroke: var(--neutral); }
+.c-small { fill: var(--small); stroke: var(--small); } .c-medium { fill: var(--medium); stroke: var(--medium); }
+.c-large { fill: var(--large); stroke: var(--large); } .c-ancient { fill: var(--ancient); stroke: var(--ancient); }
+.box { fill-opacity: .13; stroke-dasharray: 5 4; }
+.hollow { fill: var(--ground); }
+.obj { fill: var(--ground); stroke: var(--ink); }
+.pull { stroke: var(--ink); fill: none; } .pullfill { fill: var(--ink); stroke: none; }
+.eq { stroke: var(--ink); stroke-dasharray: 3 4; fill: none; }
+.upath { fill: none; stroke: var(--path); stroke-linejoin: round; stroke-linecap: round; }
+.upt { fill: var(--path); stroke: var(--ground); }
+.ping { fill: none; stroke: var(--path); }
+.sel { fill: none; stroke: var(--focus); }
+[vector-effect] { vector-effect: non-scaling-stroke; }
+</style>
+
+<div class="page">
+  <header>
+    <h1>Bot Route Map</h1>
+    <span class="sub" id="patch"></span>
+    <span class="readout" id="readout" aria-live="off">move over the map for world coordinates</span>
+  </header>
+
+  <div class="layout">
+    <div class="chart">
+      <svg id="map" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Schematic Dota 2 map in world coordinates"></svg>
+      <div class="mode" id="modeTag" hidden>drawing</div>
+      <div class="zoom">
+        <button type="button" id="zoomIn" aria-label="Zoom in">+</button>
+        <button type="button" id="zoomOut" aria-label="Zoom out">&minus;</button>
+        <button type="button" id="zoomReset" aria-label="Reset view" title="Reset view">&#8962;</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <section>
+        <h2>Layers</h2>
+        <div class="layers" id="layers"></div>
+      </section>
+
+      <section>
+        <h2>Selection</h2>
+        <div id="detail"><p class="hint">Click a camp, building or objective for its coordinates and data.</p></div>
+      </section>
+
+      <section>
+        <h2>Paths</h2>
+        <p class="hint">Turn on drawing, then click the map to add points. A click on a camp snaps to it and records its number.</p>
+        <div class="row">
+          <button type="button" id="drawToggle">Draw</button>
+          <button type="button" id="undoPt">Undo point</button>
+          <button type="button" id="newPath">New path</button>
+        </div>
+        <input type="text" id="pathName" placeholder="Path name, e.g. pos 1 farm 10-15 min" aria-label="Path name">
+        <ul class="paths" id="pathList"></ul>
+        <div class="row">
+          <button type="button" id="copyPaths">Copy paths as JSON</button>
+          <span class="status" id="copyStatus"></span>
+        </div>
+        <textarea id="pathJson" rows="5" readonly aria-label="Paths as JSON"></textarea>
+      </section>
+
+      <section>
+        <h2>Recorded pings</h2>
+        <p class="hint">Paste <code>OHA_DUMP|pin</code> lines from a console log to plot them.</p>
+        <textarea id="pingInput" rows="3" placeholder="OHA_DUMP|pin|n=7|time=6:43.3|ping=4127,-5435|..." aria-label="Ping log lines"></textarea>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+const D = /*MAP_DATA*/null;
+const A = /*ANNOTATIONS*/null;
+
+// ---- world <-> chart coordinates: the chart is Valve's minimap square; world y points up, SVG y down ----
+const MIN = D.minimap.min, MAX = D.minimap.max, SIZE = MAX[0] - MIN[0];
+const sx = x => x - MIN[0], sy = y => MAX[1] - y;
+const wx = x => x + MIN[0], wy = y => MAX[1] - y;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const fmt = n => Math.round(n).toLocaleString('en-US');
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const svg = document.getElementById('map');
+document.getElementById('patch').textContent = 'Patch ' + D.patch + ' · world coordinates, minimap frame ±' + MAX[0];
+
+// ---- features (for hover, click and snapping) ------------------------------------------------------------
+const features = [];
+const feat = (kind, x, y, title, rows) => { features.push({ kind, x, y, title, rows }); };
+const pullOf = key => A.pulls.find(p => p.camp === key);
+const stackOf = key => A.stacks.find(s => s.camp === key);
+const mmss = list => list.map(s => 'xx:' + String(s).padStart(2, '0')).join(', ');
+
+// ---- layers ----------------------------------------------------------------------------------------------
+const L = {};
+const layer = (id, label, swatch, on, html) => { L[id] = { label, swatch, on, html }; };
+const T = (x, y, size, text, anchor) => `<text x="${sx(x)}" y="${sy(y)}" font-size="${size}" stroke-width="${size * 0.28}" text-anchor="${anchor || 'middle'}">${esc(text)}</text>`;
+
+// grid every 2000 units, with the world bounds frame
+{
+  let g = '';
+  for (let v = -8000; v <= 8000; v += 2000) {
+    g += `<line class="grid" vector-effect="non-scaling-stroke" stroke-width="${v === 0 ? 1.4 : .7}" x1="${sx(v)}" y1="0" x2="${sx(v)}" y2="${SIZE}"/>`;
+    g += `<line class="grid" vector-effect="non-scaling-stroke" stroke-width="${v === 0 ? 1.4 : .7}" x1="0" y1="${sy(v)}" x2="${SIZE}" y2="${sy(v)}"/>`;
+    g += `<text x="${sx(v) + 60}" y="${SIZE - 90}" font-size="190" stroke-width="50" text-anchor="start" opacity=".6">${v}</text>`;
+    g += `<text x="70" y="${sy(v) - 60}" font-size="190" stroke-width="50" text-anchor="start" opacity=".6">${v}</text>`;
+  }
+  const b = D.worldBounds;
+  g += `<rect class="frame" vector-effect="non-scaling-stroke" stroke-width="1" x="${sx(b.min[0])}" y="${sy(b.max[1])}" width="${b.max[0] - b.min[0]}" height="${b.max[1] - b.min[1]}"/>`;
+  layer('grid', 'Grid (2000)', 'var(--grid)', true, g);
+}
+layer('trees', 'Trees', 'var(--tree)', true, D.trees.map(t => `<circle class="tree" cx="${sx(t[0])}" cy="${sy(t[1])}" r="62"/>`).join(''));
+layer('lanes', 'Creep lanes', 'var(--lane)', true, D.lanes.map(l =>
+  `<polyline class="lane ${l.team}" vector-effect="non-scaling-stroke" stroke-width="${l.team === 'radiant' ? 5 : 2.5}" points="${l.points.map(p => sx(p[0]) + ',' + sy(p[1])).join(' ')}"/>`).join(''));
+
+{ // buildings
+  let g = '';
+  for (const t of D.towers) {
+    const s = t.tier === 4 ? 150 : 210;
+    g += `<rect class="t-${t.team}" x="${sx(t.x) - s / 2}" y="${sy(t.y) - s / 2}" width="${s}" height="${s}" stroke="none"/>`;
+    if (t.tier < 4) g += T(t.x, t.y - 330, 230, 'T' + t.tier);
+    feat('tower', t.x, t.y, `${cap(t.team)} tier ${t.tier} tower` + (t.lane !== 'base' ? `, ${t.lane}` : ''), [['unit', t.name]]);
+  }
+  for (const b of D.barracks) {
+    g += `<rect class="t-${b.team} hollow" vector-effect="non-scaling-stroke" stroke-width="1.6" x="${sx(b.x) - 80}" y="${sy(b.y) - 80}" width="160" height="160"/>`;
+    feat('barracks', b.x, b.y, `${cap(b.team)} ${b.kind === 'range' ? 'ranged' : 'melee'} barracks, ${b.lane}`, [['unit', b.name]]);
+  }
+  for (const a of D.ancients) {
+    g += `<circle class="t-${a.team}" cx="${sx(a.x)}" cy="${sy(a.y)}" r="260" stroke="none"/>` + T(a.x, a.y - 470, 240, 'Ancient');
+    feat('ancient', a.x, a.y, `${cap(a.team)} Ancient`, []);
+  }
+  for (const f of D.fountains) {
+    g += `<circle class="t-${f.team} hollow" vector-effect="non-scaling-stroke" stroke-width="2" cx="${sx(f.x)}" cy="${sy(f.y)}" r="330"/>`;
+    feat('fountain', f.x, f.y, `${cap(f.team)} fountain`, []);
+  }
+  for (const s of D.shops) if (s.kind === 'secret') {
+    g += `<path class="obj" vector-effect="non-scaling-stroke" stroke-width="1.6" d="M${sx(s.x) - 130} ${sy(s.y) + 110}h260l-130 -230z"/>` + T(s.x, s.y - 330, 210, 'Secret shop');
+    feat('shop', s.x, s.y, 'Secret shop', []);
+  }
+  layer('buildings', 'Buildings', 'var(--radiant)', true, g);
+}
+
+{ // camps: spawn box, centre, number
+  let g = '';
+  for (const c of D.camps) {
+    const [x0, y0, x1, y1] = c.box;
+    g += `<rect class="box c-${c.type}" vector-effect="non-scaling-stroke" stroke-width="1.3" x="${sx(x0)}" y="${sy(y1)}" width="${x1 - x0}" height="${y1 - y0}"/>`;
+    g += `<circle class="c-${c.type}" cx="${sx(c.x)}" cy="${sy(c.y)}" r="150" stroke="none"/>`;
+    g += `<text x="${sx(c.x)}" y="${sy(c.y) + 95}" font-size="260" stroke="none" text-anchor="middle" style="fill:var(--panel)">${c.key}</text>`;
+    const pull = pullOf(c.key), stack = stackOf(c.key);
+    feat('camp', c.x, c.y, `Camp ${c.key} · ${c.type} · ${cap(c.team)}`, [
+      ['spawn box', `x ${x0} to ${x1}, y ${y0} to ${y1}`],
+      ['pull', pull ? `${mmss(pull.seconds)} → ${pull.lane} lane` : 'not measured'],
+      ['stack', stack ? mmss(stack.seconds) : 'not measured'],
+      ['map pull type', c.pullType], ['map aggro type', c.aggroType], ['volume', c.volume],
+    ].concat(pull ? [['pull note', pull.note]] : []));
+    features[features.length - 1].camp = c;
+  }
+  layer('camps', 'Neutral camps', 'var(--medium)', true, g);
+}
+
+{ // runes and objectives
+  let g = '';
+  const diamond = (x, y, r) => `M${sx(x)} ${sy(y) - r}l${r} ${r}l${-r} ${r}l${-r} ${-r}z`;
+  for (const r of D.runes) {
+    const label = r.kind === 'power' ? 'Power rune' : r.kind === 'bounty' ? 'Bounty rune' : 'Wisdom shrine';
+    g += `<path class="obj" vector-effect="non-scaling-stroke" stroke-width="1.6" d="${diamond(r.x, r.y, 150)}"/>` + T(r.x, r.y - 300, 210, r.kind === 'power' ? 'Power' : r.kind === 'bounty' ? 'Bounty' : 'Wisdom');
+    feat('rune', r.x, r.y, label + (r.position ? `, ${r.position}` : ''), []);
+  }
+  const mark = (list, label, short) => { for (const o of list) {
+    g += `<circle class="obj" vector-effect="non-scaling-stroke" stroke-width="1.6" cx="${sx(o.x)}" cy="${sy(o.y)}" r="140"/>` + T(o.x, o.y - 290, 210, short);
+    feat('objective', o.x, o.y, label, o.name ? [['name', o.name]] : []);
+  } };
+  mark(D.objectives.roshan, 'Roshan pit', 'Roshan');
+  mark(D.objectives.tormentors, 'Tormentor', 'Tormentor');
+  mark(D.objectives.lotusPools, 'Lotus pool', 'Lotus');
+  mark(D.objectives.twinGates, 'Twin gate', 'Gate');
+  mark(D.objectives.outposts, 'Outpost', 'Outpost');
+  for (const o of D.objectives.watchers) {
+    g += `<circle class="obj" vector-effect="non-scaling-stroke" stroke-width="1.2" cx="${sx(o.x)}" cy="${sy(o.y)}" r="70"/>`;
+    feat('objective', o.x, o.y, 'Watcher', []);
+  }
+  layer('objectives', 'Runes & objectives', 'var(--neutral)', true, g);
+}
+
+{ // measured pulls: hit spot, drag spot, timing
+  let g = '';
+  for (const p of A.pulls) {
+    const [hx, hy] = p.hit, [dx, dy] = p.drag;
+    const len = Math.hypot(dx - hx, dy - hy), ux = (dx - hx) / len, uy = (dy - hy) / len;
+    g += `<line class="pull" vector-effect="non-scaling-stroke" stroke-width="2" x1="${sx(hx)}" y1="${sy(hy)}" x2="${sx(dx)}" y2="${sy(dy)}"/>`;
+    g += `<path class="pullfill" d="M${sx(dx)} ${sy(dy)}L${sx(dx - ux * 190 - uy * 80)} ${sy(dy - uy * 190 + ux * 80)}L${sx(dx - ux * 190 + uy * 80)} ${sy(dy - uy * 190 - ux * 80)}z"/>`;
+    g += `<circle class="pullfill" cx="${sx(hx)}" cy="${sy(hy)}" r="70"/>`;
+    g += T(dx, uy < 0 ? dy - 400 : dy + 260, 230, 'pull ' + mmss(p.seconds)); // label beyond the drag spot
+    feat('pull', hx, hy, `Pull hit spot, camp ${p.camp}`, [['hit at', mmss(p.seconds)], ['note', p.note]]);
+    feat('pull', dx, dy, `Pull drag spot, camp ${p.camp}`, [['note', 'Where the neutrals meet the allied wave.']]);
+  }
+  layer('pulls', 'Pulls (measured)', 'var(--ink)', true, g);
+}
+
+{ // lane equilibrium: the point on each creep lane that is equally far from both tier 1 towers
+  let g = '';
+  for (const lane of ['top', 'mid', 'bot']) {
+    const t1 = team => D.towers.find(t => t.tier === 1 && t.lane === lane && t.team === team);
+    const r = t1('radiant'), d = t1('dire'), path = D.lanes.find(l => l.lane === lane && l.team === 'radiant').points;
+    let found = null;
+    for (let i = 0; i + 1 < path.length && !found; i++) {
+      const [ax, ay] = path[i], [bx, by] = path[i + 1], n = Math.ceil(Math.hypot(bx - ax, by - ay) / 20);
+      for (let k = 0; k <= n; k++) {
+        const x = ax + (bx - ax) * k / n, y = ay + (by - ay) * k / n;
+        if (Math.hypot(x - r.x, y - r.y) >= Math.hypot(x - d.x, y - d.y)) { found = { x, y, ux: (bx - ax), uy: (by - ay) }; break; }
+      }
+    }
+    if (!found) continue;
+    const len = Math.hypot(found.ux, found.uy), nx = -found.uy / len, ny = found.ux / len;
+    g += `<line class="eq" vector-effect="non-scaling-stroke" stroke-width="1.6" x1="${sx(found.x - nx * 520)}" y1="${sy(found.y - ny * 520)}" x2="${sx(found.x + nx * 520)}" y2="${sy(found.y + ny * 520)}"/>`;
+    g += T(found.x + nx * 560 + 20, found.y + ny * 560, 200, 'equilibrium', nx >= 0 ? 'start' : 'end');
+    feat('equilibrium', found.x, found.y, `Lane equilibrium, ${lane}`, [['meaning', 'Equal distance to both tier 1 towers. Past it, the wave is closer to the enemy tower: the pull trigger.']]);
+  }
+  for (const p of A.pings) {
+    g += `<circle class="ping" vector-effect="non-scaling-stroke" stroke-width="1.6" cx="${sx(p.x)}" cy="${sy(p.y)}" r="110"/>`;
+    feat('ping', p.x, p.y, p.label, []);
+  }
+  layer('equilibrium', 'Lane equilibrium', 'var(--muted)', true, g);
+}
+layer('pings', 'Pasted pings', 'var(--path)', true, '');
+layer('paths', 'My paths', 'var(--path)', true, '');
+
+svg.innerHTML = Object.keys(L).map(id => `<g id="L-${id}">${L[id].html}</g>`).join('') + '<g id="L-sel"></g>';
+const layersEl = document.getElementById('layers');
+for (const id of Object.keys(L)) {
+  const lab = document.createElement('label');
+  lab.innerHTML = `<input type="checkbox" id="lay-${id}" ${L[id].on ? 'checked' : ''}><span class="sw" style="background:${L[id].swatch}"></span><span>${L[id].label}</span>`;
+  lab.querySelector('input').addEventListener('change', e => { document.getElementById('L-' + id).setAttribute('visibility', e.target.checked ? 'visible' : 'hidden'); });
+  layersEl.appendChild(lab);
+}
+
+// ---- view: pan and zoom by changing the viewBox -------------------------------------------------------------
+const view = { x: 0, y: 0, w: SIZE };
+const applyView = () => svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.w}`);
+const clampView = () => {
+  view.w = Math.max(900, Math.min(SIZE, view.w));
+  view.x = Math.max(0, Math.min(SIZE - view.w, view.x));
+  view.y = Math.max(0, Math.min(SIZE - view.w, view.y));
+};
+const toChart = ev => { const r = svg.getBoundingClientRect(); return [view.x + (ev.clientX - r.left) / r.width * view.w, view.y + (ev.clientY - r.top) / r.height * view.w]; };
+const zoomAt = (cx, cy, factor) => { const w = view.w; view.w = w * factor; clampView(); const k = view.w / w; view.x = cx - (cx - view.x) * k; view.y = cy - (cy - view.y) * k; clampView(); applyView(); };
+applyView();
+svg.addEventListener('wheel', ev => { ev.preventDefault(); const [cx, cy] = toChart(ev); zoomAt(cx, cy, ev.deltaY > 0 ? 1.2 : 1 / 1.2); }, { passive: false });
+document.getElementById('zoomIn').addEventListener('click', () => zoomAt(view.x + view.w / 2, view.y + view.w / 2, 1 / 1.5));
+document.getElementById('zoomOut').addEventListener('click', () => zoomAt(view.x + view.w / 2, view.y + view.w / 2, 1.5));
+document.getElementById('zoomReset').addEventListener('click', () => { view.x = 0; view.y = 0; view.w = SIZE; applyView(); });
+
+// ---- hover readout, selection -------------------------------------------------------------------------------
+const readout = document.getElementById('readout'), detail = document.getElementById('detail');
+const campAt = (x, y) => D.camps.find(c => x >= c.box[0] && x <= c.box[2] && y >= c.box[1] && y <= c.box[3]);
+const nearest = (x, y, max) => { let best = null, bd = max; for (const f of features) { const d = Math.hypot(f.x - x, f.y - y); if (d < bd) { best = f; bd = d; } } return best; };
+const showDetail = f => {
+  const rows = [['position', `${fmt(f.x)}, ${fmt(f.y)}`]].concat(f.rows || []);
+  detail.innerHTML = `<strong>${esc(f.title)}</strong><dl class="kv">${rows.map(r => `<dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd>`).join('')}</dl>`;
+  document.getElementById('L-sel').innerHTML = `<circle class="sel" vector-effect="non-scaling-stroke" stroke-width="2.2" cx="${sx(f.x)}" cy="${sy(f.y)}" r="${Math.max(260, view.w / 60)}"/>`;
+};
+
+// ---- user paths ---------------------------------------------------------------------------------------------
+const store = { get() { try { return JSON.parse(localStorage.getItem('botRoutePaths') || 'null'); } catch (e) { return null; } },
+                set(v) { try { localStorage.setItem('botRoutePaths', JSON.stringify(v)); } catch (e) {} } };
+let paths = store.get() || [{ name: '', points: [] }];
+if (!Array.isArray(paths) || !paths.length) paths = [{ name: '', points: [] }];
+let current = paths.length - 1, drawing = false;
+const pathName = document.getElementById('pathName'), pathList = document.getElementById('pathList'), pathJson = document.getElementById('pathJson');
+const exportData = () => ({ patch: D.patch, paths: paths.filter(p => p.points.length).map(p => ({ name: p.name || 'unnamed', points: p.points })) });
+const renderPaths = () => {
+  let g = '';
+  paths.forEach((p, i) => {
+    if (!p.points.length) return;
+    const w = i === current ? 3.4 : 1.8, o = i === current ? 1 : .55;
+    g += `<polyline class="upath" vector-effect="non-scaling-stroke" stroke-width="${w}" opacity="${o}" points="${p.points.map(q => sx(q.x) + ',' + sy(q.y)).join(' ')}"/>`;
+    p.points.forEach((q, k) => {
+      g += `<circle class="upt" vector-effect="non-scaling-stroke" stroke-width="1" opacity="${o}" cx="${sx(q.x)}" cy="${sy(q.y)}" r="${i === current ? 95 : 70}"/>`;
+      if (i === current) g += `<text x="${sx(q.x) + 130}" y="${sy(q.y) - 110}" font-size="210" stroke-width="58" text-anchor="start" style="fill:var(--path)">${k + 1}</text>`;
+    });
+  });
+  document.getElementById('L-paths').innerHTML = g;
+  pathList.innerHTML = '';
+  paths.forEach((p, i) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<button type="button" class="name ${i === current ? 'current' : ''}">${esc(p.name || 'unnamed')} (${p.points.length})</button><button type="button" aria-label="Delete path">&times;</button>`;
+    li.children[0].addEventListener('click', () => { current = i; pathName.value = paths[i].name; renderPaths(); });
+    li.children[1].addEventListener('click', () => { paths.splice(i, 1); if (!paths.length) paths.push({ name: '', points: [] }); current = Math.min(current, paths.length - 1); pathName.value = paths[current].name; renderPaths(); });
+    pathList.appendChild(li);
+  });
+  pathJson.value = JSON.stringify(exportData());
+  store.set(paths);
+};
+pathName.value = paths[current].name;
+pathName.addEventListener('input', () => { paths[current].name = pathName.value; renderPaths(); });
+const setDrawing = on => { drawing = on; document.getElementById('drawToggle').classList.toggle('on', on); document.getElementById('drawToggle').textContent = on ? 'Drawing: on' : 'Draw'; document.getElementById('modeTag').hidden = !on; };
+document.getElementById('drawToggle').addEventListener('click', () => setDrawing(!drawing));
+document.getElementById('undoPt').addEventListener('click', () => { paths[current].points.pop(); renderPaths(); });
+document.getElementById('newPath').addEventListener('click', () => { paths.push({ name: '', points: [] }); current = paths.length - 1; pathName.value = ''; setDrawing(true); renderPaths(); pathName.focus(); });
+document.getElementById('copyPaths').addEventListener('click', () => {
+  const status = document.getElementById('copyStatus'), text = pathJson.value;
+  const fallback = () => { pathJson.focus(); pathJson.select(); status.textContent = 'Selected. Press Ctrl+C to copy.'; };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => { status.textContent = 'Copied.'; }, fallback); else fallback();
+});
+
+// ---- pointer handling: drag pans, a click selects or adds a path point ---------------------------------------
+let down = null;
+svg.addEventListener('pointerdown', ev => { down = { cx: ev.clientX, cy: ev.clientY, vx: view.x, vy: view.y, moved: false }; svg.setPointerCapture(ev.pointerId); });
+svg.addEventListener('pointermove', ev => {
+  const [cx, cy] = toChart(ev), x = wx(cx), y = wy(cy), camp = campAt(x, y);
+  readout.textContent = `x ${fmt(x)}  y ${fmt(y)}` + (camp ? `  · camp ${camp.key} (${camp.type}, ${camp.team})` : '');
+  if (down) {
+    const r = svg.getBoundingClientRect(), dx = ev.clientX - down.cx, dy = ev.clientY - down.cy;
+    if (Math.hypot(dx, dy) > 4) down.moved = true;
+    if (down.moved) { view.x = down.vx - dx / r.width * view.w; view.y = down.vy - dy / r.height * view.w; clampView(); applyView(); }
+  }
+});
+svg.addEventListener('pointerup', ev => {
+  const wasDrag = down && down.moved; down = null;
+  if (wasDrag) return;
+  const [cx, cy] = toChart(ev), x = wx(cx), y = wy(cy);
+  if (drawing) {
+    const camp = D.camps.find(c => Math.hypot(c.x - x, c.y - y) < 300);
+    paths[current].points.push(camp ? { x: camp.x, y: camp.y, camp: camp.key } : { x: Math.round(x), y: Math.round(y) });
+    renderPaths();
+  } else {
+    const f = nearest(x, y, Math.max(350, view.w / 40));
+    if (f) showDetail(f);
+  }
+});
+svg.addEventListener('pointercancel', () => { down = null; });
+
+// ---- pasted pings -------------------------------------------------------------------------------------------
+document.getElementById('pingInput').addEventListener('input', ev => {
+  let g = '';
+  for (const m of ev.target.value.matchAll(/pin\|n=(\d+)\|time=([^|]+)\|ping=(-?\d+),(-?\d+)/g)) {
+    const x = +m[3], y = +m[4];
+    g += `<circle class="ping" vector-effect="non-scaling-stroke" stroke-width="2" cx="${sx(x)}" cy="${sy(y)}" r="90"/>`;
+    g += `<text x="${sx(x) + 120}" y="${sy(y) + 70}" font-size="200" stroke-width="56" text-anchor="start" style="fill:var(--path)">${m[1]} · ${esc(m[2])}</text>`;
+  }
+  document.getElementById('L-pings').innerHTML = g;
+});
+
+renderPaths();
+</script>
