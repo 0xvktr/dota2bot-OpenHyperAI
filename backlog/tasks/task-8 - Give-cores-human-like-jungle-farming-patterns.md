@@ -4,7 +4,7 @@ title: Give cores human-like jungle farming patterns
 status: To Do
 assignee: []
 created_date: '2026-09-29 21:29'
-updated_date: '2026-09-30 15:22'
+updated_date: '2026-10-01 11:05'
 labels:
   - farming
 dependencies:
@@ -37,4 +37,6 @@ A human pos 1 beats these bots 90%+ of games by farming the jungle in the mid ga
 OpenAI Five (doc-1, sections 2-3): the final agent concentrated farm on its strongest heroes, and grouping as five on one lane was a trap that gave up the map's other resources. Farm priority should go to the strongest cores, and grouping should not stop side lanes and jungle being farmed. Related: TASK-22.
 
 Upstream issue 46: farming big stacks early is dangerous for weak heroes without area damage; stack farming should match the hero's clear speed and survivability.
+
+User clarification (2026-10-01): walking through a camp's spawn box is safe. Neutrals only aggro when a hero runs right through them, i.e. close to the spawner point where they stand (the numbered circle on the route map; its size is a symbol, not a range). The spawn box only matters for blocking the spawn at the minute mark. Farm routes can cut through camp boxes freely.
 <!-- SECTION:NOTES:END -->

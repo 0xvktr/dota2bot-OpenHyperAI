@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@claude'
 created_date: '2026-10-01 09:30'
-updated_date: '2026-10-01 09:36'
+updated_date: '2026-10-01 11:00'
 labels:
   - tooling
 dependencies: []
@@ -27,7 +27,7 @@ Farm routes, stacks, pulls, rotations and ward spots are all easier to plan on a
 - [x] #1 A script extracts the map geometry from the decompiled entity file into one data file, with camps numbered as in tests/neutral_spawners_741f.lua
 - [x] #2 The map page draws camps with numbers, types and spawn boxes, buildings, lanes, runes and objectives in world coordinates at Valve's minimap framing
 - [x] #3 Measured pull data (TASK-5) is shown on the map, with room for stack timings
-- [ ] #4 The user can draw a path on the map and export it as world coordinates
+- [x] #4 The user can draw a path on the map and export it as world coordinates
 - [ ] #5 Hovering shows world coordinates
 <!-- AC:END -->
 
@@ -44,4 +44,6 @@ Farm routes, stacks, pulls, rotations and ward spots are all easier to plan on a
 
 <!-- SECTION:NOTES:BEGIN -->
 Decompiled maps/dota/entities/default_ents.vents_c from the installed dota.vpk with the Source2Viewer CLI in .test-tools/resource-reader (output kept in scratch, not the repo). tools/map/extract_map.cjs -> docs/map/map_data.json (40 KB): 28 camps (all matched to the GetNeutralSpawners dump keys and boxes), 22 towers, 12 barracks, ancients, fountains, shops, 6 rune spots, Roshan pits, Tormentors, lotus pools, twin gates, outposts, watchers, the six creep lane paths (path_corner chains), 2306 trees, minimap frame +-9472. Each spawner also carries Valve's pulltype/aggrotype (the measured Radiant pull camp is pulltype 1). docs/map/annotations.json holds measured pulls, stacks (empty) and pings. tools/map/build_map.cjs + map_template.html -> docs/map/bot_route_map.html, published at https://claude.ai/artifact/CjFuAE1jMK8wz5QSZqJaLY. Rendered once in a browser: all layers draw, no console errors. Path drawing/export and hover coordinates are implemented but were not exercised interactively (the preview was a static snapshot); waiting on the user to try them.
+
+2026-10-01: the user drew paths on the published map and pasted the exported JSON (pull approach and drag line), so drawing and export work. Annotations updated with the new Radiant pull spots; page rebuilt and republished.
 <!-- SECTION:NOTES:END -->

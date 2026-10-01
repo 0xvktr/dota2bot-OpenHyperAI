@@ -21,7 +21,7 @@ const lua = [
     ...fs.readdirSync('bots/FunLib/rubick_hero').filter(f => f.endsWith('.lua')).map(f => 'bots/FunLib/rubick_hero/' + f),
     'bots/FunLib/lone_druid_items.lua', 'bots/BotLib/hero_lone_druid_bear.lua',
     ...heroNames.flatMap(n => [`bots/BotLib/hero_${n}.lua`, `${buildsDir}/${n}.lua`]),
-    'bots/FunLib/hero_build_preferences.lua', 'bots/FunLib/alchemist_scepter.lua', 'bots/FunLib/inventory_upkeep.lua', 'bots/FunLib/debug_dumps.lua', 'bots/FunLib/aba_ward_utility.lua', 'bots/mode_ward_generic.lua', 'bots/FunLib/aba_item.lua',
+    'bots/FunLib/hero_build_preferences.lua', 'bots/FunLib/alchemist_scepter.lua', 'bots/FunLib/inventory_upkeep.lua', 'bots/FunLib/debug_dumps.lua', 'bots/FunLib/lane_pull.lua', 'bots/mode_roam_generic.lua', 'bots/FunLib/aba_ward_utility.lua', 'bots/mode_ward_generic.lua', 'bots/FunLib/aba_item.lua',
     'bots/FunLib/aba_hero_pos_weights.lua', 'bots/FretBots/BonusTimers.lua', 'bots/Buff/NeutralItems.lua',
     'bots/FretBots/NeutralItems.lua', 'bots/hero_selection.lua', 'bots/item_purchase_generic.lua',
     'bots/ability_item_usage_generic.lua', 'bots/FunLib/jmz_func.lua', 'bots/FunLib/power_treads.lua',
@@ -155,6 +155,7 @@ for (const [, body] of read('bots/BotLib/hero_invoker.lua').matchAll(/^\s*\{([\d
 run(['tests/inventory_upkeep_spec.lua'], 'Inventory upkeep scenarios passed');
 run(['tests/ward_spawn_box_spec.lua'], 'Ward spawn box scenarios passed');
 run(['tests/ping_recorder_spec.lua'], 'Ping recorder scenarios passed');
+run(['tests/lane_pull_spec.lua'], 'Lane pull scenarios passed');
 
 // 5. Shared logic the build migration changed, executed from the real source.
 // Draft scoring with controlled positive/negative matchups.

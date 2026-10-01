@@ -4,7 +4,7 @@ title: Supports stack neutral camps for their cores
 status: To Do
 assignee: []
 created_date: '2026-09-29 21:29'
-updated_date: '2026-09-30 15:22'
+updated_date: '2026-10-01 11:05'
 labels:
   - farming
 dependencies: []
@@ -36,4 +36,6 @@ Supports never stack camps, so carries never reach the farm a human carry gets f
 OpenAI Five (doc-1, section 7): stack timing must tolerate the ~0.12-0.2 s think step: aggro inside a window and leave the spawn box by a deadline, rather than acting at an exact second.
 
 Upstream issue 46 (original author): stack by timing the aggro and walking away, but do not send weak or non-AoE heroes to farm big stacks too early, because bots die there.
+
+User clarification (2026-10-01): walking through a camp's spawn box is safe. Neutrals only aggro when a hero runs right through them, i.e. close to the spawner point where they stand (the numbered circle on the route map; its size is a symbol, not a range). The spawn box only matters for blocking the spawn at the minute mark. Relevant for stack approach and exit paths.
 <!-- SECTION:NOTES:END -->
