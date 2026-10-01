@@ -77,669 +77,395 @@ function X.MinionThink(hMinionUnit)
     Minion.MinionThink(hMinionUnit)
 end
 
-local Fissure       = bot:GetAbilityByName('earthshaker_fissure')
-local EnchantTotem  = bot:GetAbilityByName('earthshaker_enchant_totem')
-local Aftershock    = bot:GetAbilityByName('earthshaker_aftershock')
-local EchoSlam      = bot:GetAbilityByName('earthshaker_echo_slam')
+local Fissure, EnchantTotem, Aftershock, EchoSlam
+local pendingRidge, ridges = nil, {}
+local tickUnits
+local function Refresh()
+    tickUnits=nil
+    Fissure = bot:GetAbilityByName('earthshaker_fissure')
+    EnchantTotem = bot:GetAbilityByName('earthshaker_enchant_totem')
+    Aftershock = bot:GetAbilityByName('earthshaker_aftershock')
+    EchoSlam = bot:GetAbilityByName('earthshaker_echo_slam')
+end
+Refresh()
 
-local FissureDesire, FissureLocation
-local EnchantTotemDesire, EnchantTotemLocation, WantToJump
-local EchoSlamDesire
-
-local BlinkSlamDesire, BlinkSlamLocation
-local TotemSlamDesire, TotemSlamLocation
-
-local Blink
-
-local botTarget
-
-function X.SkillsComplement()
-	if J.CanNotUseAbility(bot)
-    or bot:NumQueuedActions() > 0
-    then return end
-
-    botTarget = J.GetProperTarget(bot)
-
-    BlinkSlamDesire, BlinkSlamLocation = X.ConsiderBlinkSlam()
-    if BlinkSlamDesire > 0
-    then
-        bot:Action_ClearActions(false)
-
-        bot:ActionQueue_UseAbilityOnLocation(Blink, BlinkSlamLocation)
-        bot:ActionQueue_Delay(0.1)
-        bot:ActionQueue_UseAbility(EchoSlam)
-        return
-    end
-
-    TotemSlamDesire, TotemSlamLocation = X.ConsiderTotemSlam()
-    if TotemSlamDesire > 0
-    then
-        local nLeapDuration = EnchantTotem:GetSpecialValueFloat('scepter_leap_duration')
-
-        bot:Action_ClearActions(false)
-        bot:ActionQueue_UseAbilityOnLocation(EnchantTotem, TotemSlamLocation)
-        bot:ActionQueue_Delay(nLeapDuration + 0.1)
-        bot:ActionQueue_UseAbility(EchoSlam)
-        return
-    end
-
-    EchoSlamDesire = X.ConsiderEchoSlam()
-    if EchoSlamDesire > 0
-    then
-        bot:Action_UseAbility(EchoSlam)
-        return
-    end
-
-    EnchantTotemDesire, EnchantTotemLocation, WantToJump = X.ConsiderEnchantTotem()
-    if EnchantTotemDesire > 0
-    then
-        if bot:HasScepter()
-        then
-            if WantToJump
-            then
-                bot:Action_UseAbilityOnLocation(EnchantTotem, EnchantTotemLocation)
-            else
-                bot:Action_UseAbilityOnEntity(EnchantTotem, bot)
-            end
-
-            return
-        else
-            bot:Action_UseAbility(EnchantTotem)
-            return
+local function BonusRange()
+    local bonus = 0
+    for slot = 0, 5 do
+        local item = bot:GetItemInSlot(slot)
+        if item ~= nil and item:GetName() == 'item_aether_lens' then
+            bonus = item:GetSpecialValueInt('cast_range_bonus'); break
         end
     end
-
-    FissureDesire, FissureLocation = X.ConsiderFissure()
-    if FissureDesire > 0
-    then
-        bot:Action_UseAbilityOnLocation(Fissure, FissureLocation)
-        return
+    local supremacy = bot:GetAbilityByName('rubick_arcane_supremacy')
+    if supremacy ~= nil and supremacy:IsTrained() and not J.HasBreakModifier(bot) then
+        bonus = bonus + supremacy:GetSpecialValueInt('cast_range')
     end
+    return bonus
+end
+local function CastRange(ability) return ability:GetCastRange() + BonusRange() end
+local function ShockAvailable()
+    return Aftershock ~= nil and not Aftershock:IsNull() and Aftershock:IsTrained() and not J.HasBreakModifier(bot)
+end
+local function DamageUnit(unit)
+    return J.IsValid(unit) and unit:GetTeam() ~= bot:GetTeam() and not unit:IsInvulnerable() and not unit:IsMagicImmune()
+end
+local function Enemy(unit)
+    return J.IsValidHero(unit) and DamageUnit(unit) and not J.IsSuspiciousIllusion(unit)
+        and not unit:HasModifier('modifier_enigma_black_hole_pull')
+        and not unit:HasModifier('modifier_faceless_void_chronosphere_freeze')
+        and not unit:HasModifier('modifier_necrolyte_reapers_scythe')
+end
+local function Units()
+    if tickUnits==nil then
+        tickUnits={}
+        local seen={}
+        for _,unit in pairs(GetUnitList(UNIT_LIST_ENEMIES)) do tickUnits[#tickUnits+1]=unit;seen[unit]=true end
+        for _,unit in pairs(bot:GetNearbyNeutralCreeps(1600)) do
+            if not seen[unit] then tickUnits[#tickUnits+1]=unit;seen[unit]=true end
+        end
+    end
+    return tickUnits
+end
+local function Bound(point, range)
+    local offset = point - bot:GetLocation()
+    return offset:Length2D() > range and bot:GetLocation() + offset:Normalized() * range or point
+end
+local function LineHit(unit, origin, endpoint, radius, delay)
+    local offset = J.GetCorrectLoc(unit, delay) - origin
+    local line = endpoint - origin
+    local length = line:Length2D()
+    if length == 0 then return offset:Length2D() <= radius end
+    local direction = line:Normalized()
+    local along = math.max(0, math.min(length, offset.x * direction.x + offset.y * direction.y))
+    return (offset - direction * along):Length2D() <= radius
+end
+local function FissureEnd(point)
+    return bot:GetLocation() + (point - bot:GetLocation()):Normalized() * CastRange(Fissure)
+end
+local function FissurePoint(unit)
+    if not DamageUnit(unit) then return nil end
+    local point = Bound(J.GetCorrectLoc(unit, Fissure:GetCastPoint()), CastRange(Fissure))
+    if LineHit(unit, bot:GetLocation(), FissureEnd(point), Fissure:GetSpecialValueInt('fissure_radius'), Fissure:GetCastPoint()) then return point end
+    return nil
+end
+local function Cross(a,b) return a.x*b.y-a.y*b.x end
+local function CutsRetreat(point)
+    local origin, wall = bot:GetLocation(), FissureEnd(point)-bot:GetLocation()
+    for _, ally in pairs(J.GetNearbyHeroes(bot, 1600, false, BOT_MODE_NONE)) do
+        if J.IsValidHero(ally) and not J.IsSuspiciousIllusion(ally) and J.IsRetreating(ally)
+            and ally:WasRecentlyDamagedByAnyHero(2) then
+            local route = (J.GetTeamFountain()-ally:GetLocation()):Normalized()*600
+            local difference = ally:GetLocation()-origin
+            local denominator = Cross(wall,route)
+            if math.abs(denominator)>0.001 then
+                local t,u = Cross(difference,route)/denominator, Cross(difference,wall)/denominator
+                if t>0.05 and t<1 and u>0.05 and u<1 then return true end
+            end
+        end
+    end
+    return false
+end
+local function RecordFissure(point)
+    pendingRidge = {ability=Fissure, origin=bot:GetLocation(), endpoint=FissureEnd(point),
+        earliest=DotaTime()+Fissure:GetCastPoint()}
+    bot:Action_UseAbilityOnLocation(Fissure, point)
+end
+local function ObserveRidges()
+    local now = DotaTime()
+    if pendingRidge ~= nil then
+        if Fissure ~= pendingRidge.ability or now > pendingRidge.earliest+2 then pendingRidge=nil
+        elseif now>=pendingRidge.earliest and Fissure:GetCooldownTimeRemaining()>0 then
+            table.insert(ridges,{origin=pendingRidge.origin,endpoint=pendingRidge.endpoint,
+                expires=pendingRidge.earliest+Fissure:GetSpecialValueFloat('fissure_duration')})
+            pendingRidge=nil
+        end
+    end
+    for index=#ridges,1,-1 do if ridges[index].expires<=now then table.remove(ridges,index) end end
+end
+local function ShockHit(unit, point, delay)
+    if not ShockAvailable() or not DamageUnit(unit) then return false end
+    if (J.GetCorrectLoc(unit,delay)-point):Length2D()<=Aftershock:GetSpecialValueInt('aftershock_range') then return true end
+    if bot:HasShard() and Fissure~=nil and not Fissure:IsNull() then
+        for _,ridge in pairs(ridges) do
+            if ridge.expires>DotaTime()+delay and LineHit(unit,ridge.origin,ridge.endpoint,
+                Fissure:GetSpecialValueInt('fissure_radius'),delay) then return true end
+        end
+    end
+    return false
 end
 
 function X.ConsiderFissure()
-    if not Fissure:IsFullyCastable()
-    then
-        return BOT_ACTION_DESIRE_NONE, 0
-    end
-
-    local nCastRange = J.GetProperCastRange(false, bot, Fissure:GetCastRange())
-	local nCastPoint = Fissure:GetCastPoint()
-	local nRadius = Fissure:GetSpecialValueInt('fissure_radius')
-    local nDamage = Fissure:GetSpecialValueInt('fissure_damage')
-    local nAbilityLevel = Fissure:GetLevel()
-
-    local nEnemyHeroes = J.GetNearbyHeroes(bot,nCastRange, true, BOT_MODE_NONE)
-    for _, enemyHero in pairs(nEnemyHeroes)
-    do
-        if J.IsValidHero(enemyHero)
-        and J.CanCastOnNonMagicImmune(enemyHero)
-        and not J.IsSuspiciousIllusion(enemyHero)
-        then
-            if enemyHero:IsChanneling() or J.IsCastingUltimateAbility(enemyHero)
-            then
-                return BOT_ACTION_DESIRE_HIGH, enemyHero:GetLocation()
-            end
-
-            if J.CanKillTarget(enemyHero, nDamage, DAMAGE_TYPE_MAGICAL)
-            and not enemyHero:HasModifier('modifier_abaddon_borrowed_time')
-            and not enemyHero:HasModifier('modifier_dazzle_shallow_grave')
-            and not enemyHero:HasModifier('modifier_necrolyte_reapers_scythe')
-            and not enemyHero:HasModifier('modifier_oracle_false_promise_timer')
-            and not enemyHero:HasModifier('modifier_templar_assassin_refraction_absorb')
-            then
-                return BOT_ACTION_DESIRE_HIGH, enemyHero:GetExtrapolatedLocation(nCastPoint)
-            end
-        end
-    end
-
-    local nAllyHeroes = J.GetNearbyHeroes(bot,1400, false, BOT_MODE_NONE)
-    for _, allyHero in pairs(nAllyHeroes)
-    do
-        local nAllyInRangeEnemy = J.GetNearbyHeroes(allyHero, 1200, true, BOT_MODE_NONE)
-
-        if J.IsValidHero(allyHero)
-        and J.IsRetreating(allyHero)
-        and allyHero:GetActiveModeDesire() >= 0.5
-        and not allyHero:IsIllusion()
-        then
-            if nAllyInRangeEnemy ~= nil and #nAllyInRangeEnemy >= 1
-            and J.IsValidHero(nAllyInRangeEnemy[1])
-            and J.CanCastOnNonMagicImmune(nAllyInRangeEnemy[1])
-            and J.IsInRange(bot, nAllyInRangeEnemy[1], nCastRange)
-            and J.IsChasingTarget(nAllyInRangeEnemy[1], allyHero)
-            and not J.IsChasingTarget(nAllyInRangeEnemy[1], bot)
-            and not J.IsDisabled(nAllyInRangeEnemy[1])
-            and not J.IsTaunted(nAllyInRangeEnemy[1])
-            and not J.IsSuspiciousIllusion(nAllyInRangeEnemy[1])
-            and not nAllyInRangeEnemy[1]:HasModifier('modifier_enigma_black_hole_pull')
-            and not nAllyInRangeEnemy[1]:HasModifier('modifier_faceless_void_chronosphere_freeze')
-            and not nAllyInRangeEnemy[1]:HasModifier('modifier_necrolyte_reapers_scythe')
-            then
-                return BOT_ACTION_DESIRE_HIGH, nAllyInRangeEnemy[1]:GetExtrapolatedLocation(nCastPoint + 0.1)
-            end
-        end
-    end
-
-	if J.IsInTeamFight(bot)
-	then
-        local nInRangeEnemy = J.GetEnemiesNearLoc(bot:GetLocation(), nCastRange + 300)
-        local target = nil
-        local dmg = 0
-
-        for _, enemyHero in pairs(nInRangeEnemy)
-        do
-            if J.IsValidHero(enemyHero)
-            and J.CanCastOnNonMagicImmune(enemyHero)
-            and not J.IsSuspiciousIllusion(enemyHero)
-            and not J.IsDisabled(enemyHero)
-            and not enemyHero:HasModifier('modifier_faceless_void_chronosphere')
-            and not enemyHero:HasModifier('modifier_necrolyte_reapers_scythe')
-            then
-                local currDmg = enemyHero:GetEstimatedDamageToTarget(false, bot, 5, DAMAGE_TYPE_ALL)
-                if currDmg > dmg
-                then
-                    dmg = currDmg
-                    target = enemyHero
+    if not J.CanCastAbility(Fissure) then return BOT_ACTION_DESIRE_NONE end
+    local units = Units()
+    for _,enemy in pairs(units) do
+        if Enemy(enemy) then
+            local point = FissurePoint(enemy)
+            if point ~= nil then
+                if enemy:IsChanneling() or J.IsCastingUltimateAbility(enemy) then return BOT_ACTION_DESIRE_HIGH,point,'interrupt' end
+                local damage = Fissure:GetSpecialValueInt('fissure_damage')
+                if ShockHit(enemy,bot:GetLocation(),Fissure:GetCastPoint()) then damage=damage+Aftershock:GetSpecialValueInt('aftershock_damage') end
+                if not J.CannotBeKilled(bot,enemy) and J.WillKillTarget(enemy,damage,DAMAGE_TYPE_MAGICAL,Fissure:GetCastPoint()) then
+                    return BOT_ACTION_DESIRE_HIGH,point,'lethal'
                 end
             end
         end
-
-        if target ~= nil
-        then
-            nInRangeEnemy = J.GetEnemiesNearLoc(target:GetLocation(), nRadius)
-            if nInRangeEnemy ~= nil and #nInRangeEnemy >= 1
-            then
-                return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(nInRangeEnemy)
-            else
-                return BOT_ACTION_DESIRE_HIGH, target:GetExtrapolatedLocation(nCastPoint)
-            end
-        end
-	end
-
-	if J.IsGoingOnSomeone(bot)
-	then
-		if J.IsValidTarget(botTarget)
-        and J.CanCastOnNonMagicImmune(botTarget)
-        and J.IsInRange(bot, botTarget, nCastRange)
-        and not J.IsSuspiciousIllusion(botTarget)
-        and not J.IsDisabled(botTarget)
-        and not botTarget:HasModifier('modifier_faceless_void_chronosphere')
-        and not botTarget:HasModifier('modifier_necrolyte_reapers_scythe')
-		then
-            local nInRangeAlly = J.GetNearbyHeroes(botTarget, 1200, true, BOT_MODE_NONE)
-            local nInRangeEnemy = J.GetNearbyHeroes(botTarget, 1200, false, BOT_MODE_NONE)
-
-            if nInRangeAlly ~= nil and nInRangeEnemy ~= nil
-            and #nInRangeAlly >= #nInRangeEnemy
-            then
-                nInRangeEnemy = J.GetEnemiesNearLoc(botTarget:GetLocation(), nRadius)
-                if nInRangeEnemy ~= nil and #nInRangeEnemy >= 1
-                then
-                    return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(nInRangeEnemy)
-                else
-                    return BOT_ACTION_DESIRE_HIGH, botTarget:GetExtrapolatedLocation(nCastPoint)
+    end
+    local allies = J.GetNearbyHeroes(bot,1600,false,BOT_MODE_NONE)
+    table.insert(allies,bot)
+    for _,ally in pairs(allies) do
+        if J.IsValidHero(ally) and J.IsRetreating(ally) and ally:WasRecentlyDamagedByAnyHero(2) then
+            for _,enemy in pairs(units) do
+                if Enemy(enemy) and not J.IsDisabled(enemy) and J.IsChasingTarget(enemy,ally) then
+                    local point=FissurePoint(enemy)
+                    if point~=nil and not CutsRetreat(point) then return BOT_ACTION_DESIRE_HIGH,point,'save' end
                 end
             end
-		end
-	end
-
-	if J.IsRetreating(bot)
-    then
-        local nInRangeAlly = J.GetNearbyHeroes(bot,1200, false, BOT_MODE_NONE)
-        local nInRangeEnemy = J.GetNearbyHeroes(bot,1200, true, BOT_MODE_NONE)
-
-        if nInRangeAlly ~= nil and nInRangeEnemy ~= nil
-        and #nInRangeEnemy > #nInRangeAlly
-        and J.IsValidHero(nInRangeEnemy[1])
-        and J.CanCastOnNonMagicImmune(nInRangeEnemy[1])
-        and J.IsInRange(bot, nInRangeEnemy[1], nCastRange)
-        and J.IsChasingTarget(nInRangeEnemy[1], bot)
-        and bot:WasRecentlyDamagedByAnyHero(2)
-        and not J.IsInRange(bot, nInRangeEnemy[1], 300)
-        and not J.IsSuspiciousIllusion(nInRangeEnemy[1])
-        and not J.IsDisabled(nInRangeEnemy[1])
-        then
-            nInRangeEnemy = J.GetEnemiesNearLoc(nInRangeEnemy[1]:GetLocation(), nRadius)
-            if nInRangeEnemy ~= nil and #nInRangeEnemy >= 1
-            then
-                return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(nInRangeEnemy)
-            else
-                return BOT_ACTION_DESIRE_HIGH, nInRangeEnemy[1]:GetLocation()
-            end
         end
     end
-
-    nEnemyHeroes = J.GetNearbyHeroes(bot,1600, true, BOT_MODE_NONE)
-	if (J.IsPushing(bot) or J.IsDefending(bot))
-    and J.GetManaAfter(Fissure:GetManaCost()) * bot:GetMana() > EchoSlam:GetManaCost()
-    and nAbilityLevel >= 3
-    and nEnemyHeroes ~= nil and #nEnemyHeroes == 0
-    and not J.IsThereNonSelfCoreNearby(1000)
-	then
-		local nEnemyLaneCreeps = bot:GetNearbyLaneCreeps(1600, true)
-		if nEnemyLaneCreeps ~= nil and #nEnemyLaneCreeps >= 4
-		and J.CanBeAttacked(nEnemyLaneCreeps[1])
-		then
-            return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(nEnemyLaneCreeps)
-		end
-	end
-
-	--Farming: use Fissure on neutral creeps
-	if J.IsFarming(bot) and J.GetManaAfter(Fissure:GetManaCost()) > 0.4
-	and nAbilityLevel >= 2
-	then
-		local nNeutralCreeps = bot:GetNearbyNeutralCreeps(nCastRange)
-		if nNeutralCreeps ~= nil and #nNeutralCreeps >= 3
-		then
-			return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(nNeutralCreeps)
-		end
-		local nLaneCreeps = bot:GetNearbyLaneCreeps(nCastRange, true)
-		if nLaneCreeps ~= nil and #nLaneCreeps >= 4
-		and J.CanBeAttacked(nLaneCreeps[1])
-		then
-			return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(nLaneCreeps)
-		end
-	end
-
-	--Roshan: use Fissure on Roshan
-	if J.IsDoingRoshan(bot)
-	then
-		if J.IsRoshan(botTarget)
-		and J.IsInRange(bot, botTarget, nCastRange)
-		and J.GetManaAfter(Fissure:GetManaCost()) > 0.4
-		then
-			return BOT_ACTION_DESIRE_HIGH, botTarget:GetLocation()
-		end
-	end
-
-    return BOT_ACTION_DESIRE_NONE, 0
-end
-
-function X.ConsiderEnchantTotem()
-    if not EnchantTotem:IsFullyCastable()
-    then
-        return BOT_ACTION_DESIRE_NONE, 0, false
-    end
-
-    local nCastRange = bot:HasScepter() and EnchantTotem:GetSpecialValueInt('distance_scepter') or 0
-	local nRadius = Aftershock:GetSpecialValueInt('aftershock_range')
-    local nLeapDuration = EnchantTotem:GetSpecialValueFloat('scepter_leap_duration')
-
-	if bot:HasScepter() and J.IsStuck(bot)
-	then
-		return BOT_ACTION_DESIRE_HIGH, J.Site.GetXUnitsTowardsLocation(bot, J.GetTeamFountain(), nCastRange), true
-	end
-
-	if J.IsInTeamFight(bot)
-	then
-        local nInRangeEnemy = J.GetEnemiesNearLoc(bot:GetLocation(), nRadius)
-        local nInRangeIllusion = J.GetIllusionsNearLoc(bot:GetLocation(), nRadius)
-
-		if bot:HasScepter()
-        then
-            local nLocationAoE = bot:FindAoELocation(true, true, bot:GetLocation(), nCastRange, nRadius, nLeapDuration, 0)
-            nInRangeEnemy = J.GetEnemiesNearLoc(nLocationAoE.targetloc, nRadius)
-
-            if nInRangeEnemy ~= nil and #nInRangeEnemy >= 2
-            then
-                return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(nInRangeEnemy), true
-            end
-
-            nInRangeEnemy = J.GetEnemiesNearLoc(bot:GetLocation(), 1600)
-            if nInRangeIllusion ~= nil and #nInRangeIllusion >= 2
-            and nInRangeEnemy ~= nil and #nInRangeEnemy == 0
-            then
-                return BOT_ACTION_DESIRE_HIGH, 0, false
-            end
-		else
-            if nInRangeEnemy ~= nil and #nInRangeEnemy >= 2
-            then
-                return BOT_ACTION_DESIRE_HIGH, 0, false
-            end
-
-            nInRangeEnemy = J.GetEnemiesNearLoc(bot:GetLocation(), 1600)
-            if nInRangeIllusion ~= nil and #nInRangeIllusion >= 2
-            and nInRangeEnemy ~= nil and #nInRangeEnemy == 0
-            then
-                return BOT_ACTION_DESIRE_HIGH, 0, false
-            end
-		end
-	end
-
-	if J.IsGoingOnSomeone(bot)
-	then
-		if J.IsValidTarget(botTarget)
-        and J.CanCastOnNonMagicImmune(botTarget)
-        and not J.IsSuspiciousIllusion(botTarget)
-        and not J.IsDisabled(botTarget)
-        and not botTarget:HasModifier('modifier_abaddon_borrowed_time')
-        and not botTarget:HasModifier('modifier_necrolyte_reapers_scythe')
-		then
-            local nInRangeAlly = J.GetNearbyHeroes(bot,1000, false, BOT_MODE_NONE)
-            local nInRangeEnemy = J.GetNearbyHeroes(bot,800, true, BOT_MODE_NONE)
-
-            if nInRangeAlly ~= nil and nInRangeEnemy ~= nil
-            and #nInRangeAlly >= #nInRangeEnemy
-            then
-                if bot:HasScepter()
-                then
-                    if J.IsInRange(bot, botTarget, nCastRange)
-                    and not J.IsInRange(bot, botTarget, nRadius)
-                    and not botTarget:HasModifier('modifier_faceless_void_chronosphere')
-                    then
-                        return BOT_ACTION_DESIRE_HIGH, botTarget:GetExtrapolatedLocation(nLeapDuration), true
-                    else
-                        if J.IsInRange(bot, botTarget, nRadius - 50)
-                        then
-                            return BOT_ACTION_DESIRE_HIGH, 0, false
-                        end
+    if J.IsInTeamFight(bot,1200) then
+        for _,enemy in pairs(units) do
+            if Enemy(enemy) then
+                local point,count=FissurePoint(enemy),0
+                if point~=nil and not CutsRetreat(point) then
+                    for _,other in pairs(units) do
+                        if Enemy(other) and LineHit(other,bot:GetLocation(),FissureEnd(point),Fissure:GetSpecialValueInt('fissure_radius'),Fissure:GetCastPoint()) then count=count+1 end
                     end
-                else
-                    if J.IsInRange(bot, botTarget, nRadius - 50)
-                    then
-                        return BOT_ACTION_DESIRE_HIGH, 0, false
-                    end
-                end
-            end
-		end
-	end
-
-    if J.IsRetreating(bot)
-    and bot:GetActiveModeDesire() > 0.7
-    then
-        local nInRangeEnemy = J.GetNearbyHeroes(bot,1200, true, BOT_MODE_NONE)
-        for _, enemyHero in pairs(nInRangeEnemy)
-        do
-            if J.IsValidHero(enemyHero)
-            and J.IsChasingTarget(enemyHero, bot)
-            and not J.IsSuspiciousIllusion(enemyHero)
-            and not J.IsDisabled(enemyHero)
-            then
-                local nInRangeAlly = J.GetNearbyHeroes(enemyHero, 1200, true, BOT_MODE_NONE)
-                local nTargetInRangeAlly = J.GetNearbyHeroes(enemyHero, 1200, false, BOT_MODE_NONE)
-
-                if nInRangeAlly ~= nil and nTargetInRangeAlly ~= nil
-                and ((#nTargetInRangeAlly > #nInRangeAlly)
-                    or bot:WasRecentlyDamagedByAnyHero(2))
-                then
-                    if bot:HasScepter()
-                    then
-                        return BOT_ACTION_DESIRE_HIGH, J.Site.GetXUnitsTowardsLocation(bot, J.GetTeamFountain(), nCastRange), true
-                    else
-                        if J.IsInRange(bot, enemyHero, nRadius)
-                        then
-                            return BOT_ACTION_DESIRE_HIGH, 0, false
-                        end
-                    end
+                    if count>=2 then return BOT_ACTION_DESIRE_HIGH,point end
                 end
             end
         end
     end
-
-    if (J.IsPushing(bot) or J.IsDefending(bot))
-    and J.GetManaAfter(EnchantTotem:GetManaCost()) * bot:GetMana() > Fissure:GetManaCost() * 2
-    and J.GetManaAfter(EnchantTotem:GetManaCost()) * bot:GetMana() > EchoSlam:GetManaCost()
-    and not bot:HasModifier('modifier_earthshaker_enchant_totem')
-    then
-        local nEnemyLaneCreeps = bot:GetNearbyLaneCreeps(1400, true)
-
-        if bot:HasScepter()
-        then
-            if nEnemyLaneCreeps ~= nil and #nEnemyLaneCreeps >= 3
-            and J.CanBeAttacked(nEnemyLaneCreeps[1])
-            and not J.IsRunning(nEnemyLaneCreeps[1])
-            then
-                local nCreepCount = J.GetNearbyAroundLocationUnitCount(true, false, nRadius, nEnemyLaneCreeps[1]:GetLocation())
-                if nCreepCount >= 3
-                then
-                    return BOT_ACTION_DESIRE_HIGH, nEnemyLaneCreeps[1]:GetLocation(), true
+    local target=J.GetProperTarget(bot)
+    if J.IsGoingOnSomeone(bot) and Enemy(target) and not J.IsDisabled(target) then
+        local point=FissurePoint(target)
+        if point~=nil and not CutsRetreat(point) then return BOT_ACTION_DESIRE_HIGH,point end
+    end
+    if not J.IsAllowedToSpam(bot,Fissure:GetManaCost()) then return BOT_ACTION_DESIRE_NONE end
+    local reserve=EchoSlam~=nil and EchoSlam:IsTrained() and EchoSlam:GetManaCost() or 0
+    if bot:GetMana()-Fissure:GetManaCost()<reserve then return BOT_ACTION_DESIRE_NONE end
+    if J.IsFarming(bot) or J.IsPushing(bot) or J.IsDefending(bot) then
+        local creeps=bot:GetNearbyLaneCreeps(1600,true)
+        if J.IsFarming(bot) then for _,unit in pairs(bot:GetNearbyNeutralCreeps(1600)) do table.insert(creeps,unit) end end
+        for _,creep in pairs(creeps) do
+            local point,count=FissurePoint(creep),0
+            if point~=nil and not CutsRetreat(point) then
+                for _,other in pairs(creeps) do
+                    if DamageUnit(other) and LineHit(other,bot:GetLocation(),FissureEnd(point),Fissure:GetSpecialValueInt('fissure_radius'),Fissure:GetCastPoint()) then count=count+1 end
                 end
-            end
-
-            if J.IsValidBuilding(botTarget)
-            and J.CanBeAttacked(botTarget)
-            and J.IsAttacking(bot)
-            then
-                return BOT_ACTION_DESIRE_HIGH, 0, false
-            end
-        else
-            nEnemyLaneCreeps = bot:GetNearbyLaneCreeps(nRadius, true)
-            if nEnemyLaneCreeps ~= nil and #nEnemyLaneCreeps >= 3
-            and J.CanBeAttacked(nEnemyLaneCreeps[1])
-            then
-                return BOT_ACTION_DESIRE_HIGH, 0, false
-            end
-
-            if J.IsValidBuilding(botTarget)
-            and J.CanBeAttacked(botTarget)
-            and J.IsAttacking(bot)
-            then
-                return BOT_ACTION_DESIRE_HIGH, 0, false
+                if count>=3 then return BOT_ACTION_DESIRE_HIGH,point end
             end
         end
     end
-
-    if J.IsLaning(bot)
-    and J.IsInLaningPhase()
-    then
-        local nInRangeEnemy = J.GetEnemiesNearLoc(bot:GetLocation(), nRadius)
-        if nInRangeEnemy ~= nil and #nInRangeEnemy >= 1
-        and J.IsValidHero(nInRangeEnemy[1])
-        and J.CanCastOnNonMagicImmune(nInRangeEnemy[1])
-        and not J.IsSuspiciousIllusion(nInRangeEnemy[1])
-        and not J.IsDisabled(nInRangeEnemy[1])
-        and not nInRangeEnemy[1]:HasModifier('modifier_abaddon_borrowed_time')
-        then
-            return BOT_ACTION_DESIRE_HIGH, 0, false
-        end
+    if ((J.IsDoingRoshan(bot) and J.IsRoshan(target)) or (J.IsDoingTormentor(bot) and J.IsTormentor(target)))
+        and J.IsAttacking(bot) and J.GetHP(bot)>0.6 then
+        local point=FissurePoint(target)
+        if point~=nil then return BOT_ACTION_DESIRE_HIGH,point end
     end
-
-    if J.IsDoingRoshan(bot)
-    then
-        if J.IsRoshan(botTarget)
-        and J.CanCastOnNonMagicImmune(botTarget)
-        and J.IsInRange(bot, botTarget, nRadius)
-        and J.IsAttacking(bot)
-        then
-            return BOT_ACTION_DESIRE_HIGH, 0, false
-        end
-    end
-
-    if J.IsDoingTormentor(bot)
-    then
-        if J.IsTormentor(botTarget)
-        and J.IsInRange(bot, botTarget, nRadius)
-        and J.IsAttacking(bot)
-        then
-            return BOT_ACTION_DESIRE_HIGH, 0, false
-        end
-    end
-
-    return BOT_ACTION_DESIRE_NONE, 0, false
-end
-
-function X.ConsiderEchoSlam()
-    if not EchoSlam:IsFullyCastable()
-    then
-        return BOT_ACTION_DESIRE_NONE
-    end
-
-	local nRadius = EchoSlam:GetSpecialValueInt('echo_slam_echo_range')
-
-	if J.IsInTeamFight(bot, 1200)
-	then
-        local nInRangeEnemy = J.GetEnemiesNearLoc(bot:GetLocation(), nRadius / 2)
-        if nInRangeEnemy ~= nil and #nInRangeEnemy >= 2
-        then
-            return BOT_ACTION_DESIRE_HIGH
-        end
-	end
-
-    if J.IsGoingOnSomeone(bot)
-	then
-		if J.IsValidTarget(botTarget)
-        and J.CanCastOnNonMagicImmune(botTarget)
-        and J.IsInRange(bot, botTarget, nRadius / 2)
-        -- and J.IsCore(botTarget)
-        and not J.IsSuspiciousIllusion(botTarget)
-        and not botTarget:HasModifier('modifier_abaddon_borrowed_time')
-        and not botTarget:HasModifier('modifier_dazzle_shallow_grave')
-        and not botTarget:HasModifier('modifier_necrolyte_reapers_scythe')
-        and not botTarget:HasModifier('modifier_oracle_false_promise_timer')
-        and not botTarget:HasModifier('modifier_templar_assassin_refraction_absorb')
-        and not botTarget:HasModifier('modifier_item_aeon_disk_buff')
-        and not botTarget:IsInvulnerable()
-		then
-            local nInRangeAlly = J.GetNearbyHeroes(botTarget, 1200, true, BOT_MODE_NONE)
-            local nInRangeEnemy = J.GetNearbyHeroes(botTarget, 1200, false, BOT_MODE_NONE)
-
-            if nInRangeAlly ~= nil and nInRangeEnemy ~= nil
-            then
-                if #nInRangeAlly <= 1 and #nInRangeEnemy <= 1
-                then
-                    if botTarget:IsChanneling()
-                    then
-                        return BOT_ACTION_DESIRE_HIGH
-                    end
-
-                    if botTarget:GetHealth() <= bot:GetEstimatedDamageToTarget(true, botTarget, 5, DAMAGE_TYPE_ALL)
-                    then
-                        return BOT_ACTION_DESIRE_HIGH
-                    end
-                end
-
-                if #nInRangeEnemy > #nInRangeAlly
-                then
-                    if botTarget:GetHealth() <= bot:GetEstimatedDamageToTarget(true, botTarget, 5, DAMAGE_TYPE_ALL)
-                    then
-                        return BOT_ACTION_DESIRE_HIGH
-                    end
-                end
-
-                if #nInRangeAlly >= #nInRangeEnemy
-                and not (#nInRangeAlly >= #nInRangeEnemy + 2)
-                then
-                    return BOT_ACTION_DESIRE_HIGH
-                end
-            end
-		end
-	end
-
     return BOT_ACTION_DESIRE_NONE
 end
 
--- Blink > Echo
+local function CanMove()
+    return not bot:IsRooted() and not bot:HasModifier('modifier_bloodseeker_rupture')
+        and not bot:HasModifier('modifier_slark_pounce_leash') and not bot:HasModifier('modifier_tidehunter_dead_in_the_water')
+end
+local function CanJump()
+    return J.CanCastAbility(EnchantTotem) and bot:HasScepter() and CanMove()
+        and bit.band(EnchantTotem:GetBehavior(),DOTA_ABILITY_BEHAVIOR_POINT or 16)~=0
+end
+local function JumpRange() return EnchantTotem:GetSpecialValueInt('distance_scepter')+BonusRange() end
+local function SafeLanding(point)
+    if J.GetHP(bot)<0.35 and not J.IsRetreating(bot) and not J.IsStuck(bot) then return false end
+    if not IsLocationPassable(point) or J.IsLocationInChrono(point) or J.IsLocationInBlackHole(point)
+        or J.IsLocationInArena(point,600) then return false end
+    local allies,hasBot,foes=0,false,0
+    for _,ally in pairs(J.GetAlliesNearLoc(point,1000)) do
+        if J.IsValidHero(ally) and not J.IsSuspiciousIllusion(ally) then allies=allies+1;if ally==bot then hasBot=true end end
+    end
+    if not hasBot then allies=allies+1 end
+    for _,enemy in pairs(Units()) do
+        if J.IsValidHero(enemy) and not J.IsSuspiciousIllusion(enemy) and not enemy:IsInvulnerable()
+            and GetUnitToLocationDistance(enemy,point)<=1000 then foes=foes+1 end
+    end
+    return allies>=foes
+end
+local function EchoValue(point,delay)
+    local heroes,bodies,echoes,risk=0,{},0,0
+    for _,unit in pairs(Units()) do
+        if DamageUnit(unit) and (J.GetCorrectLoc(unit,delay)-point):Length2D()<=EchoSlam:GetSpecialValueInt('echo_slam_echo_search_range') then table.insert(bodies,unit) end
+    end
+    for _,target in pairs(bodies) do
+        if Enemy(target) and not J.CannotBeKilled(bot,target)
+            and (J.GetCorrectLoc(target,delay)-point):Length2D()<=EchoSlam:GetSpecialValueInt('echo_slam_damage_range') then
+            heroes=heroes+1
+            local localEchoes=0
+            for _,source in pairs(bodies) do
+                if source~=target and (J.GetCorrectLoc(source,delay)-J.GetCorrectLoc(target,delay)):Length2D()<=EchoSlam:GetSpecialValueInt('echo_slam_echo_range') then
+                    localEchoes=localEchoes+(source:IsHero() and not source:IsIllusion() and 2 or 1)
+                end
+            end
+            echoes=echoes+localEchoes
+            if target:HasModifier('modifier_item_blade_mail_reflect') then
+                local damage=EchoSlam:GetSpecialValueInt('echo_slam_initial_damage')+localEchoes*EchoSlam:GetSpecialValueInt('echo_slam_echo_damage')
+                if ShockHit(target,point,delay) then damage=damage+Aftershock:GetSpecialValueInt('aftershock_damage') end
+                risk=risk+bot:GetActualIncomingDamage(damage,DAMAGE_TYPE_MAGICAL)
+            end
+        end
+    end
+    return heroes,#bodies,echoes,risk
+end
+function X.ConsiderEchoSlam()
+    if not J.CanCastAbility(EchoSlam) then return BOT_ACTION_DESIRE_NONE end
+    local heroes,bodies,echoes,risk=EchoValue(bot:GetLocation(),EchoSlam:GetCastPoint())
+    if risk>=bot:GetHealth()*0.8 then return BOT_ACTION_DESIRE_NONE end
+    for _,enemy in pairs(Units()) do
+        if Enemy(enemy) and GetUnitToUnitDistance(bot,enemy)<=EchoSlam:GetSpecialValueInt('echo_slam_damage_range') then
+            local shock=ShockHit(enemy,bot:GetLocation(),EchoSlam:GetCastPoint())
+            if shock and (enemy:IsChanneling() or J.IsCastingUltimateAbility(enemy)) then return BOT_ACTION_DESIRE_HIGH,'interrupt' end
+            local damage=EchoSlam:GetSpecialValueInt('echo_slam_initial_damage')+(shock and Aftershock:GetSpecialValueInt('aftershock_damage') or 0)
+            -- Only immediate guaranteed damage is used for lethal decisions; echoes arrive later.
+            if not J.CannotBeKilled(bot,enemy) and J.WillKillTarget(enemy,damage,DAMAGE_TYPE_MAGICAL,EchoSlam:GetCastPoint()) then return BOT_ACTION_DESIRE_HIGH,'lethal' end
+        end
+    end
+    if (J.IsInTeamFight(bot,1200) or J.IsGoingOnSomeone(bot))
+        and ((heroes>=2 and echoes>=2) or (heroes>=1 and bodies>=4 and echoes>=3)) then return BOT_ACTION_DESIRE_HIGH,'cluster' end
+    return BOT_ACTION_DESIRE_NONE
+end
 function X.ConsiderBlinkSlam()
-    if X.CanDoBlinkSlam()
-    then
-        local nCastRange = 1199
-        local nRadius = EchoSlam:GetSpecialValueInt('echo_slam_echo_range')
-
-        if J.IsGoingOnSomeone(bot)
-        then
-            local nLocationAoE = bot:FindAoELocation(true, true, bot:GetLocation(), nCastRange, nRadius, 0, 0)
-            local nInRangeEnemy = J.GetEnemiesNearLoc(nLocationAoE.targetloc, nRadius / 2)
-
-            if nInRangeEnemy ~= nil and #nInRangeEnemy >= 2
-            then
-                return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(nInRangeEnemy)
+    if not J.CanCastAbility(EchoSlam) or not CanMove() or not (J.IsGoingOnSomeone(bot) or J.IsInTeamFight(bot,1600)) then return BOT_ACTION_DESIRE_NONE end
+    local blink
+    for slot=0,5 do
+        local item=bot:GetItemInSlot(slot)
+        if item~=nil and item:IsFullyCastable() and (item:GetName()=='item_blink' or item:GetName()=='item_overwhelming_blink'
+            or item:GetName()=='item_arcane_blink' or item:GetName()=='item_swift_blink') then blink=item;break end
+    end
+    if blink==nil or bot:GetMana()<EchoSlam:GetManaCost()+blink:GetManaCost() then return BOT_ACTION_DESIRE_NONE end
+    local range=blink:GetSpecialValueInt('blink_range')+BonusRange()
+    for _,enemy in pairs(Units()) do
+        if Enemy(enemy) then
+            local point=Bound(J.GetCorrectLoc(enemy,0.1),range)
+            local heroes,bodies,echoes,risk=EchoValue(point,0.1)
+            if GetUnitToLocationDistance(bot,point)>150 and risk<bot:GetHealth()*0.8 and SafeLanding(point)
+                and ((heroes>=2 and echoes>=2) or (heroes>=1 and bodies>=4 and echoes>=3)) then
+                return BOT_ACTION_DESIRE_HIGH,point,blink
             end
         end
     end
-
-    return BOT_ACTION_DESIRE_NONE, 0
+    return BOT_ACTION_DESIRE_NONE
 end
-
-function X.CanDoBlinkSlam()
-    if X.HasBlink()
-    and EchoSlam:IsFullyCastable()
-    then
-        local nManaCost = EchoSlam:GetManaCost()
-
-        if bot:GetMana() >= nManaCost
-        then
-            bot.shouldBlink = true
-            return true
-        end
-    end
-
-    bot.shouldBlink = false
-    return false
-end
-
--- Enchant Totem > Echo
 function X.ConsiderTotemSlam()
-    if X.CanDoTotemSlam()
-    then
-        local nETCastRange = EnchantTotem:GetSpecialValueInt('distance_scepter')
-        local nETLeapDuration = EnchantTotem:GetSpecialValueFloat('scepter_leap_duration')
-        local nRadius = EchoSlam:GetSpecialValueInt('echo_slam_echo_range')
-
-        if J.IsInTeamFight(bot, 1200)
-        then
-            local nLocationAoE = bot:FindAoELocation(true, true, bot:GetLocation(), nETCastRange, nRadius, nETLeapDuration, 0)
-            local nInRangeEnemy = J.GetEnemiesNearLoc(nLocationAoE.targetloc, nRadius / 2)
-
-            if nInRangeEnemy ~= nil and #nInRangeEnemy >= 2
-            then
-                return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(nInRangeEnemy)
+    if not CanJump() or not J.CanCastAbility(EchoSlam) or bot:GetMana()<EnchantTotem:GetManaCost()+EchoSlam:GetManaCost()
+        or not (J.IsGoingOnSomeone(bot) or J.IsInTeamFight(bot,1600)) then return BOT_ACTION_DESIRE_NONE end
+    local delay=EnchantTotem:GetCastPoint()+EnchantTotem:GetSpecialValueFloat('scepter_leap_duration')
+    for _,enemy in pairs(Units()) do
+        if Enemy(enemy) then
+            local point=Bound(J.GetCorrectLoc(enemy,delay),JumpRange())
+            local heroes,bodies,echoes,risk=EchoValue(point,delay)
+            if GetUnitToLocationDistance(bot,point)>150 and risk<bot:GetHealth()*0.8 and SafeLanding(point)
+                and ((heroes>=2 and echoes>=2) or (heroes>=1 and bodies>=4 and echoes>=3)) then return BOT_ACTION_DESIRE_HIGH,point end
+        end
+    end
+    return BOT_ACTION_DESIRE_NONE
+end
+function X.ConsiderEnchantTotem()
+    if not J.CanCastAbility(EnchantTotem) then return BOT_ACTION_DESIRE_NONE end
+    local delay=EnchantTotem:GetCastPoint()
+    for _,enemy in pairs(Units()) do
+        if Enemy(enemy) and ShockHit(enemy,bot:GetLocation(),delay)
+            and (enemy:IsChanneling() or J.IsCastingUltimateAbility(enemy)) then return BOT_ACTION_DESIRE_HIGH,nil,false,'interrupt' end
+    end
+    if CanJump() and (J.IsStuck(bot) or (J.IsRetreating(bot) and bot:WasRecentlyDamagedByAnyHero(2))) then
+        local point=Bound(J.GetTeamFountain(),JumpRange())
+        if SafeLanding(point) then return BOT_ACTION_DESIRE_HIGH,point,true,'escape' end
+    end
+    local target=J.GetProperTarget(bot)
+    if (J.IsGoingOnSomeone(bot) or J.IsInTeamFight(bot,1200) or J.IsLaning(bot) or J.IsRetreating(bot)) then
+        for _,enemy in pairs(Units()) do
+            if Enemy(enemy) and not J.IsDisabled(enemy) and ShockHit(enemy,bot:GetLocation(),delay) then return BOT_ACTION_DESIRE_HIGH,nil,false end
+        end
+    end
+    local buff=bot:HasModifier('modifier_earthshaker_enchant_totem')
+    if J.IsGoingOnSomeone(bot) and J.IsValidHero(target) and not J.IsSuspiciousIllusion(target)
+        and J.CanBeAttacked(target) and not J.CannotBeKilled(bot,target) then
+        if CanJump() and (not bot:IsDisarmed() or (Enemy(target) and ShockAvailable()))
+            and not J.IsInRange(bot,target,bot:GetAttackRange()+EnchantTotem:GetSpecialValueInt('bonus_attack_range')) then
+            local travel=delay+EnchantTotem:GetSpecialValueFloat('scepter_leap_duration')
+            local point=Bound(J.GetCorrectLoc(target,travel),JumpRange())
+            if (J.GetCorrectLoc(target,travel)-point):Length2D()<=bot:GetAttackRange()+EnchantTotem:GetSpecialValueInt('bonus_attack_range')
+                and SafeLanding(point) then return BOT_ACTION_DESIRE_HIGH,point,true end
+        end
+        if not buff and not bot:IsDisarmed() and J.IsInRange(bot,target,1000) then
+            local reserve=EchoSlam~=nil and EchoSlam:IsTrained() and EchoSlam:GetManaCost() or 0
+            if J.IsInRange(bot,target,bot:GetAttackRange()+EnchantTotem:GetSpecialValueInt('bonus_attack_range'))
+                or bot:GetMana()>=EnchantTotem:GetManaCost()+reserve then return BOT_ACTION_DESIRE_HIGH,nil,false,'prepare' end
+        end
+    end
+    if buff or not J.IsAllowedToSpam(bot,EnchantTotem:GetManaCost()) then return BOT_ACTION_DESIRE_NONE end
+    if J.IsLaning(bot) and not bot:IsDisarmed() then
+        local reach=bot:GetAttackRange()+EnchantTotem:GetSpecialValueInt('bonus_attack_range')
+        local creeps=bot:GetNearbyLaneCreeps(math.min(reach,1600),true)
+        for _,creep in pairs(bot:GetNearbyLaneCreeps(math.min(reach,1600),false)) do
+            if J.GetHP(creep)<0.5 then table.insert(creeps,creep) end
+        end
+        local damage=bot:GetAttackDamage()+math.max(0,bot:GetBaseDamage()-bot:GetBaseDamageVariance())*EnchantTotem:GetSpecialValueInt('totem_damage_percentage')/100
+        for _,creep in pairs(creeps) do
+            if J.IsValid(creep) and J.CanBeAttacked(creep) and J.IsInRange(bot,creep,reach)
+                and not J.WillKillTarget(creep,bot:GetAttackDamage(),DAMAGE_TYPE_PHYSICAL,bot:GetAttackPoint())
+                and J.WillKillTarget(creep,damage,DAMAGE_TYPE_PHYSICAL,delay+bot:GetAttackPoint()) then
+                return BOT_ACTION_DESIRE_HIGH,nil,false,'last-hit',creep
             end
         end
     end
-
-    return BOT_ACTION_DESIRE_NONE, 0
-end
-
-function X.CanDoTotemSlam()
-    if bot:HasScepter()
-    and EnchantTotem:IsFullyCastable()
-    and EchoSlam:IsFullyCastable()
-    then
-        local nManaCost = EnchantTotem:GetManaCost() + EchoSlam:GetManaCost()
-
-        if bot:GetMana() >= nManaCost
-        then
-            return true
-        end
+    if J.IsFarming(bot) or J.IsPushing(bot) or J.IsDefending(bot) then
+        local count=0
+        local creeps=bot:GetNearbyLaneCreeps(1600,true)
+        if J.IsFarming(bot) then for _,creep in pairs(bot:GetNearbyNeutralCreeps(1600)) do table.insert(creeps,creep) end end
+        for _,creep in pairs(creeps) do if ShockHit(creep,bot:GetLocation(),delay) then count=count+1 end end
+        if count>=3 then return BOT_ACTION_DESIRE_HIGH,nil,false end
     end
-
-    return false
+    if not bot:IsDisarmed() and J.CanBeAttacked(target) and J.IsAttacking(bot)
+        and J.IsInRange(bot,target,bot:GetAttackRange()+EnchantTotem:GetSpecialValueInt('bonus_attack_range'))
+        and ((J.IsPushing(bot) and J.IsValidBuilding(target)) or (J.IsDoingRoshan(bot) and J.IsRoshan(target))
+            or (J.IsDoingTormentor(bot) and J.IsTormentor(target) and J.GetHP(bot)>0.65)) then return BOT_ACTION_DESIRE_HIGH,nil,false end
+    return BOT_ACTION_DESIRE_NONE
+end
+local function UseTotem(point,jump,attack)
+    if jump then bot:Action_UseAbilityOnLocation(EnchantTotem,point)
+    elseif bot:HasScepter() and bit.band(EnchantTotem:GetBehavior(),DOTA_ABILITY_BEHAVIOR_POINT or 16)~=0 then bot:Action_UseAbilityOnEntity(EnchantTotem,bot)
+    else bot:Action_UseAbility(EnchantTotem) end
+    if attack~=nil then bot:ActionQueue_AttackUnit(attack,true) end
+end
+local function QueueBlink(point,blink)
+    bot:ActionQueue_UseAbilityOnLocation(blink,point)
+    bot:ActionQueue_UseAbility(EchoSlam)
+end
+local function QueueTotem(point)
+    bot:ActionQueue_UseAbilityOnLocation(EnchantTotem,point)
+    bot:ActionQueue_Delay(EnchantTotem:GetSpecialValueFloat('scepter_leap_duration')+0.05)
+    bot:ActionQueue_UseAbility(EchoSlam)
 end
 
-function X.CanJump()
-    if bot:HasScepter()
-    and EnchantTotem:IsFullyCastable()
-    then
-        return true
+function X.SkillsComplement()
+    Refresh()
+    ObserveRidges()
+    bot.shouldBlink=false
+    if J.CanNotUseAbility(bot) then return end
+    local echo,reason=X.ConsiderEchoSlam()
+    if echo>0 and (reason=='interrupt' or reason=='lethal') then bot:Action_UseAbility(EchoSlam);return end
+    local fissure,point,motive=X.ConsiderFissure()
+    local totem,landing,jump,why,attack=X.ConsiderEnchantTotem()
+    if totem>0 and why=='interrupt' and (fissure==0 or EnchantTotem:GetCastPoint()<=Fissure:GetCastPoint()) then
+        UseTotem(landing,jump,attack);return
     end
-
-    return false
+    if fissure>0 and (motive=='interrupt' or motive=='lethal') then RecordFissure(point);return end
+    if totem>0 and (why=='interrupt' or why=='escape') then UseTotem(landing,jump,attack);return end
+    local blinkDesire,blinkPoint,blink=X.ConsiderBlinkSlam()
+    if blinkDesire>0 then QueueBlink(blinkPoint,blink);return end
+    local jumpDesire,jumpPoint=X.ConsiderTotemSlam()
+    if jumpDesire>0 then QueueTotem(jumpPoint);return end
+    if echo>0 then bot:Action_UseAbility(EchoSlam);return end
+    if fissure>0 and motive=='save' then RecordFissure(point);return end
+    if totem>0 then UseTotem(landing,jump,attack);return end
+    if fissure>0 then RecordFissure(point) end
 end
-
-function X.HasBlink()
-    local blink = nil
-
-    for i = 0, 5
-    do
-		local item = bot:GetItemInSlot(i)
-
-		if item ~= nil
-        and (item:GetName() == "item_blink" or item:GetName() == "item_overwhelming_blink" or item:GetName() == "item_arcane_blink" or item:GetName() == "item_swift_blink")
-        then
-			blink = item
-			break
-		end
-	end
-
-    if blink ~= nil
-    and blink:IsFullyCastable()
-	then
-        Blink = blink
-        return true
-	end
-
-    return false
-end
-
 return X

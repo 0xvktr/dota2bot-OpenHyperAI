@@ -114,6 +114,9 @@ local function fixture()
     function bot:Action_UseAbilityOnLocation(a,location)
         f.actions[#f.actions+1]={name=a:GetName(),location=location}
     end
+    function bot:Action_MoveToLocation(location)
+        f.actions[#f.actions+1]={name='move',location=location}
+    end
     bot.teleTarget=nil
     for _,flag in ipairs({'isChannelLand','isSaveUltLand','isEngagingLand','isRetreatLand','isSaveAllyLand'}) do
         bot[flag]=nil
@@ -158,7 +161,31 @@ local function fixture()
     J.Site={GetXUnitsTowardsLocation=function(u,target,range)
         return J.GetXUnitsTowardsLocation2(u:GetLocation(),target,range)
     end}
-    local R={UsePendingGate=function()
+    local R={UseGlacierDuringMultishot=function()
+        if f.channelGlacier then bot:Action_UseAbility(ability('drow_ranger_glacier'));return true end
+        return false
+    end,UseMagnetizeStone=function()
+        if f.magnetizeStone then bot:Action_UseAbilityOnLocation(ability('earth_spirit_stone_caller'),Vector(200,0,0));return true end
+        return false
+    end,UseAstralSpirit=function()
+        if f.astralReturn then bot:Action_UseAbility(ability('elder_titan_return_spirit'));return true end
+        return false
+    end,HandleAstralSpiritMinion=function(u) return u==f.astralMinion end,ObserveGlimpseHistory=function() f.historyCount=(f.historyCount or 0)+1 end,UseShadowRealmDuringChannel=function()
+        if f.channelRealm then bot:Action_UseAbility(ability('dark_willow_shadow_realm')); return true end
+        return false
+    end,UsePendingConverge=function()
+        if f.pendingConverge then bot:Action_UseAbility(ability('dawnbreaker_converge')); return true end
+        return false
+    end,UseFreezingFieldSpell=function()
+        if f.fieldSpell then bot:Action_UseAbilityOnLocation(ability('crystal_maiden_crystal_clone'),Vector(200,0,0)); return true end
+        return false
+    end,UseBarrageInvisibility=function()
+        if f.barrageCloak then bot:Action_UseAbility(ability('clinkz_wind_walk')); return true end
+        return false
+    end,UsePendingStomp=function()
+        if f.pendingStomp then bot:Action_MoveToLocation(Vector(400,0,0)); return true end
+        return false
+    end,UsePendingGate=function()
         if not f.pendingGate or f.queued then return false end
         bot:Action_UseAbilityOnEntity(ability('abyssal_underlord_portal_warp'),f.pendingGate)
         return true
@@ -171,6 +198,7 @@ local function fixture()
     local previousDofile=dofile
     dofile=function(path)
         if path=='bots/FunLib/rubick_utility' then return R end
+        if path=='bots/FunLib/aba_minion' then return {MinionThink=function() f.genericMinionCalls=(f.genericMinionCalls or 0)+1 end} end
         if path=='bots/FunLib/spell_prob_list' then return SPL end
         return previousDofile(path)
     end
@@ -233,6 +261,35 @@ check('Pending Gate precedes cooldown slots and silence',function()
     f:tick()
     assert(#f.actions==1 and f.actions[1].name=='abyssal_underlord_portal_warp')
     assert(f.nativeCalls==0,'Gate entry must precede normal native decisions')
+end)
+
+check('Pending Stomp movement precedes cooldown slots and ability guards',function()
+    local f=fixture()
+    f.pendingStomp=true;f.using=true
+    f.slots[3]=ability('centaur_hoof_stomp',{castable=false})
+    f.slots[4]=ability('abaddon_death_coil')
+    f.stolenCasts.abaddon_death_coil=true
+    f:tick()
+    assert(#f.actions==1 and f.actions[1].name=='move','Stomp windup movement was skipped or overwritten')
+    assert(f.nativeCalls==0,'Native spells continued during Stomp windup')
+end)
+
+check('Freezing Field exception precedes channel guards',function()
+    local f=fixture()
+    f.channeling=true;f.fieldSpell=true
+    f:prepareSteal()
+    f:tick()
+    assert(#f.actions==1 and f.actions[1].name=='crystal_maiden_crystal_clone')
+    assert(f.nativeCalls==0,'Native decisions overwrote ongoing Field')
+end)
+
+check('Barrage invisibility precedes channel guards',function()
+    local f=fixture()
+    f.channeling=true;f.barrageCloak=true
+    f:prepareSteal()
+    f:tick()
+    assert(#f.actions==1 and f.actions[1].name=='clinkz_wind_walk')
+    assert(f.nativeCalls==0,'Native decisions overwrote ongoing Barrage')
 end)
 
 check('Missing stolen slots',function()
@@ -457,6 +514,42 @@ for _,name in ipairs({'ancient_apparition_ice_blast_release','alchemist_unstable
         end)
     end
 end
+
+check('Glimpse observes during channel and cooldown gates without an action',function()
+    local f=fixture();f.channeling=true
+    f:tick()
+    assert(f.historyCount==1 and #f.actions==0 and f.nativeCalls==0,'Observed history was gated by cast readiness')
+end)
+
+check('Shadow Realm allowed during channel precedes generic guards',function()
+    local f=fixture();f.channeling=true;f.channelRealm=true
+    f:tick()
+    assert(#f.actions==1 and f.actions[1].name=='dark_willow_shadow_realm')
+    assert(f.nativeCalls==0,'Native decisions overwrote channel-safe Realm')
+end)
+check('Pending Converge after Hammer precedes native decisions',function()
+    local f=fixture();f.pendingConverge=true
+    f:tick()
+    assert(#f.actions==1 and f.actions[1].name=='dawnbreaker_converge')
+    assert(f.nativeCalls==0,'Native decisions overwrote pending Converge')
+end)
+
+for _,case in ipairs({{'channelGlacier','drow_ranger_glacier'},{'magnetizeStone','earth_spirit_stone_caller'},{'astralReturn','elder_titan_return_spirit'}}) do
+    check('Observed linked spell precedes normal native decisions '..case[1],function()
+        local f=fixture();f[case[1]]=true
+        if case[1]=='channelGlacier' then f.channeling=true end
+        f:tick()
+        assert(#f.actions==1 and f.actions[1].name==case[2] and f.nativeCalls==0)
+    end)
+end
+
+check('Owned Astral Spirit bypasses generic minion orders',function()
+    local f=fixture();f.astralMinion={}
+    f.X.MinionThink(f.astralMinion)
+    assert(f.genericMinionCalls==nil,'generic minion controller overwrote Spirit')
+    f.X.MinionThink({})
+    assert(f.genericMinionCalls==1,'ordinary minion still delegates')
+end)
 
 local landFlags={'isChannelLand','isSaveUltLand','isEngagingLand','isRetreatLand','isSaveAllyLand'}
 local function staleFlags()

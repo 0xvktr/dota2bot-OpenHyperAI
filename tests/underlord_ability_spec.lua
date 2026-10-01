@@ -125,8 +125,9 @@ local Copy=H.realDofile('bots/FunLib/rubick_hero/abyssal_underlord.lua')
 package.loaded['bots/FunLib/rubick_hero/abyssal_underlord']=Copy
 for _,name in ipairs({'abaddon','alchemist','ancient_apparition','antimage','arc_warden','axe','bane',
     'batrider','beastmaster','bloodseeker','bounty_hunter','brewmaster','bristleback','broodmother',
-    'centaur','chaos_knight','chen','clinkz','crystal_maiden','rattletrap'}) do
-    package.loaded['bots/FunLib/rubick_hero/'..name]={ConsiderStolenSpell=function() return nil end}
+    'centaur','chaos_knight','chen','clinkz','crystal_maiden','rattletrap','dark_seer','dark_willow','dawnbreaker','death_prophet','disruptor','doom_bringer','dragon_knight','drow_ranger','earth_spirit','earthshaker','elder_titan'}) do
+    package.loaded['bots/FunLib/rubick_hero/'..name]={UseGlacierDuringMultishot=function() return false end,UseMagnetizeStone=function() return false end,UseAstralSpirit=function() return false end,HandleAstralSpiritMinion=function() return false end,ObserveGlimpseHistory=function() end,UseShadowRealmDuringChannel=function() return false end,UsePendingConverge=function() return false end,UseFreezingFieldSpell=function() return false end,UseBarrageInvisibility=function() return false end,UsePendingStomp=function() return false end,
+        ConsiderStolenSpell=function() return nil end}
 end
 local Dispatcher=H.realDofile('bots/FunLib/rubick_utility.lua')
 local function reset()

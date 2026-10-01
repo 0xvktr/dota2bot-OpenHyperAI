@@ -19,7 +19,7 @@ for (const name of heroNames) {
 const lua = [
     'bots/FunLib/rubick_utility.lua', 'bots/FunLib/spell_prob_list.lua',
     ...fs.readdirSync('bots/FunLib/rubick_hero').filter(f => f.endsWith('.lua')).map(f => 'bots/FunLib/rubick_hero/' + f),
-    'bots/FunLib/break_state.lua', 'bots/FunLib/minion_lib/primal_split.lua', 'bots/FunLib/lone_druid_items.lua', 'bots/BotLib/hero_lone_druid_bear.lua',
+    'bots/FunLib/break_state.lua', 'bots/FunLib/minion_lib/primal_split.lua', 'bots/FunLib/minion_lib/minion_with_skill.lua', 'bots/FunLib/lone_druid_items.lua', 'bots/BotLib/hero_lone_druid_bear.lua',
     ...heroNames.flatMap(n => [`bots/BotLib/hero_${n}.lua`, `${buildsDir}/${n}.lua`]),
     'bots/FunLib/hero_build_preferences.lua', 'bots/FunLib/alchemist_scepter.lua', 'bots/FunLib/inventory_upkeep.lua', 'bots/FunLib/debug_dumps.lua', 'bots/FunLib/lane_pull.lua', 'bots/mode_roam_generic.lua', 'bots/FunLib/aba_ward_utility.lua', 'bots/mode_ward_generic.lua', 'bots/FunLib/aba_item.lua',
     'bots/FunLib/aba_hero_pos_weights.lua', 'bots/FretBots/BonusTimers.lua', 'bots/Buff/NeutralItems.lua',
@@ -151,6 +151,26 @@ run(['tests/bane_ability_spec.lua'], 'Bane ability scenarios passed');
 run(['tests/batrider_ability_spec.lua'], 'Batrider ability scenarios passed');
 run(['tests/beastmaster_ability_spec.lua'], 'Beastmaster ability scenarios passed');
 run(['tests/brewmaster_ability_spec.lua'], 'Brewmaster ability scenarios passed');
+run(['tests/bloodseeker_ability_spec.lua'], 'Bloodseeker ability scenarios passed');
+run(['tests/bounty_hunter_ability_spec.lua'], 'Bounty Hunter ability scenarios passed');
+run(['tests/bristleback_ability_spec.lua'], 'Bristleback ability scenarios passed');
+run(['tests/broodmother_ability_spec.lua'], 'Broodmother ability scenarios passed');
+run(['tests/centaur_ability_spec.lua'], 'Centaur ability scenarios passed');
+run(['tests/chaos_knight_ability_spec.lua'], 'Chaos Knight ability scenarios passed');
+run(['tests/chen_ability_spec.lua'], 'Chen ability scenarios passed');
+run(['tests/clinkz_ability_spec.lua'], 'Clinkz ability scenarios passed');
+run(['tests/crystal_maiden_ability_spec.lua'], 'Crystal Maiden ability scenarios passed');
+run(['tests/dark_seer_ability_spec.lua'], 'Dark Seer ability scenarios passed');
+run(['tests/dark_willow_ability_spec.lua'], 'Dark Willow ability scenarios passed');
+run(['tests/dawnbreaker_ability_spec.lua'], 'Dawnbreaker ability scenarios passed');
+run(['tests/death_prophet_ability_spec.lua'], 'Death Prophet ability scenarios passed');
+run(['tests/disruptor_ability_spec.lua'], 'Disruptor ability scenarios passed');
+run(['tests/doom_bringer_ability_spec.lua'], 'Doom ability scenarios passed');
+run(['tests/dragon_knight_ability_spec.lua'], 'Dragon Knight ability scenarios passed');
+run(['tests/drow_ranger_ability_spec.lua'], 'Drow Ranger ability scenarios passed');
+run(['tests/earth_spirit_ability_spec.lua'], 'Earth Spirit ability scenarios passed');
+run(['tests/earthshaker_ability_spec.lua'], 'Earthshaker ability scenarios passed');
+run(['tests/elder_titan_ability_spec.lua'], 'Elder Titan ability scenarios passed');
 run(['tests/break_state_spec.lua'], 'Break state scenarios passed');
 run(['tests/brewmaster_split_spec.lua'], 'Brewmaster split scenarios passed');
 run(['tests/rubick_handlers_spec.lua'], 'Rubick specialized handler scenarios passed');

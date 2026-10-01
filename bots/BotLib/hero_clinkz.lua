@@ -60,615 +60,290 @@ function X.MinionThink(hMinionUnit)
 	Minion.MinionThink(hMinionUnit)
 end
 
-local Strafe            = bot:GetAbilityByName('clinkz_strafe')
--- Tar Bomb was replaced by Searing Arrows (7.41f slot 2).
-local DeathPact         = bot:GetAbilityByName('clinkz_death_pact')
-local BurningBarrage    = bot:GetAbilityByName('clinkz_burning_barrage')
-local BurningArmy       = bot:GetAbilityByName('clinkz_burning_army')
-local SkeletonWalk      = bot:GetAbilityByName('clinkz_wind_walk')
-local SearingArrows     = bot:GetAbilityByName('clinkz_searing_arrows')
+local Strafe = bot:GetAbilityByName('clinkz_strafe')
+local DeathPact = bot:GetAbilityByName('clinkz_death_pact')
+local BurningBarrage = bot:GetAbilityByName('clinkz_burning_barrage')
+local SkeletonWalk = bot:GetAbilityByName('clinkz_wind_walk')
+local SearingArrows = bot:GetAbilityByName('clinkz_searing_arrows')
 
-local StrafeDesire
-local DeathPactDesire, DeathPactTarget
-local BurningBarrageDesire, BurningBarrageLocation
-local BurningArmyDesire, BurningArmyLocation
-local SkeletonWalkDesire
-local SearingArrowsDesire, SearingArrowsTarget
-
-local botTarget
-
-function X.SkillsComplement()
-	if J.CanNotUseAbility(bot) then return end
-
-    botTarget = J.GetProperTarget(bot)
-
-    SkeletonWalkDesire = X.ConsiderSkeletonWalk()
-    if SkeletonWalkDesire > 0
-    then
-        bot:Action_UseAbility(SkeletonWalk)
-        return
-    end
-
-    SearingArrowsDesire, SearingArrowsTarget = X.ConsiderSearingArrows()
-    if SearingArrowsDesire > 0
-    then
-        bot:Action_UseAbilityOnEntity(SearingArrows, SearingArrowsTarget)
-        return
-    end
-
-    BurningBarrageDesire, BurningBarrageLocation = X.ConsiderBurningBarrage()
-    if BurningBarrageDesire > 0
-    then
-        bot:Action_UseAbilityOnLocation(BurningBarrage, BurningBarrageLocation)
-        return
-    end
-
-    StrafeDesire = X.ConsiderStrafe()
-    if StrafeDesire > 0
-    then
-        bot:Action_UseAbility(Strafe)
-        return
-    end
-
-    DeathPactDesire, DeathPactTarget = X.ConsiderDeathPact()
-    if DeathPactDesire > 0
-    then
-        bot:Action_UseAbilityOnEntity(DeathPact, DeathPactTarget)
-        return
-    end
-
-    BurningArmyDesire, BurningArmyLocation = X.ConsiderBurningArmy()
-    if BurningArmyDesire > 0
-    then
-        bot:Action_UseAbilityOnLocation(BurningArmy, BurningArmyLocation)
-        return
-    end
+local function Castable(ability)
+    return ability ~= nil and ability:IsFullyCastable() and not ability:IsHidden()
 end
 
-function X.ConsiderStrafe()
-    if not Strafe:IsFullyCastable()
-    then
-		return BOT_ACTION_DESIRE_NONE
-	end
-
-    local nAttackRange = bot:GetAttackRange()
-
-    if J.IsGoingOnSomeone(bot)
-	then
-		if J.IsValidTarget(botTarget)
-        and J.IsInRange(bot, botTarget, nAttackRange)
-        and not J.IsChasingTarget(bot, botTarget)
-        and not J.IsSuspiciousIllusion(botTarget)
-        and not botTarget:HasModifier('modifier_abaddon_borrowed_time')
-        and not botTarget:HasModifier('modifier_dazzle_shallow_grave')
-        and not botTarget:HasModifier('modifier_necrolyte_reapers_scythe')
-		then
-            local nInRangeAlly = J.GetNearbyHeroes(botTarget, 1200, true, BOT_MODE_NONE)
-            local nInRangeEnemy = J.GetNearbyHeroes(botTarget, 1200, false, BOT_MODE_NONE)
-
-            if nInRangeAlly ~= nil and nInRangeEnemy ~= nil
-            and #nInRangeAlly >= #nInRangeEnemy
-            then
-                return BOT_ACTION_DESIRE_HIGH
-            end
-		end
-	end
-
-    if J.IsFarming(bot)
-    then
-        if J.IsAttacking(bot)
-        then
-            local nNeutralCreeps = bot:GetNearbyNeutralCreeps(1000)
-            if nNeutralCreeps ~= nil
-            and (#nNeutralCreeps >= 3
-                or (#nNeutralCreeps >= 2 and nNeutralCreeps[1]:IsAncientCreep()))
-            then
-                if SkeletonWalk:IsTrained()
-                then
-                    if J.GetManaAfter(Strafe:GetManaCost()) * bot:GetMana() > SkeletonWalk:GetManaCost()
-                    then
-                        return BOT_ACTION_DESIRE_HIGH
-                    end
-                else
-                    if J.GetMP(bot) > 0.25
-                    then
-                        return BOT_ACTION_DESIRE_HIGH
-                    end
-                end
-            end
-
-            local nEnemyLaneCreeps = bot:GetNearbyLaneCreeps(1000, true)
-            if nEnemyLaneCreeps ~= nil and #nEnemyLaneCreeps >= 4
-            then
-                if SkeletonWalk:IsTrained()
-                then
-                    if J.GetManaAfter(Strafe:GetManaCost()) * bot:GetMana() > SkeletonWalk:GetManaCost()
-                    then
-                        return BOT_ACTION_DESIRE_HIGH
-                    end
-                else
-                    if J.GetMP(bot) > 0.25
-                    then
-                        return BOT_ACTION_DESIRE_HIGH
-                    end
-                end
-            end
-        end
+local function CastRange(ability)
+    local range = ability:GetCastRange()
+    local lens = J.IsItemAvailable('item_aether_lens')
+    if lens ~= nil then range = range + lens:GetSpecialValueInt('cast_range_bonus') end
+    local supremacy = bot:GetAbilityByName('rubick_arcane_supremacy')
+    if supremacy ~= nil and supremacy:IsTrained() and not J.HasBreakModifier(bot) then
+        range = range + supremacy:GetSpecialValueInt('cast_range')
     end
-
-    if J.IsPushing(bot) or J.IsDefending(bot)
-    then
-        local nEnemyLaneCreeps = bot:GetNearbyLaneCreeps(1000, true)
-        if nEnemyLaneCreeps ~= nil and #nEnemyLaneCreeps >= 4
-        then
-            if SkeletonWalk:IsTrained()
-            then
-                if J.GetManaAfter(Strafe:GetManaCost()) * bot:GetMana() > SkeletonWalk:GetManaCost()
-                then
-                    return BOT_ACTION_DESIRE_HIGH
-                end
-            else
-                if J.GetMP(bot) > 0.25
-                then
-                    return BOT_ACTION_DESIRE_HIGH
-                end
-            end
-        end
-    end
-
-	if J.IsDoingRoshan(bot) or J.IsDoingTormentor(bot)
-	then
-		if (J.IsRoshan(botTarget) or J.IsTormentor(botTarget))
-        and J.IsInRange(bot, botTarget, nAttackRange)
-        and J.IsAttacking(bot)
-		then
-			return BOT_ACTION_DESIRE_HIGH
-		end
-	end
-
-	return BOT_ACTION_DESIRE_NONE
+    return range
 end
 
-function X.ConsiderDeathPact()
-    if not DeathPact:IsFullyCastable()
-    then
-        return BOT_ACTION_DESIRE_NONE, nil
-    end
+local function Protected(unit)
+    return unit:HasModifier('modifier_abaddon_borrowed_time')
+        or unit:HasModifier('modifier_dazzle_shallow_grave')
+        or unit:HasModifier('modifier_oracle_false_promise_timer')
+        or unit:HasModifier('modifier_necrolyte_reapers_scythe')
+        or unit:HasModifier('modifier_item_blade_mail_reflect')
+end
 
-    local nCastRange = DeathPact:GetCastRange()
-    local nMaxLevel = DeathPact:GetSpecialValueInt('creep_level')
-    local nCreeps = bot:GetNearbyCreeps(nCastRange, true)
+local function Attackable(unit)
+    return J.IsValid(unit) and J.CanBeAttacked(unit) and not Protected(unit)
+        and not J.IsSuspiciousIllusion(unit)
+end
 
-    if J.IsInLaningPhase()
-    then
-        if J.IsLaning(bot)
-        then
-            local nEnemyLaneCreeps = bot:GetNearbyLaneCreeps(nCastRange, true)
+local function WalkReserve()
+    local walk = bot:GetAbilityByName('clinkz_wind_walk')
+    return walk ~= nil and walk:IsTrained() and walk:GetManaCost() or 0
+end
 
-            for _, creep in pairs(nEnemyLaneCreeps)
-            do
-                if J.IsValid(creep)
-                and J.CanBeAttacked(creep)
-                and J.IsKeyWordUnit('ranged', creep) or J.IsKeyWordUnit('siege', creep)
-                and creep:GetLevel() <= nMaxLevel
-                then
-                    local nCreepInRangeHero = J.GetNearbyHeroes(bot,1600, false, BOT_MODE_NONE)
+local function FarmMana(ability)
+    return bot:GetMana() - ability:GetManaCost() >= WalkReserve()
+        and (bot:GetMana() - ability:GetManaCost()) / bot:GetMaxMana() >= 0.25
+end
 
-                    if nCreepInRangeHero ~= nil and #nCreepInRangeHero >= 1
-                    and GetUnitToUnitDistance(creep, nCreepInRangeHero[1]) < 600
-                    and botTarget ~= creep
-                    and not bot:HasModifier('modifier_clinkz_death_pact')
-                    then
-                        return BOT_ACTION_DESIRE_HIGH, creep
-                    end
-                end
-            end
-        end
-    else
-        local creep = GetMostHPCreepLevel(nCreeps, nMaxLevel)
-        if creep ~= nil
-        and not bot:HasModifier('modifier_clinkz_death_pact')
-        and not creep:IsAncientCreep()
-        then
-            return BOT_ACTION_DESIRE_HIGH, creep
-        end
-    end
+local function OwnSkeleton(unit)
+    return J.IsValid(unit) and unit:GetUnitName() == 'npc_dota_clinkz_skeleton_archer'
+        and unit:GetPlayerID() == bot:GetPlayerID()
+end
 
-    return BOT_ACTION_DESIRE_NONE, nil
+function X.UseBarrageInvisibility()
+    bot = GetBot()
+    if not bot:IsChanneling() or not bot:IsAlive() or bot:IsSilenced() or bot:IsStunned()
+        or bot:IsHexed() or bot:IsNightmared() or bot:NumQueuedActions() > 0 then return false end
+    local active = bot:GetCurrentActiveAbility()
+    local walk = bot:GetAbilityByName('clinkz_wind_walk')
+    if active == nil or active:GetName() ~= 'clinkz_burning_barrage' or not Castable(walk)
+        or bot:HasModifier('modifier_clinkz_wind_walk') or J.IsRealInvisible(bot) then return false end
+    -- Skeleton Walk is immediate and explicitly ignores channels in current Valve KV.
+    bot:Action_UseAbility(walk)
+    return true
 end
 
 function X.ConsiderSkeletonWalk()
-    if not SkeletonWalk:IsFullyCastable()
-    or bot:HasModifier('modifier_clinkz_wind_walk')
-    or J.IsRealInvisible(bot)
-    then
-        return BOT_ACTION_DESIRE_NONE
+    if not Castable(SkeletonWalk) or bot:HasModifier('modifier_clinkz_wind_walk')
+        or J.IsRealInvisible(bot) then return BOT_ACTION_DESIRE_NONE end
+    local target = J.GetProperTarget(bot)
+    if J.IsRetreating(bot) and (bot:WasRecentlyDamagedByAnyHero(2)
+        or #J.GetNearbyHeroes(bot, 1200, true, BOT_MODE_NONE) > 0) then
+        -- Detection may reveal us; the movement bonus remains useful for escape.
+        return BOT_ACTION_DESIRE_HIGH
     end
-
-    local RoshanLocation = J.GetCurrentRoshanLocation()
-    local TormentorLocation = J.GetTormentorLocation(GetTeam())
-    local nEnemyHeroes = J.GetNearbyHeroes(bot,1600, true, BOT_MODE_NONE)
-
-    if J.IsGoingOnSomeone(bot)
-    and bot:GetActiveModeDesire() > 0.65
-	then
-		if J.IsValidTarget(botTarget)
-        and GetUnitToUnitDistance(bot, botTarget) > 1600
-        and not J.IsSuspiciousIllusion(botTarget)
-        and not botTarget:HasModifier('modifier_necrolyte_reapers_scythe')
-		then
-            local nInRangeAlly = J.GetAlliesNearLoc(botTarget:GetLocation(), 1200)
-            local nInRangeEnemy = J.GetEnemiesNearLoc(botTarget:GetLocation(), 1200)
-
-            if nInRangeAlly ~= nil and nInRangeEnemy ~= nil
-            and #nInRangeAlly >= #nInRangeEnemy
-            then
-                return BOT_ACTION_DESIRE_HIGH
-            end
-		end
-	end
-
-    if J.IsRetreating(bot)
-    and bot:GetActiveModeDesire() > 0.5
-	then
-        local nInRangeEnemy = J.GetNearbyHeroes(bot,1200, true, BOT_MODE_NONE)
-        for _, enemyHero in pairs(nInRangeEnemy)
-        do
-            if J.IsValidHero(enemyHero)
-            and J.IsChasingTarget(enemyHero, bot)
-            and not J.IsSuspiciousIllusion(enemyHero)
-            and not J.IsDisabled(enemyHero)
-            then
-                local nInRangeAlly = J.GetNearbyHeroes(enemyHero, 1200, true, BOT_MODE_NONE)
-                local nTargetInRangeAlly = J.GetNearbyHeroes(enemyHero, 1200, false, BOT_MODE_NONE)
-
-                if nInRangeAlly ~= nil and nTargetInRangeAlly ~= nil
-                and ((#nTargetInRangeAlly > #nInRangeAlly)
-                    or bot:WasRecentlyDamagedByAnyHero(1.5))
-                then
-                    return BOT_ACTION_DESIRE_HIGH
-                end
-            end
-        end
-	end
-
-    -- if J.IsPushing(bot)
-    -- then
-    --     if bot.laneToPush ~= nil
-    --     then
-    --         if GetUnitToLocationDistance(bot, GetLaneFrontLocation(GetTeam(), bot.laneToPush, 0)) > 3200
-    --         and bot:GetActiveModeDesire() > 0.65
-    --         then
-    --             return  BOT_ACTION_DESIRE_HIGH
-    --         end
-    --     end
-    -- end
-
-    -- if J.IsDefending(bot)
-    -- then
-    --     if bot.laneToDefend ~= nil
-    --     then
-    --         if GetUnitToLocationDistance(bot, GetLaneFrontLocation(GetTeam(), bot.laneToDefend, 0)) > 3200
-    --         and bot:GetActiveModeDesire() > 0.65
-    --         then
-    --             return  BOT_ACTION_DESIRE_HIGH
-    --         end
-    --     end
-    -- end
-
-    if J.IsFarming(bot)
-    then
-        if bot.farmLocation ~= nil
-        then
-            if GetUnitToLocationDistance(bot, bot.farmLocation) > 3200
-            then
-                return BOT_ACTION_DESIRE_HIGH
-            end
-        end
+    if J.IsGoingOnSomeone(bot) and J.IsValidHero(target) and not J.IsSuspiciousIllusion(target)
+        and not Protected(target) and not J.IsInRange(bot, target, bot:GetAttackRange() + 200)
+        and J.IsInRange(bot, target, 3000) then return BOT_ACTION_DESIRE_HIGH end
+    if J.IsFarming(bot) and bot.farmLocation ~= nil
+        and GetUnitToLocationDistance(bot, bot.farmLocation) > 1800 and FarmMana(SkeletonWalk) then
+        return BOT_ACTION_DESIRE_HIGH
     end
-
-    if J.IsLaning(bot)
-	then
-		if J.GetManaAfter(SkeletonWalk:GetManaCost()) > 0.8
-		and bot:DistanceFromFountain() > 100
-		and bot:DistanceFromFountain() < 6000
-		and J.IsInLaningPhase()
-		and nEnemyHeroes ~= nil and #nEnemyHeroes == 0
-		then
-			local nLane = bot:GetAssignedLane()
-			local nLaneFrontLocation = GetLaneFrontLocation(GetTeam(), nLane, 0)
-			local nDistFromLane = GetUnitToLocationDistance(bot, nLaneFrontLocation)
-
-			if nDistFromLane > 1600
-			then
-                return BOT_ACTION_DESIRE_HIGH
-			end
-		end
-	end
-
-    if J.IsDoingRoshan(bot)
-    then
-        if GetUnitToLocationDistance(bot, RoshanLocation) > 4000
-        then
-            return BOT_ACTION_DESIRE_HIGH
-        end
+    if J.IsLaning(bot) and J.GetMP(bot) > 0.75
+        and bot:DistanceFromFountain() > 100 and bot:DistanceFromFountain() < 6000
+        and GetUnitToLocationDistance(bot, GetLaneFrontLocation(GetTeam(), bot:GetAssignedLane(), 0)) > 1600
+        and #J.GetNearbyHeroes(bot, 1200, true, BOT_MODE_NONE) == 0 then return BOT_ACTION_DESIRE_HIGH end
+    if J.IsDoingRoshan(bot) and GetUnitToLocationDistance(bot, J.GetCurrentRoshanLocation()) > 3000
+        or J.IsDoingTormentor(bot) and GetUnitToLocationDistance(bot, J.GetTormentorLocation(GetTeam())) > 3000 then
+        return BOT_ACTION_DESIRE_HIGH
     end
-
-    if J.IsDoingTormentor(bot)
-    then
-        if GetUnitToLocationDistance(bot, TormentorLocation) > 4000
-        then
-            return BOT_ACTION_DESIRE_HIGH
-        end
-    end
-
     return BOT_ACTION_DESIRE_NONE
 end
 
-function X.ConsiderSearingArrows()
-    if not J.CanCastAbility(SearingArrows)
-    or bot:IsDisarmed()
-    then
+function X.ConsiderDeathPact()
+    if not Castable(DeathPact) then return BOT_ACTION_DESIRE_NONE, nil end
+    local range = CastRange(DeathPact)
+    local needsHealing = bot:GetMaxHealth() - bot:GetHealth() >= DeathPact:GetSpecialValueInt('health_gain') * 0.65
+        or J.GetHP(bot) < 0.45
+    local hasBuff = bot:HasModifier('modifier_clinkz_death_pact')
+    if hasBuff and not needsHealing then return BOT_ACTION_DESIRE_NONE, nil end
+    if not needsHealing and not FarmMana(DeathPact) then return BOT_ACTION_DESIRE_NONE, nil end
+    -- Keep the final spare charge for combat once the ability holds two charges.
+    if not needsHealing and DeathPact:GetSpecialValueInt('AbilityCharges') >= 2
+        and DeathPact:GetCurrentCharges() <= 1
+        and not J.IsGoingOnSomeone(bot) and not J.IsInTeamFight(bot, 1200) then
         return BOT_ACTION_DESIRE_NONE, nil
     end
-
-    local nCastRange = bot:GetAttackRange()
-    local nManaCost = SearingArrows:GetManaCost()
-	local fManaAfter = J.GetManaAfter(nManaCost)
-	local fManaThreshold1 = J.GetManaThreshold(bot, nManaCost, {Strafe, DeathPact, BurningBarrage, BurningArmy, SkeletonWalk})
-
-    local bIsAutoCasted = SearingArrows:GetAutoCastState()
-
-	if J.IsGoingOnSomeone(bot) then
-		if  J.IsValidHero(botTarget)
-		and J.CanBeAttacked(botTarget)
-		and J.IsInRange(bot, botTarget, nCastRange + 300)
-        and not J.IsSuspiciousIllusion(botTarget)
-        and not botTarget:IsMagicImmune()
-        and not botTarget:HasModifier('modifier_abaddon_borrowed_time')
-		and not botTarget:HasModifier('modifier_dazzle_shallow_grave')
-        and not botTarget:HasModifier('modifier_necrolyte_reapers_scythe')
-		then
-            if fManaAfter > fManaThreshold1 + 0.1 then
-                if not bIsAutoCasted then
-                    SearingArrows:ToggleAutoCast()
-                end
-
-                return BOT_ACTION_DESIRE_NONE
-            end
-		end
-	end
-
-    if J.IsPushing(bot) or J.IsDefending(bot) or J.IsFarming(bot) then
-        if  J.IsValid(botTarget)
-        and J.CanBeAttacked(botTarget)
-        and J.IsInRange(bot, botTarget, nCastRange)
-        and not J.CanKillTarget(botTarget, bot:GetAttackDamage() * 3, DAMAGE_TYPE_PHYSICAL)
-        and not J.IsRoshan(botTarget)
-        and not J.IsTormentor(botTarget)
-        then
-            if fManaAfter > fManaThreshold1 + 0.15 then
-                if not bIsAutoCasted then
-                    SearingArrows:ToggleAutoCast()
-                end
-
-                return BOT_ACTION_DESIRE_NONE
-            end
+    local best, score = nil, -math.huge
+    local candidates = bot:GetNearbyCreeps(math.min(range, 1600), true)
+    for _, unit in pairs(bot:GetNearbyNeutralCreeps(math.min(range, 1600))) do table.insert(candidates, unit) end
+    if needsHealing then
+        for _, unit in pairs(GetUnitList(UNIT_LIST_ALLIES)) do
+            if OwnSkeleton(unit) then table.insert(candidates, unit) end
         end
     end
-
-	if J.IsDoingRoshan(bot) then
-        if  J.IsRoshan(botTarget)
-		and J.CanBeAttacked(botTarget)
-        and J.IsInRange(bot, botTarget, nCastRange)
-        then
-            if fManaAfter > fManaThreshold1 + 0.15 then
-                if not bIsAutoCasted and bAttacking then
-                    SearingArrows:ToggleAutoCast()
-                end
-
-                return BOT_ACTION_DESIRE_NONE
-            end
+    for _, creep in pairs(candidates) do
+        local own = OwnSkeleton(creep)
+        if J.IsValid(creep) and not creep:IsHero() and not creep:IsAncientCreep()
+            and creep:CanBeSeen() and not creep:IsInvulnerable()
+            and J.IsInRange(bot, creep, range)
+            and (own or creep:GetTeam() ~= bot:GetTeam()
+                and creep:GetLevel() <= DeathPact:GetSpecialValueInt('creep_level')
+                and J.CanCastOnNonMagicImmune(creep) and J.CanCastOnTargetAdvanced(creep)
+                and not creep:HasModifier('modifier_antimage_counterspell')
+                and not creep:HasModifier('modifier_antimage_counterspell_ally')) then
+            local value = own and -1000 or creep:GetMaxHealth()
+            if not own and creep:GetPlayerID() >= 0 then value = value + 2000 end
+            if not own and (J.IsKeyWordUnit('ranged', creep) or J.IsKeyWordUnit('siege', creep)) then value = value + 1000 end
+            if value > score then best, score = creep, value end
         end
     end
-
-    if J.IsDoingTormentor(bot) then
-        if  J.IsTormentor(botTarget)
-        and J.IsInRange(bot, botTarget, nCastRange)
-        then
-            if fManaAfter > fManaThreshold1 + 0.15 then
-                if not bIsAutoCasted and bAttacking then
-                    SearingArrows:ToggleAutoCast()
-                end
-
-                return BOT_ACTION_DESIRE_NONE
-            end
-        end
-    end
-
-    if bIsAutoCasted then
-        SearingArrows:ToggleAutoCast()
-    end
-
+    if best ~= nil then return BOT_ACTION_DESIRE_HIGH, best end
     return BOT_ACTION_DESIRE_NONE, nil
 end
 
-
---Aghanim's Shard
-function X.ConsiderBurningBarrage()
-    if not BurningBarrage:IsTrained()
-    or not BurningBarrage:IsFullyCastable()
-    then
-        return BOT_ACTION_DESIRE_NONE, 0
+function X.ConsiderStrafe()
+    if not Castable(Strafe) or bot:HasModifier('modifier_clinkz_strafe') then return BOT_ACTION_DESIRE_NONE end
+    local target = J.GetProperTarget(bot)
+    local range = bot:GetAttackRange() + Strafe:GetSpecialValueInt('attack_range_bonus')
+    if not bot:IsDisarmed() and Attackable(target) and J.IsInRange(bot, target, range)
+        and (J.IsGoingOnSomeone(bot) or J.IsInTeamFight(bot, 1200)
+            or (J.IsPushing(bot) and J.IsValidBuilding(target) and J.IsAttacking(bot))
+            or ((J.IsDoingRoshan(bot) and J.IsRoshan(target)
+                or J.IsDoingTormentor(bot) and J.IsTormentor(target)) and J.IsAttacking(bot))) then
+        return BOT_ACTION_DESIRE_HIGH
     end
+    local barrage = bot:GetAbilityByName('clinkz_burning_barrage')
+    local base = bot:GetUnitName() == 'npc_dota_hero_rubick' and 550 or 600
+    if not bot:IsDisarmed() and Castable(barrage) and J.IsGoingOnSomeone(bot) and Attackable(target)
+        and J.IsInRange(bot, target, barrage:GetSpecialValueInt('range')
+            + math.max(0, bot:GetAttackRange() - base) + Strafe:GetSpecialValueInt('attack_range_bonus'))
+        and bot:GetMana() >= Strafe:GetManaCost() + barrage:GetManaCost() + WalkReserve() then
+        return BOT_ACTION_DESIRE_HIGH
+    end
+    -- The skeleton buff is useful even while Clinkz remains hidden or disarmed.
+    for _, skeleton in pairs(GetUnitList(UNIT_LIST_ALLIES)) do
+        if OwnSkeleton(skeleton) and J.IsInRange(bot, skeleton, Strafe:GetSpecialValueInt('strafe_skeleton_radius'))
+            and Attackable(skeleton:GetAttackTarget()) then return BOT_ACTION_DESIRE_HIGH end
+    end
+    if not bot:IsDisarmed() and J.IsAttacking(bot) and FarmMana(Strafe)
+        and (J.IsFarming(bot) or J.IsPushing(bot) or J.IsDefending(bot))
+        and (#bot:GetNearbyNeutralCreeps(range) >= 2 or #bot:GetNearbyLaneCreeps(range, true) >= 4) then
+        return BOT_ACTION_DESIRE_HIGH
+    end
+    return BOT_ACTION_DESIRE_NONE
+end
 
-    local nCastRange = J.GetProperCastRange(false, bot, BurningBarrage:GetCastRange())
-    local nRadius = BurningBarrage:GetSpecialValueInt('projectile_width')
+local function CanArrow(unit)
+    return Attackable(unit) and J.IsInRange(bot, unit, bot:GetAttackRange())
+        and not unit:HasModifier('modifier_antimage_counterspell')
+        and not unit:HasModifier('modifier_antimage_counterspell_ally')
+end
 
-    if J.IsGoingOnSomeone(bot)
-	then
-		if J.IsValidTarget(botTarget)
-        and J.IsInRange(bot, botTarget, nCastRange - 125)
-        and not J.IsSuspiciousIllusion(botTarget)
-        and not botTarget:HasModifier('modifier_abaddon_borrowed_time')
-        and not botTarget:HasModifier('modifier_dazzle_shallow_grave')
-        and not botTarget:HasModifier('modifier_necrolyte_reapers_scythe')
-		then
-            local nInRangeAlly = J.GetAlliesNearLoc(botTarget:GetLocation(), 1200)
-            local nInRangeEnemy = J.GetEnemiesNearLoc(botTarget:GetLocation(), 1200)
+function X.ConsiderSearingArrows()
+    if SearingArrows == nil or not SearingArrows:IsTrained() or SearingArrows:IsHidden() then
+        return BOT_ACTION_DESIRE_NONE, nil
+    end
+    local target = J.GetProperTarget(bot)
+    local valid = not bot:IsDisarmed() and CanArrow(target)
+    local combat = valid and J.IsValidHero(target) and (J.IsGoingOnSomeone(bot) or J.IsInTeamFight(bot, 1200))
+    local sustained = valid and (combat or J.IsPushing(bot) and J.IsValidBuilding(target)
+        or J.IsDoingRoshan(bot) and J.IsRoshan(target) or J.IsDoingTormentor(bot) and J.IsTormentor(target))
+    local canSpend = Castable(SearingArrows) and bot:GetMana() - SearingArrows:GetManaCost() >= WalkReserve()
+    if sustained and canSpend then
+        if not SearingArrows:GetAutoCastState() then SearingArrows:ToggleAutoCast() end
+        return BOT_ACTION_DESIRE_NONE, nil
+    end
+    if SearingArrows:GetAutoCastState() then SearingArrows:ToggleAutoCast() end
+    if not Castable(SearingArrows) or bot:IsDisarmed() or J.IsRetreating(bot) then return BOT_ACTION_DESIRE_NONE, nil end
+    local damage = bot:GetAttackDamage() + SearingArrows:GetSpecialValueInt('damage_bonus')
+    if J.IsLaning(bot) then
+        for _, creep in pairs(bot:GetNearbyLaneCreeps(bot:GetAttackRange(), true)) do
+            if CanArrow(creep) and J.CanKillTarget(creep, damage, DAMAGE_TYPE_PHYSICAL)
+                and not J.CanKillTarget(creep, bot:GetAttackDamage(), DAMAGE_TYPE_PHYSICAL)
+                and FarmMana(SearingArrows) then return BOT_ACTION_DESIRE_HIGH, creep end
+        end
+        if J.IsValidHero(target) and CanArrow(target) and FarmMana(SearingArrows) then
+            return BOT_ACTION_DESIRE_HIGH, target
+        end
+    end
+    return BOT_ACTION_DESIRE_NONE, nil
+end
 
-            if nInRangeAlly ~= nil and nInRangeEnemy ~= nil
-            and #nInRangeAlly >= #nInRangeEnemy
-            then
-                nInRangeEnemy = J.GetEnemiesNearLoc(botTarget:GetLocation(), nRadius - 75)
-                if nInRangeEnemy ~= nil and #nInRangeEnemy >= 1
-                then
-                    return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(nInRangeEnemy)
-                else
-                    return BOT_ACTION_DESIRE_HIGH, botTarget:GetExtrapolatedLocation(0.5)
-                end
+local function BarrageRange()
+    -- These are the current base attack ranges of the native hero and Rubick.
+    local base = bot:GetUnitName() == 'npc_dota_hero_rubick' and 550 or 600
+    return BurningBarrage:GetSpecialValueInt('range') + math.max(0, bot:GetAttackRange() - base)
+end
+
+local function LineHits(units, location, range)
+    local origin = bot:GetLocation()
+    local delta = location - origin
+    if delta:Length2D() == 0 then return 0 end
+    local dir = delta:Normalized()
+    local count = 0
+    for _, unit in pairs(units) do
+        if J.IsValid(unit) and J.CanBeAttacked(unit) and not Protected(unit) then
+            local offset = J.GetCorrectLoc(unit, 0.4) - origin
+            local along = offset.x * dir.x + offset.y * dir.y
+            local across = math.abs(offset.x * dir.y - offset.y * dir.x)
+            if along >= 0 and along <= range and across <= BurningBarrage:GetSpecialValueInt('projectile_width') / 2 then
+                count = count + 1
             end
-		end
-	end
+        end
+    end
+    return count
+end
 
-    if J.IsFarming(bot)
-    then
-        local nNeutralCreeps = bot:GetNearbyNeutralCreeps(1000)
-        if nNeutralCreeps ~= nil and #nNeutralCreeps >= 1
-        and J.IsAttacking(bot)
-        and J.GetManaAfter(BurningBarrage:GetManaCost()) * bot:GetMana() > SkeletonWalk:GetManaCost()
-        then
-            if J.IsBigCamp(nNeutralCreeps)
-            or nNeutralCreeps[1]:IsAncientCreep()
-            then
-                if #nNeutralCreeps >= 2
-                then
-                    return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(nNeutralCreeps)
-                end
-            else
-                if #nNeutralCreeps >= 3
-                then
-                    return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(nNeutralCreeps)
+function X.ConsiderBurningBarrage()
+    if not Castable(BurningBarrage) or bot:IsDisarmed() or J.IsRetreating(bot) then return BOT_ACTION_DESIRE_NONE, nil end
+    local range = BarrageRange()
+    local target = J.GetProperTarget(bot)
+    if J.IsGoingOnSomeone(bot) and Attackable(target) and J.IsInRange(bot, target, range)
+        and #J.GetNearbyHeroes(bot, 600, true, BOT_MODE_NONE) <= 1 then
+        local location = J.GetCorrectLoc(target, 0.4)
+        if LineHits({target}, location, range) > 0 then return BOT_ACTION_DESIRE_HIGH, location end
+    end
+    if J.IsInTeamFight(bot, 1200) then
+        local enemies = J.GetNearbyHeroes(bot, math.min(range, 1600), true, BOT_MODE_NONE)
+        for _, enemy in pairs(enemies) do
+            local location = J.GetCorrectLoc(enemy, 0.4)
+            if LineHits(enemies, location, range) >= 2 then return BOT_ACTION_DESIRE_HIGH, location end
+        end
+    end
+    if FarmMana(BurningBarrage) and J.IsAttacking(bot)
+        and (J.IsFarming(bot) or J.IsPushing(bot) or J.IsDefending(bot)) then
+        local lists = {bot:GetNearbyLaneCreeps(math.min(range, 1600), true)}
+        if J.IsFarming(bot) then table.insert(lists, bot:GetNearbyNeutralCreeps(math.min(range, 1600))) end
+        for index, units in ipairs(lists) do
+            for _, unit in pairs(units) do
+                local location = unit:GetLocation()
+                if LineHits(units, location, range) >= (index == 1 and 3 or 2) then
+                    return BOT_ACTION_DESIRE_HIGH, location
                 end
             end
         end
-
-        local nEnemyLaneCreeps = bot:GetNearbyLaneCreeps(1000, true)
-		if nEnemyLaneCreeps ~= nil and #nEnemyLaneCreeps >= 4
-		then
-			return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(nEnemyLaneCreeps)
-		end
     end
-
-    if J.IsPushing(bot) or J.IsDefending(bot)
-    then
-        local nEnemyLaneCreeps = bot:GetNearbyLaneCreeps(1000, true)
-		if nEnemyLaneCreeps ~= nil and #nEnemyLaneCreeps >= 4
-		then
-			return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(nEnemyLaneCreeps)
-		end
-    end
-
-    if J.IsDoingRoshan(bot) or J.IsDoingTormentor(bot)
-	then
-		if (J.IsRoshan(botTarget) or J.IsTormentor(botTarget))
-        and J.IsInRange(bot, botTarget, bot:GetAttackRange())
-        and J.IsAttacking(bot)
-		then
-			return BOT_ACTION_DESIRE_HIGH, botTarget:GetLocation()
-		end
-	end
-
-    return BOT_ACTION_DESIRE_NONE, 0
+    if ((J.IsDoingRoshan(bot) and J.IsRoshan(target)) or (J.IsDoingTormentor(bot) and J.IsTormentor(target)))
+        and Attackable(target) and J.IsAttacking(bot) and J.IsInRange(bot, target, range)
+        and FarmMana(BurningBarrage) then return BOT_ACTION_DESIRE_HIGH, target:GetLocation() end
+    return BOT_ACTION_DESIRE_NONE, nil
 end
 
---Aghanim's Scepter
+local function EnableBarrageArrows()
+    local arrows = bot:GetAbilityByName('clinkz_searing_arrows')
+    if Castable(arrows) and not arrows:GetAutoCastState()
+        and bot:GetMana() >= BurningBarrage:GetManaCost() + WalkReserve()
+            + arrows:GetManaCost() * BurningBarrage:GetSpecialValueInt('wave_count') then
+        arrows:ToggleAutoCast()
+    end
+end
+
 function X.ConsiderBurningArmy()
-    if not BurningBarrage:IsTrained()
-    or not BurningBarrage:IsFullyCastable()
-    then
-        return BOT_ACTION_DESIRE_NONE, 0
-    end
-
-    local nAttackRange = bot:GetAttackRange()
-	local nCastRange = BurningArmy:GetCastRange()
-    local nSpawnRange = 900
-
-	if J.IsInTeamFight(bot, 1200)
-	then
-		local nLocationAoE = bot:FindAoELocation(true, true, bot:GetLocation(), nCastRange + (nSpawnRange / 2), nSpawnRange, 0, 0)
-        local nInRangeEnemy = J.GetEnemiesNearLoc(nLocationAoE.targetloc, nSpawnRange)
-
-		if nInRangeEnemy ~= nil and #nInRangeEnemy >= 2
-        then
-            if GetUnitToLocationDistance(bot, J.GetCenterOfUnits(nInRangeEnemy)) > nCastRange
-            then
-                return BOT_ACTION_DESIRE_HIGH, J.Site.GetXUnitsTowardsLocation(bot, J.GetCenterOfUnits(nInRangeEnemy), nCastRange)
-            else
-                return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(nInRangeEnemy)
-            end
-		end
-	end
-
-    if J.IsGoingOnSomeone(bot)
-	then
-		if J.IsValidTarget(botTarget)
-        and J.IsInRange(bot, botTarget, nCastRange)
-        and not J.IsSuspiciousIllusion(botTarget)
-        and not botTarget:HasModifier('modifier_abaddon_borrowed_time')
-        and not botTarget:HasModifier('modifier_dazzle_shallow_grave')
-        and not botTarget:HasModifier('modifier_necrolyte_reapers_scythe')
-		then
-            local nInRangeAlly = J.GetAlliesNearLoc(botTarget:GetLocation(), 1200)
-            local nInRangeEnemy = J.GetEnemiesNearLoc(botTarget:GetLocation(), 1200)
-
-            if nInRangeAlly ~= nil and nInRangeEnemy ~= nil
-            and #nInRangeAlly >= #nInRangeEnemy
-            then
-                nInRangeEnemy = J.GetEnemiesNearLoc(botTarget:GetLocation(), nSpawnRange)
-                if nInRangeEnemy ~= nil and #nInRangeEnemy >= 1
-                then
-                    if GetUnitToLocationDistance(bot, J.GetCenterOfUnits(nInRangeEnemy)) > nCastRange
-                    then
-                        return BOT_ACTION_DESIRE_HIGH, J.Site.GetXUnitsTowardsLocation(bot, J.GetCenterOfUnits(nInRangeEnemy), nCastRange)
-                    else
-                        return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(nInRangeEnemy)
-                    end
-                else
-                    if GetUnitToUnitDistance(bot, botTarget) > nCastRange
-                    then
-                        return BOT_ACTION_DESIRE_HIGH, J.Site.GetXUnitsTowardsLocation(bot, botTarget:GetLocation(), nCastRange)
-                    else
-                        return BOT_ACTION_DESIRE_HIGH, botTarget:GetExtrapolatedLocation(0.5)
-                    end
-                end
-            end
-		end
-	end
-
-    return BOT_ACTION_DESIRE_NONE, 0
+    -- Requires two vector endpoints. Do not replace it with an invalid point cast.
+    return BOT_ACTION_DESIRE_NONE, nil
 end
 
--- Helper Funcs
-function GetMostHPCreepLevel(creeList, level)
-	local mostHpCreep = nil
-	local maxHP = 0
-
-	for _, creep in pairs(creeList)
-	do
-		local uHp = creep:GetHealth()
-        local lvl = creep:GetLevel()
-
-		if uHp > maxHP
-        and lvl <= level
-        and not J.IsKeyWordUnit("flagbearer", creep)
-		then
-			mostHpCreep = creep
-			maxHP = uHp
-		end
-	end
-
-	return mostHpCreep
+function X.SkillsComplement()
+    if X.UseBarrageInvisibility() then return end
+    if J.CanNotUseAbility(bot) then return end
+    if X.ConsiderSkeletonWalk() > 0 then bot:Action_UseAbility(SkeletonWalk); return end
+    local pact, creep = X.ConsiderDeathPact()
+    if pact > 0 then bot:Action_UseAbilityOnEntity(DeathPact, creep); return end
+    if X.ConsiderStrafe() > 0 then bot:Action_UseAbility(Strafe); return end
+    local arrows, target = X.ConsiderSearingArrows()
+    if arrows > 0 then bot:Action_UseAbilityOnEntity(SearingArrows, target); return end
+    local barrage, location = X.ConsiderBurningBarrage()
+    if barrage > 0 then EnableBarrageArrows(); bot:Action_UseAbilityOnLocation(BurningBarrage, location); return end
 end
 
 return X

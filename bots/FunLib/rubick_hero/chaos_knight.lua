@@ -1,305 +1,136 @@
-local bot
 local X = {}
+local bot = GetBot()
 local J = require(GetScriptDirectory()..'/FunLib/jmz_func')
-
-local ChaosBolt
-local RealityRift
-local Phantasm
-
-local nHP, hEnemyHeroList
-
-local botTarget
-
+local abilityQ, abilityW, abilityR
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
-    local abilityName = ability:GetName()
-    if abilityName ~= 'chaos_knight_phantasm'
-    and abilityName ~= 'chaos_knight_reality_rift'
-    and abilityName ~= 'chaos_knight_chaos_bolt' then return nil end
-
+    local name = ability:GetName()
+    if name ~= 'chaos_knight_chaos_bolt' and name ~= 'chaos_knight_reality_rift'
+        and name ~= 'chaos_knight_phantasm' then return nil end
     if J.CanNotUseAbility(bot) then return false end
-
-    botTarget = J.GetProperTarget(bot)
-
-	nHP = bot:GetHealth()/bot:GetMaxHealth()
-	hEnemyHeroList = J.GetNearbyHeroes(bot, 1600, true, BOT_MODE_NONE )
-
-    if abilityName == 'chaos_knight_phantasm'
-    then
-        Phantasm = ability
-        PhantasmDesire = X.ConsiderPhantasm()
-        if PhantasmDesire > 0
-        then
-            bot:ActionQueue_UseAbility(Phantasm)
-            return true
-        end
-    end
-
-    if abilityName == 'chaos_knight_reality_rift'
-    then
-        RealityRift = ability
-        RealityRiftDesire, RealityRiftTarget = X.ConsiderRealityRift()
-        if RealityRiftDesire > 0
-        then
-            bot:Action_UseAbilityOnEntity(RealityRift, RealityRiftTarget)
-            return true
-        end
-    end
-
-    if abilityName == 'chaos_knight_chaos_bolt'
-    then
-        ChaosBolt = ability
-        ChaosBoltDesire, ChaosBoltTarget = X.ConsiderChaosBolt()
-        if ChaosBoltDesire > 0
-        then
-            bot:Action_UseAbilityOnEntity(ChaosBolt, ChaosBoltTarget)
-            return true
-        end
-    end
+    local desire, target
+    if name == 'chaos_knight_phantasm' then
+        abilityR=ability; desire=X.ConsiderPhantasm()
+        if desire > 0 then bot:ActionQueue_UseAbility(ability); return true end
+    elseif name == 'chaos_knight_chaos_bolt' then abilityQ=ability; desire,target=X.ConsiderChaosBolt()
+    else abilityW=ability; desire,target=X.ConsiderRealityRift() end
+    if desire > 0 then bot:Action_UseAbilityOnEntity(ability, target); return true end
     return false
 end
 
-function X.ConsiderChaosBolt()
-
-	if not ChaosBolt:IsFullyCastable() then return BOT_ACTION_DESIRE_NONE end
-
-	local nCastRange = J.GetProperCastRange(false, bot, ChaosBolt:GetCastRange())
-	local nSkillLV = ChaosBolt:GetLevel()
-	local nDamage = 30 + nSkillLV * 30 + 120 * 0.38
-
-	local nEnemysHeroesInCastRange = J.GetNearbyHeroes(bot, nCastRange + 99, true, BOT_MODE_NONE )
-	local nEnemysHeroesInView = J.GetNearbyHeroes(bot, 880, true, BOT_MODE_NONE )
-
-	if #nEnemysHeroesInCastRange > 0 then
-		for i=1, #nEnemysHeroesInCastRange do
-			if J.IsValid( nEnemysHeroesInCastRange[i] )
-				and J.CanCastOnNonMagicImmune( nEnemysHeroesInCastRange[i] )
-				and J.CanCastOnTargetAdvanced( nEnemysHeroesInCastRange[i] )
-				and nEnemysHeroesInCastRange[i]:GetHealth() < nEnemysHeroesInCastRange[i]:GetActualIncomingDamage( nDamage, DAMAGE_TYPE_MAGICAL )
-				and not ( GetUnitToUnitDistance( nEnemysHeroesInCastRange[i], bot ) <= bot:GetAttackRange() + 60 )
-				and not J.IsDisabled( nEnemysHeroesInCastRange[i] )
-			then
-				return BOT_ACTION_DESIRE_HIGH, nEnemysHeroesInCastRange[i]
-			end
-		end
-	end
-
-	if #nEnemysHeroesInView > 0 then
-		for i=1, #nEnemysHeroesInView do
-			if J.IsValid( nEnemysHeroesInView[i] )
-				and J.CanCastOnNonMagicImmune( nEnemysHeroesInView[i] )
-				and J.CanCastOnTargetAdvanced( nEnemysHeroesInView[i] )
-				and nEnemysHeroesInView[i]:IsChanneling()
-			then
-				return BOT_ACTION_DESIRE_HIGH, nEnemysHeroesInView[i]
-			end
-		end
-	end
-
-	if J.IsInTeamFight( bot, 1200 )
-		and DotaTime() > 4 * 60
-	then
-		local npcMostDangerousEnemy = nil
-		local nMostDangerousDamage = 0
-
-		for _, npcEnemy in pairs( nEnemysHeroesInCastRange )
-		do
-			if J.IsValid( npcEnemy )
-				and J.CanCastOnNonMagicImmune( npcEnemy )
-				and J.CanCastOnTargetAdvanced( npcEnemy )
-				and not J.IsDisabled( npcEnemy )
-				and not npcEnemy:IsDisarmed()
-			then
-				local npcEnemyDamage = npcEnemy:GetEstimatedDamageToTarget( false, bot, 3.0, DAMAGE_TYPE_ALL )
-				if ( npcEnemyDamage > nMostDangerousDamage )
-				then
-					nMostDangerousDamage = npcEnemyDamage
-					npcMostDangerousEnemy = npcEnemy
-				end
-			end
-		end
-
-		if ( npcMostDangerousEnemy ~= nil )
-		then
-			return BOT_ACTION_DESIRE_HIGH, npcMostDangerousEnemy
-		end
-	end
-
-	if J.IsGoingOnSomeone( bot )
-	then
-		local target = J.GetProperTarget( bot )
-		if J.IsValidHero( target )
-			and J.CanCastOnNonMagicImmune( target )
-			and J.CanCastOnTargetAdvanced( target )
-			and J.IsInRange( target, bot, nCastRange )
-			and not J.IsDisabled( target )
-			and not target:IsDisarmed()
-		then
-			return BOT_ACTION_DESIRE_HIGH, target
-		end
-	end
-
-	if J.IsRetreating( bot )
-	then
-		if J.IsValid( nEnemysHeroesInCastRange[1] )
-			and J.CanCastOnNonMagicImmune( nEnemysHeroesInCastRange[1] )
-			and J.CanCastOnTargetAdvanced( nEnemysHeroesInCastRange[1] )
-			and not J.IsDisabled( nEnemysHeroesInCastRange[1] )
-			and not nEnemysHeroesInCastRange[1]:IsDisarmed()
-			and GetUnitToUnitDistance( bot, nEnemysHeroesInCastRange[1] ) <= nCastRange - 60
-		then
-			return BOT_ACTION_DESIRE_HIGH, nEnemysHeroesInCastRange[1]
-		end
-	end
-
-
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN
-		and bot:GetMana() > 400
-	then
-		local target =  bot:GetAttackTarget()
-
-		if target ~= nil and target:IsAlive()
-			and J.GetHP( target ) > 0.2
-			and not J.IsDisabled( target )
-			and not target:IsDisarmed()
-		then
-			return BOT_ACTION_DESIRE_LOW, target
-		end
-	end
-
-	return BOT_ACTION_DESIRE_NONE
+local function CastRange(ability)
+    local range = ability:GetCastRange()
+    if J.IsItemAvailable('item_aether_lens') ~= nil then range = range + 225 end
+    local supremacy = bot:GetAbilityByName('rubick_arcane_supremacy')
+    if supremacy ~= nil and supremacy:IsTrained() and not J.HasBreakModifier(bot) then
+        range = range + supremacy:GetSpecialValueInt('cast_range')
+    end
+    return range
 end
 
-
-function X.ConsiderRealityRift()
-
-	if not RealityRift:IsFullyCastable() or bot:IsRooted() then return BOT_ACTION_DESIRE_NONE end
-
-	local nCastRange = J.GetProperCastRange(false, bot, RealityRift:GetCastRange())
-
-	if J.IsGoingOnSomeone( bot )
-	then
-		local target = J.GetProperTarget( bot )
-		if J.IsValidHero( target )
-			and J.IsInRange( target, bot, nCastRange + 50 )
-			and ( not J.IsInRange( bot, target, 200 ) or not target:HasModifier( 'modifier_chaos_knight_reality_rift' ) )
-			and J.CanCastOnNonMagicImmune( target )
-			and J.CanCastOnTargetAdvanced( target )
-			and not J.IsDisabled( target )
-		then
-			return BOT_ACTION_DESIRE_HIGH, target
-		end
-	end
-
-
-	if J.IsRetreating( bot )
-	then
-		local enemies = J.GetNearbyHeroes(bot, 800, true, BOT_MODE_NONE )
-		local creeps = bot:GetNearbyLaneCreeps( nCastRange, true )
-
-		if enemies[1] ~= nil and creeps[1] ~= nil
-		then
-			for _, creep in pairs( creeps )
-			do
-				if enemies[1]:IsFacingLocation( bot:GetLocation(), 30 )
-					and bot:IsFacingLocation( creep:GetLocation(), 30 )
-					and GetUnitToUnitDistance( bot, creep ) >= 650
-				then
-					return BOT_ACTION_DESIRE_LOW, creep
-				end
-			end
-		end
-	end
-
-
-	if hEnemyHeroList[1] == nil
-		and bot:GetAttackDamage() >= 150
-	then
-		local nCreeps = bot:GetNearbyLaneCreeps( 1000, true )
-		for i=1, #nCreeps
-		do
-			local creep = nCreeps[#nCreeps -i + 1]
-			if J.IsValid( creep )
-				and not creep:HasModifier( "modifier_fountain_glyph" )
-				and J.IsKeyWordUnit( "ranged", creep )
-				and GetUnitToUnitDistance( bot, creep ) >= 350
-			then
-				return BOT_ACTION_DESIRE_LOW, creep
-			end
-		end
-	end
-
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN
-		and bot:GetMana() > 400
-	then
-		local target =  bot:GetAttackTarget()
-		if target ~= nil
-			and not J.IsDisabled( target )
-			and not target:IsDisarmed()
-		then
-			return BOT_ACTION_DESIRE_LOW, target
-		end
-	end
-
-	return BOT_ACTION_DESIRE_NONE
-
+local function CanTarget(enemy, ability, immune)
+    return J.IsValid(enemy) and J.IsInRange(bot, enemy, CastRange(ability))
+        and (immune and J.CanCastOnMagicImmune(enemy) or not immune and J.CanCastOnNonMagicImmune(enemy))
+        and J.CanCastOnTargetAdvanced(enemy)
+        and not enemy:HasModifier('modifier_antimage_counterspell')
+        and not enemy:HasModifier('modifier_antimage_counterspell_ally')
 end
 
-function X.ConsiderPhantasm()
-
-	if not Phantasm:IsFullyCastable() or bot:DistanceFromFountain() < 500 then return BOT_ACTION_DESIRE_NONE end
-
-	local nNearbyEnemyHeroes = J.GetEnemyList( bot, 1600 )
-	local nNearbyEnemyTowers = bot:GetNearbyTowers( 700, true )
-	local nNearbyEnemyBarracks = bot:GetNearbyBarracks( 400, true )
-	local nNearbyAlliedCreeps = bot:GetNearbyLaneCreeps( 1000, false )
-	local nCastRange = 900
-
-	if J.IsGoingOnSomeone( bot )
-	then
-		if J.IsValidHero( botTarget )
-			and J.IsInRange( bot, botTarget, nCastRange )
-			and J.CanCastOnMagicImmune( botTarget )
-			--and #nNearbyAllyHeroes - #nNearbyEnemyHeroes <= 2
-			and ( J.GetHP( botTarget ) > 0.5
-				  or nHP < 0.7
-				  or #nNearbyEnemyHeroes >= 2 )
-
-		then
-			return BOT_ACTION_DESIRE_HIGH
-		end
-	end
-
-
-	if J.IsInTeamFight( bot, 1200 )
-	then
-		if #nNearbyEnemyHeroes >= 2
-		then
-			return BOT_ACTION_DESIRE_HIGH
-		end
-	end
-
-
-	if J.IsPushing( bot )
-		and DotaTime() > 8 * 30
-	then
-		if ( #nNearbyEnemyTowers >= 1 or #nNearbyEnemyBarracks >= 1 )
-			and #nNearbyAlliedCreeps >= 2
-		then
-			return BOT_ACTION_DESIRE_HIGH
-		end
-	end
-
-
-	if bot:GetActiveMode() == BOT_MODE_RETREAT
-		and nHP >= 0.5
-		and J.IsValidHero( nNearbyEnemyHeroes[1] )
-		and GetUnitToUnitDistance( bot, nNearbyEnemyHeroes[1] ) <= 700
-	then
-		return BOT_ACTION_DESIRE_HIGH
-	end
-
-	return BOT_ACTION_DESIRE_NONE
+function X.ConsiderQ()
+    if not J.CanCastAbility(abilityQ) then return 0 end
+    local enemies = J.GetNearbyHeroes(bot, math.min(CastRange(abilityQ), 1600), true, BOT_MODE_NONE)
+    local damage = abilityQ:GetSpecialValueInt('damage_min')
+    for _, enemy in ipairs(enemies) do
+        if CanTarget(enemy, abilityQ, false) then
+            local delay = abilityQ:GetCastPoint() + GetUnitToUnitDistance(bot, enemy) / abilityQ:GetSpecialValueInt('chaos_bolt_speed')
+            -- Only the minimum random roll can guarantee a kill.
+            if enemy:IsChanneling() or J.WillMagicKillTarget(bot, enemy, damage, delay) then
+                return BOT_ACTION_DESIRE_HIGH, enemy
+            end
+        end
+    end
+    local target = J.GetProperTarget(bot)
+    if J.IsGoingOnSomeone(bot) and J.IsValidHero(target) and CanTarget(target, abilityQ, false)
+        and not J.IsDisabled(target) then return BOT_ACTION_DESIRE_HIGH, target end
+    local best, power = nil, 0
+    for _, enemy in ipairs(enemies) do
+        if CanTarget(enemy, abilityQ, false) and not J.IsDisabled(enemy) then
+            if J.IsRetreating(bot) and bot:WasRecentlyDamagedByHero(enemy, 3) then
+                return BOT_ACTION_DESIRE_HIGH, enemy
+            end
+            if J.IsInTeamFight(bot, 1200) then
+                local value = enemy:GetEstimatedDamageToTarget(false, bot, 3, DAMAGE_TYPE_ALL)
+                if value > power then best, power = enemy, value end
+            end
+        end
+    end
+    if best then return BOT_ACTION_DESIRE_HIGH, best end
+    return 0
 end
 
+function X.ConsiderW()
+    if not J.CanCastAbility(abilityW) or bot:IsRooted() then return 0 end
+    local target = J.GetProperTarget(bot)
+    local talent = bot:GetAbilityByName('special_bonus_unique_chaos_knight')
+    local immune = abilityW:GetSpecialValueInt('pierces_immunity') == 1 or talent ~= nil and talent:IsTrained()
+    if J.IsGoingOnSomeone(bot) and J.IsValidHero(target) and CanTarget(target, abilityW, immune)
+        and not target:IsAttackImmune()
+        and (not J.IsInRange(bot, target, bot:GetAttackRange())
+            or not target:HasModifier('modifier_chaos_knight_reality_rift')) then
+        -- Pull allied-controlled targets as well: the armor debuff benefits the illusion burst.
+        return BOT_ACTION_DESIRE_HIGH, target
+    end
+    if (J.IsDoingRoshan(bot) or J.IsDoingTormentor(bot)) and J.IsValid(target)
+        and (J.IsRoshan(target) or J.IsTormentor(target)) and J.IsAttacking(bot)
+        and CanTarget(target, abilityW, immune) then return BOT_ACTION_DESIRE_HIGH, target end
+    if (J.IsFarming(bot) or J.IsPushing(bot) or J.IsDefending(bot))
+        and #J.GetNearbyHeroes(bot, 1600, true, BOT_MODE_NONE) == 0
+        and J.IsAllowedToSpam(bot, abilityW:GetManaCost()) then
+        for _, creep in ipairs(bot:GetNearbyLaneCreeps(math.min(CastRange(abilityW), 1600), true)) do
+            if CanTarget(creep, abilityW, immune) and J.IsKeyWordUnit('ranged', creep)
+                and not creep:HasModifier('modifier_fountain_glyph')
+                and not J.IsInRange(bot, creep, 350) then return BOT_ACTION_DESIRE_HIGH, creep end
+        end
+    end
+    return 0
+end
+
+function X.ConsiderR()
+    if not J.CanCastAbility(abilityR) or bot:DistanceFromFountain() < 500 then return 0 end
+    if bot:IsRooted() or bot:HasModifier('modifier_item_dustofappearance')
+        or J.IsUnitTargetProjectileIncoming(bot, 800) then return BOT_ACTION_DESIRE_HIGH end
+    local target = J.GetProperTarget(bot)
+    local enemies = J.GetNearbyHeroes(bot, 1200, true, BOT_MODE_NONE)
+    local reserve = 0
+    for _, name in ipairs({'chaos_knight_chaos_bolt','chaos_knight_reality_rift'}) do
+        local spell = bot:GetAbilityByName(name)
+        if J.CanCastAbility(spell) then reserve = reserve + spell:GetManaCost() end
+    end
+    if bot:GetMana() - abilityR:GetManaCost() < reserve then return 0 end
+    if J.IsGoingOnSomeone(bot) and J.IsValidHero(target) and J.CanCastOnMagicImmune(target)
+        and J.IsInRange(bot, target, 1000) then return BOT_ACTION_DESIRE_HIGH end
+    if J.IsInTeamFight(bot, 1200) and #enemies >= 2 then return BOT_ACTION_DESIRE_HIGH end
+    if J.IsRetreating(bot) and #enemies > 0 and bot:WasRecentlyDamagedByAnyHero(2) then
+        return BOT_ACTION_DESIRE_HIGH
+    end
+    if #enemies == 0 and J.IsFarming(bot) and J.IsAttacking(bot) then
+        local creeps = bot:GetNearbyNeutralCreeps(700)
+        for _, creep in ipairs(creeps) do
+            if J.IsValid(creep) and (creep:IsAncientCreep() or #creeps >= 3)
+                and creep:GetHealth() > bot:GetAttackDamage() * 3 then return BOT_ACTION_DESIRE_HIGH end
+        end
+    end
+    if J.IsPushing(bot) and #bot:GetNearbyLaneCreeps(1000, false) >= 2
+        and (#bot:GetNearbyTowers(700, true) > 0 or #bot:GetNearbyBarracks(500, true) > 0) then
+        return BOT_ACTION_DESIRE_HIGH
+    end
+    if (J.IsDoingRoshan(bot) or J.IsDoingTormentor(bot)) and J.IsValid(target)
+        and (J.IsRoshan(target) or J.IsTormentor(target)) and J.IsAttacking(bot)
+        and J.IsInRange(bot, target, 700) then return BOT_ACTION_DESIRE_HIGH end
+    return 0
+end
+
+X.ConsiderChaosBolt=X.ConsiderQ
+X.ConsiderRealityRift=X.ConsiderW
+X.ConsiderPhantasm=X.ConsiderR
 return X

@@ -70,6 +70,7 @@ X['bDeafaultAbility'] = false
 X['bDeafaultItem'] = false
 
 function X.MinionThink(hMinionUnit)
+    if R.HandleAstralSpiritMinion(hMinionUnit) then return end
     Minion.MinionThink(hMinionUnit)
 end
 
@@ -104,6 +105,8 @@ local function considerLinkedSpells(releaseOnly)
 end
 
 function X.SkillsComplement()
+    R.ObserveGlimpseHistory()
+    if R.UseShadowRealmDuringChannel() or R.UsePendingConverge() or R.UseFreezingFieldSpell() or R.UseBarrageInvisibility() or R.UsePendingStomp() or R.UseGlacierDuringMultishot() or R.UseMagnetizeStone() or R.UseAstralSpirit() then return end
     if bot:IsChanneling() or bot:IsUsingAbility() or bot:IsCastingAbility() then return end
     if R.UsePendingGate() then return end
     if J.CanNotUseAbility(bot) then

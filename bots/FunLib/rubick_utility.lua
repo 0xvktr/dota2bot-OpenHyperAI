@@ -21,12 +21,24 @@ local Chen = require(GetScriptDirectory()..'/FunLib/rubick_hero/chen')
 local Clinkz = require(GetScriptDirectory()..'/FunLib/rubick_hero/clinkz')
 local CrystalMaiden = require(GetScriptDirectory()..'/FunLib/rubick_hero/crystal_maiden')
 local Clockwerk = require(GetScriptDirectory()..'/FunLib/rubick_hero/rattletrap')
+local DarkSeer = require(GetScriptDirectory()..'/FunLib/rubick_hero/dark_seer')
+local DarkWillow = require(GetScriptDirectory()..'/FunLib/rubick_hero/dark_willow')
+local Dawnbreaker = require(GetScriptDirectory()..'/FunLib/rubick_hero/dawnbreaker')
+local DeathProphet = require(GetScriptDirectory()..'/FunLib/rubick_hero/death_prophet')
+local Disruptor = require(GetScriptDirectory()..'/FunLib/rubick_hero/disruptor')
+local DoomBringer = require(GetScriptDirectory()..'/FunLib/rubick_hero/doom_bringer')
+
+local DragonKnight = require(GetScriptDirectory()..'/FunLib/rubick_hero/dragon_knight')
+local DrowRanger = require(GetScriptDirectory()..'/FunLib/rubick_hero/drow_ranger')
+local EarthSpirit = require(GetScriptDirectory()..'/FunLib/rubick_hero/earth_spirit')
+local Earthshaker = require(GetScriptDirectory()..'/FunLib/rubick_hero/earthshaker')
+local ElderTitan = require(GetScriptDirectory()..'/FunLib/rubick_hero/elder_titan')
 
 local J = require( GetScriptDirectory()..'/FunLib/jmz_func' )
 local handlers = {
     Abaddon, AbyssalUnderlord, Alchemist, AncientApparition, Antimage, ArcWarden,
     Axe, Bane, Batrider, Beastmaster, Bloodseeker, BountyHunter, Brewmaster,
-    Bristleback, Broodmother, Centaur, ChaosKnight, Chen, Clinkz, CrystalMaiden, Clockwerk,
+    Bristleback, Broodmother, Centaur, ChaosKnight, Chen, Clinkz, CrystalMaiden, Clockwerk, DarkSeer, DarkWillow, Dawnbreaker, DeathProphet, Disruptor, DoomBringer, DragonKnight, DrowRanger, EarthSpirit, Earthshaker, ElderTitan,
 }
 
 local UNIT = DOTA_ABILITY_BEHAVIOR_UNIT_TARGET or 8
@@ -40,9 +52,8 @@ local function has(value, flag) return bit.band(value, flag) ~= 0 end
 -- Reviewed simple effects only: cast metadata cannot establish safe spell intent.
 local fallback = {}
 for _,name in ipairs({
-    'dark_willow_bramble_maze','dazzle_poison_touch','death_prophet_carrion_swarm','death_prophet_silence',
-    'disruptor_kinetic_field','disruptor_static_storm','disruptor_thunder_strike','dragon_knight_breathe_fire',
-    'dragon_knight_dragon_tail','enigma_malefice','enigma_midnight_pulse','grimstroke_dark_artistry',
+    'dazzle_poison_touch',
+    'enigma_malefice','enigma_midnight_pulse','grimstroke_dark_artistry',
     'invoker_cold_snap','jakiro_dual_breath','jakiro_ice_path','jakiro_macropyre','kunkka_torrent',
     'leshrac_lightning_storm','leshrac_split_earth','lich_frost_nova','lina_dragon_slave','lina_laguna_blade',
     'lina_light_strike_array','lion_finger_of_death','lion_impale','lion_voodoo','luna_lucent_beam',
@@ -93,10 +104,23 @@ end
 
 -- Gate travel must continue after the creating spell enters cooldown.
 X.UsePendingGate = AbyssalUnderlord.UsePendingGate
+-- Stomp has a movable windup after its immediate cast has entered cooldown.
+X.UsePendingStomp = Centaur.UsePendingStomp
+X.UseBarrageInvisibility = Clinkz.UseBarrageInvisibility
+X.UseFreezingFieldSpell = CrystalMaiden.UseFreezingFieldSpell
+X.UseShadowRealmDuringChannel = DarkWillow.UseShadowRealmDuringChannel
+X.UsePendingConverge = Dawnbreaker.UsePendingConverge
+X.ObserveGlimpseHistory = Disruptor.ObserveGlimpseHistory
+
+X.UseGlacierDuringMultishot = DrowRanger.UseGlacierDuringMultishot
+X.UseMagnetizeStone = EarthSpirit.UseMagnetizeStone
+X.UseAstralSpirit = ElderTitan.UseAstralSpirit
+X.HandleAstralSpiritMinion = ElderTitan.HandleAstralSpiritMinion
 
 function X.ConsiderStolenSpell(ability)
+    X.ObserveGlimpseHistory()
     bot = GetBot()
-    if X.UsePendingGate() then return true end
+    if X.UseShadowRealmDuringChannel() or X.UsePendingConverge() or X.UseFreezingFieldSpell() or X.UseBarrageInvisibility() or X.UsePendingStomp() or X.UsePendingGate() or X.UseGlacierDuringMultishot() or X.UseMagnetizeStone() or X.UseAstralSpirit() then return true end
     if not ready(ability) or (J.CanNotUseAbility(bot) and not canReleaseWhileSilenced(ability))
         or bot:IsChanneling() or bot:IsCastingAbility() or bot:IsUsingAbility() then return false end
 

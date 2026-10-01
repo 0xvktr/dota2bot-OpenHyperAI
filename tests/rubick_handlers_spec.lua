@@ -5,14 +5,22 @@ BOT_ACTION_DESIRE_NONE=0; BOT_ACTION_DESIRE_HIGH=1; BOT_ACTION_DESIRE_MODERATE=0
 BOT_MODE_NONE=0; BOT_MODE_ROSHAN=10; BOT_MODE_LANING=11
 TEAM_NEUTRAL=4; DAMAGE_TYPE_PHYSICAL=1; DAMAGE_TYPE_MAGICAL=2
 UNIT_LIST_ALLIES=1; UNIT_LIST_ALLIED_HEROES=2; UNIT_LIST_ENEMY_CREEPS=3
+local v={};v.__index=v
+function Vector(x,y,z) return setmetatable({x=x,y=y or 0,z=z or 0},v) end
+function v.__add(a,b) return Vector(a.x+b.x,a.y+b.y,a.z+b.z) end
+function v.__sub(a,b) return Vector(a.x-b.x,a.y-b.y,a.z-b.z) end
+function v.__mul(a,b) if type(a)=='number' then a,b=b,a end;return Vector(a.x*b,a.y*b,a.z*b) end
+function v:Length2D() return math.sqrt(self.x*self.x+self.y*self.y) end
+function v:Normalized() local n=self:Length2D();return n==0 and Vector(0,0) or self*(1/n) end
 local now, blocked, target, actions = 100, false, {}, {}
+target.x, target.y, target.z = 100, 0, 0
 function DotaTime() return now end
 function GetUnitToLocationDistance() return 100 end
 function GetLinearProjectiles() return {} end
 function GetUnitList() return {} end
 function bot:GetTeam() return 2 end
 function target:GetTeam() return 3 end
-function bot:GetLocation() return {x=0,y=0,z=0} end
+function bot:GetLocation() return Vector(0,0,0) end
 function bot:GetMana() return 1000 end
 function bot:GetMaxMana() return 1000 end
 function bot:GetHealth() return 1000 end
@@ -23,11 +31,17 @@ function bot:IsStunned() return false end
 function bot:IsHexed() return false end
 function bot:IsNightmared() return false end
 function bot:IsChanneling() return false end
+function bot:IsCastingAbility() return false end
+function bot:IsUsingAbility() return false end
+function bot:IsSilenced() return false end
+function bot:NumQueuedActions() return 0 end
 function bot:IsInvisible() return false end
 function bot:HasModifier() return false end
 function bot:GetAbilityByName() return nil end
 function bot:GetItemInSlot() return nil end
 function bot:GetActiveMode() return 0 end
+function bot:HasShard() return false end
+function bot:HasScepter() return false end
 function bot:GetAttackDamage() return 100 end
 for _,name in ipairs({'Action_UseAbility','Action_UseAbilityOnEntity','Action_UseAbilityOnLocation',
     'ActionQueue_UseAbility','ActionQueue_UseAbilityOnEntity','ActionQueue_UseAbilityOnLocation'}) do
@@ -39,11 +53,15 @@ for _,name in ipairs({'Action_UseAbility','Action_UseAbilityOnEntity','Action_Us
 end
 function bot:Action_ClearActions() end
 function bot:ActionQueue_Delay() end
-function target:GetLocation() return {x=100,y=0,z=0} end
+function target:GetLocation() return Vector(100,0,0) end
+J.CanCastAbility=function(a) return a~=nil and not a:IsNull() and not a:IsPassive()
+    and not a:IsHidden() and a:IsTrained() and a:IsFullyCastable() and a:IsActivated() end
 J.CanNotUseAbility=function() return blocked end
+J.GetCorrectLoc=function(u) return u:GetLocation() end
 J.GetProperTarget=function() return target end
 J.GetNearbyHeroes=function() return {} end
 J.GetAlliesNearLoc=function() return {} end
+J.IsRetreating=function() return false end
 J.GetModifierTime=function() return 0 end
 J.IsItemAvailable=function() return nil end
 J.SetQueuePtToINT=function() end
@@ -51,7 +69,13 @@ J.SetQueueToInvisible=function() end
 local function Spell(name, values)
     local a={}
     function a:GetName() return name end
+    function a:GetCooldownTimeRemaining() return 0 end
+    function a:IsInAbilityPhase() return false end
+    function a:GetAutoCastState() return false end
     function a:IsFullyCastable() return true end
+    function a:IsNull() return false end
+    function a:IsPassive() return false end
+    function a:IsActivated() return true end
     function a:IsTrained() return true end
     function a:IsHidden() return false end
     function a:GetLevel() return 1 end
@@ -77,16 +101,27 @@ local cases={
     batrider={'batrider_flaming_lasso','batrider_firefly','batrider_flamebreak','batrider_sticky_napalm'},
     beastmaster={'beastmaster_primal_roar','beastmaster_summon_razorback','beastmaster_summon_raptor','beastmaster_wild_axes'},
     bloodseeker={'bloodseeker_blood_mist','bloodseeker_rupture','bloodseeker_bloodrage','bloodseeker_blood_bath'},
-    bounty_hunter={'bounty_hunter_wind_walk','bounty_hunter_wind_walk_ally','bounty_hunter_track','bounty_hunter_shuriken_toss'},
+    bounty_hunter={'bounty_hunter_wind_walk','bounty_hunter_wind_walk_ally','bounty_hunter_track','bounty_hunter_shuriken_toss','bounty_hunter_jinada'},
     brewmaster={'brewmaster_cinder_brew','brewmaster_thunder_clap','brewmaster_primal_split'},
     bristleback={'bristleback_hairball','bristleback_bristleback','bristleback_viscous_nasal_goo','bristleback_quill_spray'},
-    broodmother={'broodmother_spawn_spiderlings','broodmother_spin_web','broodmother_silken_bola','broodmother_insatiable_hunger'},
+    broodmother={'broodmother_spawn_spiderlings','broodmother_spin_web','broodmother_insatiable_hunger'},
     centaur={'centaur_mount','centaur_work_horse','centaur_stampede','centaur_hoof_stomp','centaur_double_edge'},
     chaos_knight={'chaos_knight_phantasm','chaos_knight_reality_rift','chaos_knight_chaos_bolt'},
     chen={'chen_hand_of_god','chen_penitence','chen_holy_persuasion','chen_divine_favor'},
-    clinkz={'clinkz_wind_walk','clinkz_tar_bomb','clinkz_burning_barrage','clinkz_strafe','clinkz_death_pact','clinkz_burning_army'},
+    clinkz={'clinkz_wind_walk','clinkz_searing_arrows','clinkz_tar_bomb','clinkz_burning_barrage','clinkz_strafe','clinkz_death_pact','clinkz_burning_army'},
     crystal_maiden={'crystal_maiden_crystal_clone','crystal_maiden_crystal_nova','crystal_maiden_frostbite','crystal_maiden_freezing_field'},
     rattletrap={'rattletrap_overclocking','rattletrap_hookshot','rattletrap_power_cogs','rattletrap_battery_assault','rattletrap_rocket_flare','rattletrap_jetpack'},
+    dark_seer={'dark_seer_vacuum','dark_seer_ion_shell','dark_seer_surge','dark_seer_wall_of_replica'},
+    dark_willow={'dark_willow_bramble_maze','dark_willow_shadow_realm','dark_willow_cursed_crown','dark_willow_bedlam','dark_willow_terrorize'},
+    dawnbreaker={'dawnbreaker_fire_wreath','dawnbreaker_celestial_hammer','dawnbreaker_converge','dawnbreaker_solar_guardian'},
+    death_prophet={'death_prophet_carrion_swarm','death_prophet_silence','death_prophet_spirit_siphon','death_prophet_exorcism'},
+    disruptor={'disruptor_thunder_strike','disruptor_glimpse','disruptor_kinetic_field','disruptor_kinetic_fence','disruptor_static_storm'},
+    doom_bringer={'doom_bringer_devour','doom_bringer_scorched_earth','doom_bringer_infernal_blade','doom_bringer_doom'},
+    dragon_knight={'dragon_knight_breathe_fire','dragon_knight_dragon_tail','dragon_knight_fireball','dragon_knight_elder_dragon_form'},
+    drow_ranger={'drow_ranger_frost_arrows','drow_ranger_wave_of_silence','drow_ranger_multishot','drow_ranger_glacier'},
+    earth_spirit={'earth_spirit_boulder_smash','earth_spirit_rolling_boulder','earth_spirit_geomagnetic_grip','earth_spirit_magnetize','earth_spirit_petrify','earth_spirit_stone_caller'},
+    earthshaker={'earthshaker_fissure','earthshaker_enchant_totem','earthshaker_echo_slam','earthshaker_aftershock'},
+    elder_titan={'elder_titan_echo_stomp','elder_titan_ancestral_spirit','elder_titan_earth_splitter'},
 }
 local count=0
 for hero,names in pairs(cases) do
@@ -100,7 +135,9 @@ for hero,names in pairs(cases) do
         X.HasBlink=function() return false end
         X.CanBKB=function() return false end
         X.ConsiderCombo=function() return false end
+        X.UseMagnetizeStone=function() return false end
         local ability=Spell(name)
+        function bot:GetAbilityByName(wanted) return wanted==name and ability or nil end
         actions={}; blocked=false
         assert(X.ConsiderStolenSpell(ability)==false and #actions==0, hero..' recognized skip must stop fallback')
         actions={}; blocked=true
@@ -113,8 +150,18 @@ for hero,names in pairs(cases) do
             end
         end
         X.ConsiderCombo=function() return false end
-        if name=='clinkz_burning_army' then
-            assert(X.ConsiderStolenSpell(ability)==false and #actions==0, 'unsupported vector spell must remain skipped')
+        X.ConsiderBlinkVacuum=function() return 0 end
+        X.ConsiderBlinkDoom=function() return 0 end
+        X.ConsiderBlinkSlam=function() return 0 end
+        X.ConsiderTotemSlam=function() return 0 end
+        if hero=='earth_spirit' then
+            for _,key in ipairs({'ConsiderBoulderSmash','ConsiderRollingBoulder','ConsiderGeomagneticGrip'}) do
+                X[key]=function() return 1,{location=target:GetLocation()} end
+            end
+        end
+        if name=='dawnbreaker_celestial_hammer' then X.ConsiderConverge=function() return 0 end end
+        if name=='clinkz_burning_army' or name=='clinkz_tar_bomb' or name=='disruptor_kinetic_fence' or name=='earth_spirit_stone_caller' or name=='earthshaker_aftershock' then
+            assert(X.ConsiderStolenSpell(ability)==false and #actions==0, 'unsupported vector or retired spell must remain skipped')
         else
             assert(X.ConsiderStolenSpell(ability)==true and #actions==1, hero..' reports true only after exactly one spell action: '..name)
             assert(actions[1].ability==ability, 'dispatch must use the supplied stolen handle')
@@ -126,6 +173,7 @@ for hero,names in pairs(cases) do
 end
 
 -- Linked spells can exist without their owner's other abilities.
+function bot:GetAbilityByName() return nil end
 local X=Load('batrider')
 local blink=Spell('item_blink')
 function bot:GetItemInSlot(slot) return slot==0 and blink or nil end
@@ -150,13 +198,19 @@ assert(X.ConsiderStolenSpell(Spell('ancient_apparition_ice_blast_release'))==fal
 -- Persuasion counts only this bot's units and respects levels in its early branch.
 local creeps,allies={},{}
 function bot:GetNearbyNeutralCreeps() return creeps end
+function bot:GetNearbyCreeps() return {} end
 function GetUnitList(kind) return kind==UNIT_LIST_ALLIES and allies or {} end
 local function Creep(level,owner,converted)
     return {GetLevel=function() return level end,IsAncientCreep=function() return false end,
         GetUnitName=function() return 'npc_dota_neutral_alpha_wolf' end,
-        GetPlayerID=function() return owner end,HasModifier=function() return converted end}
+        GetPlayerID=function() return owner end,HasModifier=function() return converted end,
+        IsNull=function() return false end,IsAlive=function() return true end,
+        IsHero=function() return false end,IsCreep=function() return true end,
+        IsIllusion=function() return false end,GetTeam=function() return converted and 2 or 4 end}
 end
 J.IsValid=function(unit) return unit~=nil end
+J.IsInRange=function() return true end
+J.CanCastOnTargetAdvanced=function() return true end
 X=Load('chen')
 local persuasion=Spell('chen_holy_persuasion',{max_units=1,level_req=3})
 creeps={Creep(5,9,false)}
@@ -168,7 +222,7 @@ allies={Creep(3,bot:GetPlayerID(),true)};actions={}
 assert(X.ConsiderStolenSpell(persuasion)==false and #actions==0, 'own controlled-unit cap prevents needless replacement')
 
 -- Current Culling damage and renamed Coil/Wraith fields drive actual targeting.
-function target:GetLocation() return {x=100,y=0,z=0} end
+function target:GetLocation() return Vector(100,0,0) end
 function target:CanBeSeen() return true end
 function target:GetHealth() return 260 end
 function target:GetHealthRegen() return 0 end

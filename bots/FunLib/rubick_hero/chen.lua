@@ -1,420 +1,226 @@
-local bot
+local bot = GetBot()
 local X = {}
 local J = require(GetScriptDirectory()..'/FunLib/jmz_func')
-
-local Penitence
-local HolyPersuasion
-local DivineFavor
-local HandOfGod
-
-local botTarget
-
-local nChenCreeps = {}
+local Penitence, HolyPersuasion, DivineFavor, Zealot, HandOfGod
 
 function X.ConsiderStolenSpell(ability)
+    local name = ability:GetName()
+    if name ~= 'chen_penitence' and name ~= 'chen_holy_persuasion'
+        and name ~= 'chen_divine_favor' and name ~= 'chen_hand_of_god' then return nil end
     bot = GetBot()
-    local abilityName = ability:GetName()
-    if abilityName ~= 'chen_hand_of_god'
-    and abilityName ~= 'chen_penitence'
-    and abilityName ~= 'chen_holy_persuasion'
-    and abilityName ~= 'chen_divine_favor' then return nil end
-
     if J.CanNotUseAbility(bot) then return false end
-
-    botTarget = J.GetProperTarget(bot)
-
-    if abilityName == 'chen_hand_of_god'
-    then
+    local desire, target
+    if name == 'chen_hand_of_god' then
         HandOfGod = ability
-        HandOfGodDesire = X.ConsiderHandOfGod()
-        if HandOfGodDesire > 0
-        then
-            bot:Action_UseAbility(HandOfGod)
-            return true
-        end
-    end
-
-    if abilityName == 'chen_penitence'
-    then
+        if X.ConsiderHandOfGod() > 0 then bot:Action_UseAbility(ability); return true end
+    elseif name == 'chen_penitence' then
         Penitence = ability
-        PenitenceDesire, PenitenceTarget = X.ConsiderPenitence()
-        if PenitenceDesire > 0
-        then
-            bot:Action_UseAbilityOnEntity(Penitence, PenitenceTarget)
-            return true
-        end
-    end
-
-    if abilityName == 'chen_holy_persuasion'
-    then
+        desire, target = X.ConsiderPenitence()
+    elseif name == 'chen_holy_persuasion' then
         HolyPersuasion = ability
-        HolyPersuasionDesire, HolyPersuasionTarget = X.ConsiderHolyPersuasion()
-        if HolyPersuasionDesire > 0
-        then
-            bot:Action_UseAbilityOnEntity(HolyPersuasion, HolyPersuasionTarget)
-            return true
-        end
-    end
-
-    if abilityName == 'chen_divine_favor'
-    then
+        desire, target = X.ConsiderHolyPersuasion()
+    else
         DivineFavor = ability
-        DivineFavorDesire, DivineFavorTarget = X.ConsiderDivineFavor()
-        if DivineFavorDesire > 0
-        then
-            bot:Action_UseAbilityOnEntity(DivineFavor, DivineFavorTarget)
-            return true
-        end
+        desire, target = X.ConsiderDivineFavor()
     end
+    if desire ~= nil and desire > 0 then bot:Action_UseAbilityOnEntity(ability, target); return true end
     return false
 end
 
+local function CastRange(ability)
+    local range = ability:GetCastRange()
+    local lens = J.IsItemAvailable('item_aether_lens')
+    if lens ~= nil then range = range + lens:GetSpecialValueInt('cast_range_bonus') end
+    local supremacy = bot:GetAbilityByName('rubick_arcane_supremacy')
+    if supremacy ~= nil and supremacy:IsTrained() and not J.HasBreakModifier(bot) then
+        range = range + supremacy:GetSpecialValueInt('cast_range')
+    end
+    return range
+end
+
+local function AllyHero(unit)
+    -- Hand of God explicitly heals invulnerable and hidden allies; J.IsValidHero excludes them.
+    return unit ~= nil and not unit:IsNull() and unit:IsAlive() and unit:IsHero()
+        and unit:GetTeam() == bot:GetTeam() and not unit:IsIllusion()
+end
+
+local function HealBlocked(unit)
+    return unit:HasModifier('modifier_ice_blast') or unit:HasModifier('modifier_doom_bringer_doom')
+end
+
+local function OwnedUnits(persuadedOnly)
+    local units = {}
+    for _, unit in pairs(GetUnitList(UNIT_LIST_ALLIES)) do
+        if unit ~= nil and not unit:IsNull() and unit:IsAlive() and not unit:IsHero()
+            and unit:GetPlayerID() == bot:GetPlayerID()
+            and (unit:HasModifier('modifier_chen_holy_persuasion')
+                or not persuadedOnly and string.find(unit:GetUnitName(), 'npc_dota_chen_zealot', 1, true)) then
+            units[#units + 1] = unit
+        end
+    end
+    return units
+end
+
+local function PenitenceTarget(unit)
+    return J.IsValid(unit) and J.CanCastOnNonMagicImmune(unit)
+        and J.CanCastOnTargetAdvanced(unit) and not J.IsSuspiciousIllusion(unit)
+        and J.IsInRange(bot, unit, CastRange(Penitence))
+        and not unit:HasModifier('modifier_antimage_counterspell')
+        and not unit:HasModifier('modifier_antimage_counterspell_ally')
+        and not unit:HasModifier('modifier_abaddon_borrowed_time')
+        and not unit:HasModifier('modifier_necrolyte_reapers_scythe')
+end
+
 function X.ConsiderPenitence()
-    if not Penitence:IsFullyCastable()
-    then
-        return BOT_ACTION_DESIRE_NONE, nil
+    if not J.CanCastAbility(Penitence) then return BOT_ACTION_DESIRE_NONE, nil end
+    local enemies = J.GetNearbyHeroes(bot, math.min(CastRange(Penitence), 1600), true, BOT_MODE_NONE)
+    for _, enemy in ipairs(enemies) do
+        if PenitenceTarget(enemy) and not enemy:HasModifier('modifier_dazzle_shallow_grave')
+            and not enemy:HasModifier('modifier_oracle_false_promise_timer')
+            and J.CanKillTarget(enemy, Penitence:GetSpecialValueInt('damage'), DAMAGE_TYPE_PURE) then
+            return BOT_ACTION_DESIRE_HIGH, enemy
+        end
     end
-
-    local nCastRange = J.GetProperCastRange(false, bot, Penitence:GetCastRange())
-    local nAttackRange = bot:GetAttackRange()
-
-    local nAllyHeroes = J.GetNearbyHeroes(bot,nCastRange, false, BOT_MODE_NONE)
-    for _, allyHero in pairs(nAllyHeroes)
-    do
-        local nAllyInRangeEnemy = J.GetNearbyHeroes(allyHero, 1200, true, BOT_MODE_NONE)
-
-        if J.IsValidHero(allyHero)
-        and J.IsRetreating(allyHero)
-        and allyHero:WasRecentlyDamagedByAnyHero(1.5)
-        and not allyHero:IsIllusion()
-        then
-            if nAllyInRangeEnemy ~= nil and #nAllyInRangeEnemy >= 1
-            and J.IsValidHero(nAllyInRangeEnemy[1])
-            and J.IsInRange(bot, nAllyInRangeEnemy[1], nCastRange)
-            and J.IsChasingTarget(nAllyInRangeEnemy[1], allyHero)
-            and allyHero:GetCurrentMovementSpeed() < nAllyInRangeEnemy[1]:GetCurrentMovementSpeed()
-            and not J.IsDisabled(nAllyInRangeEnemy[1])
-            and not J.IsTaunted(nAllyInRangeEnemy[1])
-            and not J.IsSuspiciousIllusion(nAllyInRangeEnemy[1])
-            and not nAllyInRangeEnemy[1]:HasModifier('modifier_necrolyte_reapers_scythe')
-            then
-                return BOT_ACTION_DESIRE_HIGH, nAllyInRangeEnemy[1]
+    for _, enemy in ipairs(enemies) do
+        if PenitenceTarget(enemy) and not enemy:HasModifier('modifier_chen_penitence') then
+            if J.IsRetreating(bot) and J.IsChasingTarget(enemy, bot) then
+                return BOT_ACTION_DESIRE_HIGH, enemy
+            end
+            for _, ally in ipairs(J.GetNearbyHeroes(bot, 1600, false, BOT_MODE_NONE)) do
+                if J.IsValidHero(ally) and J.IsRetreating(ally) and J.IsChasingTarget(enemy, ally) then
+                    return BOT_ACTION_DESIRE_HIGH, enemy
+                end
             end
         end
     end
-
-    if J.IsGoingOnSomeone(bot)
-	then
-		if J.IsValidTarget(botTarget)
-        and J.IsInRange(bot, botTarget, nCastRange)
-        and not J.IsSuspiciousIllusion(botTarget)
-        and not botTarget:HasModifier('modifier_abaddon_borrowed_time')
-        and not botTarget:HasModifier('modifier_necrolyte_reapers_scythe')
-		then
-            local nInRangeAlly = J.GetNearbyHeroes(botTarget, 1200, true, BOT_MODE_NONE)
-            local nInRangeEnemy = J.GetNearbyHeroes(botTarget, 1200, false, BOT_MODE_NONE)
-
-            if nInRangeAlly ~= nil and nInRangeEnemy ~= nil
-            and #nInRangeAlly >= #nInRangeEnemy
-            then
-                if J.IsChasingTarget(bot, botTarget)
-                and bot:GetCurrentMovementSpeed() < botTarget:GetCurrentMovementSpeed()
-                then
-                    return BOT_ACTION_DESIRE_HIGH, botTarget
-                end
-
-                nInRangeAlly = J.GetAlliesNearLoc(bot:GetLocation(), 1600)
-                if J.IsInRange(bot, botTarget, nAttackRange)
-                and J.IsAttacking(bot)
-                and J.GetHeroCountAttackingTarget(nInRangeAlly, botTarget) >= 2
-                then
-                    return BOT_ACTION_DESIRE_HIGH, botTarget
-                end
-            end
-		end
-	end
-
-	if J.IsRetreating(bot)
-	then
-        local nInRangeEnemy = J.GetNearbyHeroes(bot,nCastRange, true, BOT_MODE_NONE)
-        for _, enemyHero in pairs(nInRangeEnemy)
-        do
-            if J.IsValidHero(enemyHero)
-            and J.IsChasingTarget(enemyHero, bot)
-            and not J.IsSuspiciousIllusion(enemyHero)
-            and not J.IsDisabled(enemyHero)
-            then
-                local nInRangeAlly = J.GetNearbyHeroes(enemyHero, 1200, true, BOT_MODE_NONE)
-                local nTargetInRangeAlly = J.GetNearbyHeroes(enemyHero, 1200, false, BOT_MODE_NONE)
-
-                if nInRangeAlly ~= nil and nTargetInRangeAlly ~= nil
-                and ((#nTargetInRangeAlly > #nInRangeAlly)
-                    or bot:WasRecentlyDamagedByAnyHero(1.5))
-                and bot:GetCurrentMovementSpeed() < enemyHero:GetCurrentMovementSpeed()
-                then
-                    return BOT_ACTION_DESIRE_HIGH, enemyHero
-                end
+    local target = J.GetProperTarget(bot)
+    if PenitenceTarget(target) and not target:HasModifier('modifier_chen_penitence') then
+        if J.IsGoingOnSomeone(bot) or J.IsInTeamFight(bot, 1200) then
+            return BOT_ACTION_DESIRE_HIGH, target
+        end
+        if (J.IsDoingRoshan(bot) and J.IsRoshan(target)
+            or J.IsDoingTormentor(bot) and J.IsTormentor(target)) and J.IsAttacking(bot) then
+            return BOT_ACTION_DESIRE_HIGH, target
+        end
+    end
+    if J.IsLaning(bot) and bot:GetMana() / bot:GetMaxMana() > 0.45 then
+        for _, enemy in ipairs(enemies) do
+            if PenitenceTarget(enemy) and not enemy:HasModifier('modifier_chen_penitence') then
+                return BOT_ACTION_DESIRE_HIGH, enemy
             end
         end
-	end
-
-	if J.IsDoingRoshan(bot) or J.IsDoingTormentor(bot)
-	then
-        local nInRangeAlly = J.GetAlliesNearLoc(bot:GetLocation(), 800)
-
-		if (J.IsRoshan(botTarget) or J.IsTormentor(botTarget))
-        and J.IsInRange(bot, botTarget, nCastRange)
-        and J.IsAttacking(bot)
-        and nInRangeAlly ~= nil and #nInRangeAlly >= 1
-        and J.GetHeroCountAttackingTarget(nInRangeAlly, botTarget) >= 2
-		then
-			return BOT_ACTION_DESIRE_HIGH, botTarget
-		end
-	end
-
+    end
     return BOT_ACTION_DESIRE_NONE, nil
 end
 
+local creepScores = {
+    npc_dota_neutral_harpy_storm = 9,
+    npc_dota_neutral_centaur_khan = 9,
+    npc_dota_neutral_dark_troll_warlord = 9,
+    npc_dota_neutral_alpha_wolf = 8,
+    npc_dota_neutral_satyr_hellcaller = 8,
+    npc_dota_neutral_polar_furbolg_ursa_warrior = 8,
+    npc_dota_neutral_enraged_wildkin = 7,
+    npc_dota_neutral_warpine_raider = 7,
+    npc_dota_neutral_satyr_trickster = 6,
+    npc_dota_neutral_mud_golem = 6,
+    npc_dota_neutral_black_dragon = 12,
+    npc_dota_neutral_granite_golem = 12,
+    npc_dota_neutral_big_thunder_lizard = 12,
+}
+
 function X.ConsiderHolyPersuasion()
-	if not HolyPersuasion:IsFullyCastable()
-    then
-		return BOT_ACTION_DESIRE_NONE, nil
-	end
-
-    local nCastRange = J.GetProperCastRange(false, bot, HolyPersuasion:GetCastRange())
-    local nMaxUnit = HolyPersuasion:GetSpecialValueInt('max_units')
-    local nMaxLevel = HolyPersuasion:GetSpecialValueInt('level_req')
-	local nNeutralCreeps = bot:GetNearbyNeutralCreeps(nCastRange)
-
-    local unitTable = {}
-    for _, unit in pairs(GetUnitList(UNIT_LIST_ALLIES))
-    do
-        if string.find(unit:GetUnitName(), 'neutral')
-        and unit:HasModifier('modifier_chen_holy_persuasion')
-        and unit:GetPlayerID() == bot:GetPlayerID()
-        then
-            table.insert(unitTable, unit)
+    if not J.CanCastAbility(HolyPersuasion) or J.IsRetreating(bot) then return BOT_ACTION_DESIRE_NONE, nil end
+    local owned = OwnedUnits(true)
+    if #owned >= HolyPersuasion:GetSpecialValueInt('max_units') then return BOT_ACTION_DESIRE_NONE, nil end
+    local ancients = 0
+    for _, unit in ipairs(owned) do if unit:IsAncientCreep() then ancients = ancients + 1 end end
+    local ultimate = bot:GetAbilityByName('chen_hand_of_god')
+    local ancientLimit = bot:HasShard() and ultimate ~= nil and ultimate:GetLevel() or 0
+    local range = CastRange(HolyPersuasion)
+    local candidates = bot:GetNearbyNeutralCreeps(math.min(range, 1600))
+    -- Enemy summons and dominated creeps are valid recruitment targets too.
+    for _, unit in ipairs(bot:GetNearbyCreeps(math.min(range, 1600), true)) do candidates[#candidates + 1] = unit end
+    local best, bestScore = nil, -1
+    for _, unit in ipairs(candidates) do
+        if J.IsValid(unit) and unit:IsCreep() and not unit:IsIllusion()
+            and unit:GetTeam() ~= bot:GetTeam() and J.IsInRange(bot, unit, range)
+            and unit:GetLevel() <= HolyPersuasion:GetSpecialValueInt('level_req')
+            and (not unit:IsAncientCreep() or ancients < ancientLimit)
+            and J.CanCastOnTargetAdvanced(unit)
+            and not unit:HasModifier('modifier_antimage_counterspell')
+            and not unit:HasModifier('modifier_antimage_counterspell_ally') then
+            local score = creepScores[unit:GetUnitName()] or unit:GetLevel()
+            if score > bestScore then best, bestScore = unit, score end
         end
     end
-
-    local nChenCreeps = unitTable
-    if #nChenCreeps >= nMaxUnit then return BOT_ACTION_DESIRE_NONE, nil end
-
-    local nGoodCreep = {
-        "npc_dota_neutral_alpha_wolf",
-        "npc_dota_neutral_centaur_khan",
-        "npc_dota_neutral_polar_furbolg_ursa_warrior",
-        "npc_dota_neutral_dark_troll_warlord",
-        "npc_dota_neutral_satyr_hellcaller",
-        "npc_dota_neutral_enraged_wildkin",
-        "npc_dota_neutral_warpine_raider",
-    }
-
-    if nMaxLevel < 5
-    then
-        for _, creep in pairs(nNeutralCreeps)
-        do
-            if J.IsValid(creep)
-            and not creep:IsAncientCreep()
-            and creep:GetLevel() <= nMaxLevel
-            then
-                return BOT_ACTION_DESIRE_HIGH, creep
-            end
-        end
-    else
-        if nChenCreeps ~= nil and #nChenCreeps < nMaxUnit
-        then
-            for _, creep in pairs(nNeutralCreeps)
-            do
-                if J.IsValid(creep)
-                and not creep:IsAncientCreep()
-                and creep:GetLevel() <= nMaxLevel
-                then
-                    for _, gCreep in pairs(nGoodCreep)
-                    do
-                        if creep:GetUnitName() == gCreep
-                        then
-                            return BOT_ACTION_DESIRE_HIGH, creep
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-	return BOT_ACTION_DESIRE_NONE, nil
+    if best ~= nil then return BOT_ACTION_DESIRE_HIGH, best end
+    return BOT_ACTION_DESIRE_NONE, nil
 end
 
 function X.ConsiderDivineFavor()
-    if not DivineFavor:IsFullyCastable()
-    then
-        return BOT_ACTION_DESIRE_NONE, nil
-    end
-
-    local nCastRange = J.GetProperCastRange(false, bot, DivineFavor:GetCastRange())
-    local nAllyHeroes = J.GetNearbyHeroes(bot,nCastRange, false, BOT_MODE_NONE)
-
-	for _, allyHero in pairs(nAllyHeroes)
-	do
-		if J.IsValidHero(allyHero)
-		and J.IsInRange(bot, allyHero, nCastRange)
-        and not allyHero:HasModifier('modifier_abaddon_borrowed_time')
-		and not allyHero:HasModifier('modifier_legion_commander_press_the_attack')
-        and not allyHero:HasModifier('modifier_necrolyte_reapers_scythe')
-        and not allyHero:HasModifier('modifier_chen_penitence_attack_speed_buff')
-        and not allyHero:HasModifier('modifier_chen_divine_favor_armor_buff')
-        and not allyHero:IsIllusion()
-		and not allyHero:IsInvulnerable()
-		then
-			if J.IsGoingOnSomeone(allyHero)
-			then
-				local allyTarget = J.GetProperTarget(allyHero)
-
-				if J.IsValidTarget(allyTarget)
-                and J.IsCore(allyHero)
-				and J.IsInRange(allyHero, allyTarget, allyHero:GetCurrentVisionRange())
-                and not J.IsSuspiciousIllusion(allyTarget)
-				then
-					return BOT_ACTION_DESIRE_HIGH, allyHero
-				end
-			end
-
-            local nAllyInRangeEnemy = J.GetNearbyHeroes(allyHero, 1200, true, BOT_MODE_NONE)
-
-            if J.IsRetreating(allyHero)
-            and allyHero:WasRecentlyDamagedByAnyHero(1.5)
-            then
-                if nAllyInRangeEnemy ~= nil and #nAllyInRangeEnemy >= 1
-                and J.IsValidHero(nAllyInRangeEnemy[1])
-                and J.IsInRange(bot, nAllyInRangeEnemy[1], nCastRange)
-                and J.IsChasingTarget(nAllyInRangeEnemy[1], allyHero)
-                and not J.IsDisabled(nAllyInRangeEnemy[1])
-                and not J.IsTaunted(nAllyInRangeEnemy[1])
-                and not J.IsSuspiciousIllusion(nAllyInRangeEnemy[1])
-                and not nAllyInRangeEnemy[1]:HasModifier('modifier_necrolyte_reapers_scythe')
-                then
-                    return BOT_ACTION_DESIRE_HIGH, nAllyInRangeEnemy[1]
+    if not J.CanCastAbility(DivineFavor) then return BOT_ACTION_DESIRE_NONE, nil end
+    local range = CastRange(DivineFavor)
+    local best, bestScore = nil, 0
+    local allies = J.GetNearbyHeroes(bot, math.min(range, 1600), false, BOT_MODE_NONE)
+    allies[#allies + 1] = bot
+    for _, ally in ipairs(allies) do
+        if AllyHero(ally) and not ally:IsInvulnerable() and not ally:IsMagicImmune()
+            and J.IsInRange(bot, ally, range)
+            and not ally:HasModifier('modifier_chen_divine_favor_armor_buff') then
+            local score = 0
+            if ally:WasRecentlyDamagedByAnyHero(3) then score = 2 + (1 - J.GetHP(ally)) * 4 end
+            if J.IsGoingOnSomeone(ally) or J.IsInTeamFight(ally, 1200) then score = score + 1 end
+            if ally == bot then
+                for _, creep in ipairs(OwnedUnits(false)) do
+                    if J.IsInRange(bot, creep, 1200) and (creep:WasRecentlyDamagedByAnyHero(3)
+                        or J.IsPushing(bot) or J.IsInTeamFight(bot, 1200)) then score = score + 1 end
                 end
             end
-		end
-	end
-
-    if J.IsDoingRoshan(bot) or J.IsDoingTormentor(bot)
-	then
-		if (J.IsRoshan(botTarget) or J.IsTormentor(botTarget))
-        and J.IsInRange(bot, botTarget, nCastRange)
-        and J.IsAttacking(bot)
-		then
-            local target = J.GetAttackableWeakestUnit(bot, nCastRange, true, false)
-
-            if target ~= nil
-            then
-                return BOT_ACTION_DESIRE_HIGH, target
-            end
-        end
-	end
-
-    if J.IsInTeamFight(bot, 1200)
-    then
-        local totDist = 0
-
-        for _, creep in pairs(nChenCreeps)
-        do
-            local dist = GetUnitToUnitDistance(bot, creep)
-            if dist > 1600
-            then
-                totDist = totDist + dist
-            end
-        end
-
-        if nChenCreeps ~= nil and #nChenCreeps > 0
-        then
-            if (totDist / #nChenCreeps) > 1600
-            then
-                return BOT_ACTION_DESIRE_HIGH, bot
-            end
+            if score > bestScore then best, bestScore = ally, score end
         end
     end
-
-    if J.IsRetreating(bot)
-	then
-        local nInRangeEnemy = J.GetNearbyHeroes(bot,nCastRange, true, BOT_MODE_NONE)
-        for _, enemyHero in pairs(nInRangeEnemy)
-        do
-            if J.IsValidHero(enemyHero)
-            and J.IsChasingTarget(enemyHero, bot)
-            and not J.IsSuspiciousIllusion(enemyHero)
-            and not J.IsDisabled(enemyHero)
-            then
-                local nInRangeAlly = J.GetNearbyHeroes(enemyHero, 1200, true, BOT_MODE_NONE)
-                local nTargetInRangeAlly = J.GetNearbyHeroes(enemyHero, 1200, false, BOT_MODE_NONE)
-
-                if nInRangeAlly ~= nil and nTargetInRangeAlly ~= nil
-                and ((#nTargetInRangeAlly > #nInRangeAlly and #nInRangeAlly <= 1)
-                    or bot:WasRecentlyDamagedByAnyHero(2))
-                then
-                    return BOT_ACTION_DESIRE_HIGH, enemyHero
-                end
-            end
-        end
-	end
-
+    if best ~= nil then return BOT_ACTION_DESIRE_HIGH, best end
     return BOT_ACTION_DESIRE_NONE, nil
 end
 
 function X.ConsiderHandOfGod()
-	if not HandOfGod:IsFullyCastable()
-    then
-		return BOT_ACTION_DESIRE_NONE
-	end
-
-    local nTeamFightLocation = J.GetTeamFightLocation(bot)
-
-    if nTeamFightLocation ~= nil
-    then
-        local nAllyList = J.GetAlliesNearLoc(nTeamFightLocation, 1600)
-
-        for _, allyHero in pairs(nAllyList)
-        do
-            if J.IsValidHero(allyHero)
-            and J.IsCore(allyHero)
-            and J.GetHP(allyHero) < 0.5
-            and not allyHero:IsIllusion()
-            and not allyHero:IsAttackImmune()
-			and not allyHero:IsInvulnerable()
-            and not allyHero:HasModifier('modifier_necrolyte_reapers_scythe')
-            and not allyHero:HasModifier('modifier_oracle_false_promise_timer')
-            then
-                return BOT_ACTION_DESIRE_HIGH
+    if not J.CanCastAbility(HandOfGod) then return BOT_ACTION_DESIRE_NONE end
+    local heal = HandOfGod:GetSpecialValueInt('heal_amount')
+    local wounded = 0
+    for _, ally in pairs(GetUnitList(UNIT_LIST_ALLIED_HEROES)) do
+        if AllyHero(ally) then
+            if HandOfGod:GetSpecialValueInt('does_purge') > 0
+                and not ally:HasModifier('modifier_doom_bringer_doom')
+                and (ally:IsStunned() or ally:IsHexed() or ally:IsRooted() or ally:IsNightmared())
+                and ally:WasRecentlyDamagedByAnyHero(3) then return BOT_ACTION_DESIRE_HIGH end
+            if not HealBlocked(ally) then
+                local missing = ally:GetMaxHealth() - ally:GetHealth()
+                if missing >= heal * 0.75 and ally:WasRecentlyDamagedByAnyHero(4) then
+                    wounded = wounded + 1
+                    if J.GetHP(ally) < 0.55 then return BOT_ACTION_DESIRE_HIGH end
+                end
             end
         end
     end
-
-    for _, allyHero in pairs(GetUnitList(UNIT_LIST_ALLIED_HEROES))
-    do
-        local nAllyInRangeEnemy = J.GetNearbyHeroes(allyHero, 1200, true, BOT_MODE_NONE)
-
-        if J.IsValidHero(allyHero)
-        and J.IsCore(allyHero)
-        and J.GetHP(allyHero) < 0.5
-        and allyHero:WasRecentlyDamagedByAnyHero(1)
-        and not allyHero:IsIllusion()
-        and not allyHero:IsAttackImmune()
-		and not allyHero:IsInvulnerable()
-        and not allyHero:HasModifier('modifier_necrolyte_reapers_scythe')
-        and not allyHero:HasModifier('modifier_oracle_false_promise_timer')
-        then
-            if nAllyInRangeEnemy ~= nil and #nAllyInRangeEnemy >= 1
-            and J.IsValidHero(nAllyInRangeEnemy[1])
-            and J.IsChasingTarget(nAllyInRangeEnemy[1], allyHero)
-            and not J.IsSuspiciousIllusion(nAllyInRangeEnemy[1])
-            then
-                return BOT_ACTION_DESIRE_HIGH
+    if wounded >= 2 then return BOT_ACTION_DESIRE_HIGH end
+    local endangeredArmy = 0
+    for _, unit in ipairs(OwnedUnits(true)) do
+        if unit:GetLevel() >= 5 and not HealBlocked(unit) and J.GetHP(unit) < 0.4
+            and unit:GetMaxHealth() - unit:GetHealth() >= heal
+            and unit:WasRecentlyDamagedByAnyHero(3) then endangeredArmy = endangeredArmy + 1 end
+    end
+    if endangeredArmy >= 2 then return BOT_ACTION_DESIRE_HIGH end
+    if bot:HasScepter() then
+        local threatened = 0
+        for _, ally in ipairs(J.GetNearbyHeroes(bot, HandOfGod:GetSpecialValueInt('debuff_immune_radius'), false, BOT_MODE_NONE)) do
+            if AllyHero(ally) and not ally:IsMagicImmune() and ally:WasRecentlyDamagedByAnyHero(2) then
+                threatened = threatened + 1
             end
         end
+        if threatened >= 2 then return BOT_ACTION_DESIRE_HIGH end
     end
-
-	return BOT_ACTION_DESIRE_NONE
+    return BOT_ACTION_DESIRE_NONE
 end
 
 return X

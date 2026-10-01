@@ -47,7 +47,8 @@ function X.Think(ownerBot, hMinionUnit)
                 end
             end
 
-            if J.CheckBitfieldFlag(ability:GetBehavior(), ABILITY_BEHAVIOR_UNIT_TARGET)
+            if ability:GetName() ~= 'chen_martyrdom'
+                and J.CheckBitfieldFlag(ability:GetBehavior(), ABILITY_BEHAVIOR_UNIT_TARGET)
 			then
                 hMinionUnit.cast_desire, hMinionUnit.cast_target = X.ConsiderUnitTarget(hMinionUnit, ability)
                 if hMinionUnit.cast_desire > 0
@@ -85,6 +86,47 @@ end
 X.ConsiderSpellUsage['default'] = function (hMinionUnit, ability)
     print("[WARN] No function for the usage of ability: " .. ability:GetName() .. ', for unit owned by: ' .. bot:GetUnitName())
     return 0, nil, nil
+end
+
+-- Zealot's sacrifice must never fall through to generic unit-target poke.
+X.ConsiderSpellUsage['chen_martyrdom'] = function(hMinionUnit, ability)
+    local range = ability:GetCastRange()
+    local damage = ability:GetSpecialValueInt('base_value')
+        + hMinionUnit:GetHealth() * ability:GetSpecialValueInt('current_hp_pct') / 100
+    local heal = damage * ability:GetSpecialValueInt('heal_factor') / 100
+    local best, lowestHP = nil, 1
+    for _, ally in ipairs(nAllyHeroes) do
+        if J.IsValidHero(ally) and not ally:IsIllusion() and J.IsInRange(hMinionUnit, ally, range)
+            and not ally:HasModifier('modifier_ice_blast')
+            and not ally:HasModifier('modifier_doom_bringer_doom')
+            and ally:WasRecentlyDamagedByAnyHero(3) and J.GetHP(ally) < 0.5
+            and ally:GetMaxHealth() - ally:GetHealth() >= heal * 0.75
+            and J.GetHP(ally) < lowestHP then best, lowestHP = ally, J.GetHP(ally) end
+    end
+    if best ~= nil then return BOT_ACTION_DESIRE_HIGH, best, 'unit' end
+    -- The pinned KV omits the damage type; use the live value rather than inventing one.
+    local damageType = ability:GetDamageType()
+    if damageType ~= DAMAGE_TYPE_PHYSICAL and damageType ~= DAMAGE_TYPE_MAGICAL
+        and damageType ~= DAMAGE_TYPE_PURE then return BOT_ACTION_DESIRE_NONE, nil, nil end
+    local speed = ability:GetSpecialValueInt('speed')
+    if speed <= 0 then speed = 1000 end -- Pinned projectile speed when the live value is absent.
+    for _, enemy in ipairs(nEnemyHeroes) do
+        if J.IsValidHero(enemy) and J.IsInRange(hMinionUnit, enemy, range)
+            and J.CanCastOnNonMagicImmune(enemy) and J.CanCastOnTargetAdvanced(enemy)
+            and not enemy:HasModifier('modifier_antimage_counterspell')
+            and not enemy:HasModifier('modifier_antimage_counterspell_ally')
+            and not enemy:HasModifier('modifier_abaddon_borrowed_time')
+            and not enemy:HasModifier('modifier_dazzle_shallow_grave')
+            and not enemy:HasModifier('modifier_oracle_false_promise_timer')
+            and not enemy:HasModifier('modifier_necrolyte_reapers_scythe')
+            and (J.WillKillTarget(enemy, damage, damageType,
+                    ability:GetCastPoint() + GetUnitToUnitDistance(hMinionUnit, enemy) / speed)
+                or thisMinionHP < 0.15 and hMinionUnit:WasRecentlyDamagedByAnyHero(2)
+                    and enemy == botTarget and J.IsGoingOnSomeone(bot)) then
+            return BOT_ACTION_DESIRE_HIGH, enemy, 'unit'
+        end
+    end
+    return BOT_ACTION_DESIRE_NONE, nil, nil
 end
 
 -- Tornado
