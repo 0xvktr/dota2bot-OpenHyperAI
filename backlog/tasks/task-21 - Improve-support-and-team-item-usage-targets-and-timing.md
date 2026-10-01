@@ -4,11 +4,13 @@ title: 'Improve support and team item usage: targets and timing'
 status: To Do
 assignee: []
 created_date: '2026-09-29 22:03'
+updated_date: '2026-10-01 12:49'
 labels:
   - teamfight
 dependencies: []
 references:
   - bots/ability_item_usage_generic.lua
+  - tools/tdl/fetch.cjs
 priority: medium
 ordinal: 21000
 ---
@@ -24,3 +26,9 @@ Every common support and team item already has a handler in ability_item_usage_g
 - [ ] #1 Each item group's subtask is done
 - [ ] #2 Handlers are audited against how the items are used in human play; the reasoning is written into the subtasks
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-01: Torte de Lini guides carry per-item usage tips for many heroes (when and on whom to use the item). `node tools/tdl/fetch.cjs <hero>` prints them under "Item tips"; `node tools/tdl/fetch.cjs --all` caches every guide for searching across heroes. Reference only: turn the advice into logic, never paste the text. See the playbook (doc-2).
+<!-- SECTION:NOTES:END -->

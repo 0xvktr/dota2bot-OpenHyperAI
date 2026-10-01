@@ -67,3 +67,6 @@ dist
 # user's personal customized settings
 game/Customize
 .test-tools/
+
+# Torte de Lini guide text downloaded by tools/tdl/fetch.cjs (copyrighted, not committed)
+tools/tdl/cache/

@@ -1,0 +1,1096 @@
+{
+ "note": "Workshop IDs of Torte de Lini hero guides. Fetch the text with tools/tdl/fetch.cjs; do not commit guide text.",
+ "missing": [
+  "spirit_breaker"
+ ],
+ "guides": [
+  {
+   "hero": "abaddon",
+   "id": "159698040",
+   "title": "Torte de Lini Position 5",
+   "role": "Support",
+   "patch": "7.41e",
+   "updated": "2026-08-06"
+  },
+  {
+   "hero": "abyssal_underlord",
+   "id": "750410650",
+   "title": "Torte de Lini Position 3",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "alchemist",
+   "id": "129111538",
+   "title": "Torte de Lini Position 3",
+   "role": "OffLane",
+   "patch": "7.41c",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "alchemist",
+   "id": "356791078",
+   "title": "Torte de Lini Position 1",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "ancient_apparition",
+   "id": "232946791",
+   "title": "Torte de Lini Position 5",
+   "role": "Support",
+   "patch": "7.41f",
+   "updated": "2026-09-23"
+  },
+  {
+   "hero": "antimage",
+   "id": "128960249",
+   "title": "Torte de Lini Position 1 #",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-20"
+  },
+  {
+   "hero": "arc_warden",
+   "id": "576975639",
+   "title": "Torte de Lini Position 2",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "axe",
+   "id": "128726494",
+   "title": "Torte de Lini Position 3 #",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-20"
+  },
+  {
+   "hero": "bane",
+   "id": "128876778",
+   "title": "Torte de Lini Position 5",
+   "role": "Support",
+   "patch": "7.41f",
+   "updated": "2026-09-23"
+  },
+  {
+   "hero": "batrider",
+   "id": "129332354",
+   "title": "Torte de Lini Position 3",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "beastmaster",
+   "id": "129134687",
+   "title": "Torte de Lini Pos 3, Zoo",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-21"
+  },
+  {
+   "hero": "bloodseeker",
+   "id": "128754907",
+   "title": "Torte de Lini Pos 1, Magic",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "bloodseeker",
+   "id": "319092835",
+   "title": "Torte de Lini Pos 1, Physical",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "bounty_hunter",
+   "id": "128751287",
+   "title": "Torte de Lini Position 4",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-21"
+  },
+  {
+   "hero": "brewmaster",
+   "id": "129109889",
+   "title": "Torte de Lini Position 3",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "bristleback",
+   "id": "134962374",
+   "title": "Torte de Lini Position 3",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "broodmother",
+   "id": "128757681",
+   "title": "Torte de Lini Position 2",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "centaur",
+   "id": "128735861",
+   "title": "Torte de Lini Position 3",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-20"
+  },
+  {
+   "hero": "chaos_knight",
+   "id": "128918471",
+   "title": "Torte de Lini Position 1",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "chen",
+   "id": "129081331",
+   "title": "Torte de Lini Position 5",
+   "role": "Support",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "clinkz",
+   "id": "129056935",
+   "title": "Torte de Lini Position 1 #",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-20"
+  },
+  {
+   "hero": "crystal_maiden",
+   "id": "128851981",
+   "title": "Torte de Lini Positon 5",
+   "role": "Support",
+   "patch": "7.41f",
+   "updated": "2026-09-20"
+  },
+  {
+   "hero": "dark_seer",
+   "id": "129331714",
+   "title": "Torte de Lini Position 3",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-21"
+  },
+  {
+   "hero": "dark_willow",
+   "id": "1187546268",
+   "title": "Torte de Lini Position 4",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "dawnbreaker",
+   "id": "2451777397",
+   "title": "Torte de Lini Position 3",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-20"
+  },
+  {
+   "hero": "dazzle",
+   "id": "128730475",
+   "title": "Torte de Lini Position 5",
+   "role": "Support",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "death_prophet",
+   "id": "129323738",
+   "title": "Torte de Lini Position 2",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "disruptor",
+   "id": "128871463",
+   "title": "Torte de Lini Position 5",
+   "role": "Support",
+   "patch": "7.41f",
+   "updated": "2026-09-20"
+  },
+  {
+   "hero": "doom_bringer",
+   "id": "129098268",
+   "title": "Torte de Lini Position 3",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "doom_bringer",
+   "id": "143243384",
+   "title": "Torte de Lini Position 3",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "dragon_knight",
+   "id": "286904891",
+   "title": "Torte de Lini Position 3",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-21"
+  },
+  {
+   "hero": "drow_ranger",
+   "id": "128743885",
+   "title": "Torte de Lini Position 1 #",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-20"
+  },
+  {
+   "hero": "earth_spirit",
+   "id": "195048794",
+   "title": "Torte de Lini Position 2",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-21"
+  },
+  {
+   "hero": "earth_spirit",
+   "id": "319111870",
+   "title": "Torte de Lini Position 4",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-21"
+  },
+  {
+   "hero": "earthshaker",
+   "id": "129137630",
+   "title": "Torte de Lini Position 4",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-22"
+  },
+  {
+   "hero": "elder_titan",
+   "id": "143016376",
+   "title": "Torte de Lini Position 3",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "ember_spirit",
+   "id": "195052251",
+   "title": "Torte de Lini Pos 2, Physical",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-22"
+  },
+  {
+   "hero": "ember_spirit",
+   "id": "251934276",
+   "title": "Torte de Lini Pos 2, Magic",
+   "role": "Core",
+   "patch": "7.41e",
+   "updated": "2026-09-22"
+  },
+  {
+   "hero": "enchantress",
+   "id": "128858659",
+   "title": "Torte de Lini Position 5",
+   "role": "Support",
+   "patch": "7.41f",
+   "updated": "2026-09-21"
+  },
+  {
+   "hero": "enigma",
+   "id": "128887479",
+   "title": "Torte de Lini Position 3",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "faceless_void",
+   "id": "128922664",
+   "title": "Torte de Lini Position 1 #",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-22"
+  },
+  {
+   "hero": "furion",
+   "id": "128925332",
+   "title": "Torte de Lini Position 1",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "grimstroke",
+   "id": "1492532510",
+   "title": "Torte de Lini Position 4",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-23"
+  },
+  {
+   "hero": "gyrocopter",
+   "id": "129399377",
+   "title": "Torte de Lini Position 1 #",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "hoodwink",
+   "id": "2324368014",
+   "title": "Torte de Lini Position 4",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "huskar",
+   "id": "129119115",
+   "title": "Torte de Lini Position 2",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-22"
+  },
+  {
+   "hero": "invoker",
+   "id": "129334727",
+   "title": "Torte de Lini Position 2",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "jakiro",
+   "id": "128862386",
+   "title": "Torte de Lini Position 5",
+   "role": "Support",
+   "patch": "7.41f",
+   "updated": "2026-09-22"
+  },
+  {
+   "hero": "juggernaut",
+   "id": "129083818",
+   "title": "Torte de Lini Position 1 #",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-20"
+  },
+  {
+   "hero": "keeper_of_the_light",
+   "id": "128873254",
+   "title": "Torte de Lini Position 2",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-23"
+  },
+  {
+   "hero": "kez",
+   "id": "3362336316",
+   "title": "Torte de Lini Position 1",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "kunkka",
+   "id": "129060054",
+   "title": "Torte de Lini Position 2",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "largo",
+   "id": "3625076233",
+   "title": "Torte de Lini Position 3",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-23"
+  },
+  {
+   "hero": "legion_commander",
+   "id": "203428541",
+   "title": "Torte de Lini Position 3 #",
+   "role": "OffLane",
+   "patch": "7.41c",
+   "updated": "2026-09-22"
+  },
+  {
+   "hero": "legion_commander",
+   "id": "203428546",
+   "title": "Torte de Lini Position 3 #",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-22"
+  },
+  {
+   "hero": "leshrac",
+   "id": "319085962",
+   "title": "Torte de Lini Position 2",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "lich",
+   "id": "128882317",
+   "title": "Torte de Lini Position 5",
+   "role": "Support",
+   "patch": "7.41f",
+   "updated": "2026-09-23"
+  },
+  {
+   "hero": "life_stealer",
+   "id": "232367327",
+   "title": "Torte de Lini Position 1 #",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-20"
+  },
+  {
+   "hero": "lina",
+   "id": "129067853",
+   "title": "Torte de Lini Pos 2, Magic",
+   "role": "Core",
+   "patch": "7.41e",
+   "updated": "2026-09-23"
+  },
+  {
+   "hero": "lina",
+   "id": "381725812",
+   "title": "Torte de Lini Pos 2, Physical",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-23"
+  },
+  {
+   "hero": "lion",
+   "id": "128929132",
+   "title": "Torte de Lini Position 5 #",
+   "role": "Support",
+   "patch": "7.41f",
+   "updated": "2026-09-22"
+  },
+  {
+   "hero": "lone_druid",
+   "id": "129399862",
+   "title": "Torte de Lini Position 2",
+   "role": "Core",
+   "patch": "7.41c",
+   "updated": "2026-09-22"
+  },
+  {
+   "hero": "lone_druid",
+   "id": "176984007",
+   "title": "Torte de Lini Position 1",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-22"
+  },
+  {
+   "hero": "luna",
+   "id": "129063701",
+   "title": "Torte de Lini Position 1",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-20"
+  },
+  {
+   "hero": "lycan",
+   "id": "128917369",
+   "title": "Torte de Lini Position 3, Zoo",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-22"
+  },
+  {
+   "hero": "lycan",
+   "id": "286891439",
+   "title": "Torte de Lini Position 3, Physical",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-22"
+  },
+  {
+   "hero": "magnataur",
+   "id": "128945163",
+   "title": "Torte de Lini Position 3",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-22"
+  },
+  {
+   "hero": "marci",
+   "id": "2639555824",
+   "title": "Torte de Lini Position 3",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "mars",
+   "id": "1674127743",
+   "title": "Torte de Lini Position 3",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "medusa",
+   "id": "129403206",
+   "title": "Torte de Lini Position 1",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "meepo",
+   "id": "129402256",
+   "title": "Torte de Lini Position 2",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "mirana",
+   "id": "129381491",
+   "title": "Torte de Lini Position 4",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "monkey_king",
+   "id": "817387228",
+   "title": "Torte de Lini Position 2",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "morphling",
+   "id": "129076227",
+   "title": "Torte de Lini Position 1",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "muerta",
+   "id": "2943368068",
+   "title": "Torte de Lini Position 1",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "naga_siren",
+   "id": "129402805",
+   "title": "Torte de Lini Position 1",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "necrolyte",
+   "id": "129193377",
+   "title": "Torte de Lini Position 2",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "nevermore",
+   "id": "129081035",
+   "title": "Torte de Lini Position 1",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-20"
+  },
+  {
+   "hero": "night_stalker",
+   "id": "128741319",
+   "title": "Torte de Lini Position 3",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "nyx_assassin",
+   "id": "128932114",
+   "title": "Torte de Lini Position 4 #",
+   "role": "Roamer",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "obsidian_destroyer",
+   "id": "129332786",
+   "title": "Torte de Lini Position 2",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "ogre_magi",
+   "id": "128866569",
+   "title": "Torte de Lini Position 5",
+   "role": "Support",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "omniknight",
+   "id": "129130896",
+   "title": "Torte de Lini Position 5",
+   "role": "Support",
+   "patch": "7.41b",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "omniknight",
+   "id": "895968997",
+   "title": "Torte de Lini Position 3",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "oracle",
+   "id": "344511398",
+   "title": "Torte de Lini Position 5",
+   "role": "Support",
+   "patch": "7.41f",
+   "updated": "2026-09-20"
+  },
+  {
+   "hero": "pangolier",
+   "id": "1187551178",
+   "title": "Torte de Lini Position 2",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "phantom_assassin",
+   "id": "128920907",
+   "title": "Torte de Lini Position 1 #",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "phantom_lancer",
+   "id": "129093311",
+   "title": "Torte de Lini Position 1 #",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-20"
+  },
+  {
+   "hero": "phoenix",
+   "id": "222264754",
+   "title": "Torte de Lini Position 4",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "primal_beast",
+   "id": "2762905224",
+   "title": "Torte de Lini Position 3",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "puck",
+   "id": "128855291",
+   "title": "Torte de Lini Position 2",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "pudge",
+   "id": "128906539",
+   "title": "Torte de Lini Position 4 #",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-20"
+  },
+  {
+   "hero": "pugna",
+   "id": "128899869",
+   "title": "Torte de Lini Position 5",
+   "role": "Support",
+   "patch": "7.41e",
+   "updated": "2026-08-06"
+  },
+  {
+   "hero": "queenofpain",
+   "id": "129204328",
+   "title": "Torte de Lini Position 2",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "rattletrap",
+   "id": "128732275",
+   "title": "Torte de Lini Position 4",
+   "role": "Support",
+   "patch": "7.41f",
+   "updated": "2026-09-23"
+  },
+  {
+   "hero": "razor",
+   "id": "128756420",
+   "title": "Torte de Lini Position 3",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "riki",
+   "id": "128745244",
+   "title": "Torte de Lini Position 1",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "ringmaster",
+   "id": "3315134700",
+   "title": "Torte de Lini Position 4",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "rubick",
+   "id": "128927319",
+   "title": "Torte de Lini Position 4",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "sand_king",
+   "id": "129100110",
+   "title": "Torte de Lini Position 3",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "shadow_demon",
+   "id": "128937771",
+   "title": "Torte de Lini Position 5",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "shadow_shaman",
+   "id": "129085778",
+   "title": "Torte de Lini Position 5 #",
+   "role": "Support",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "shredder",
+   "id": "129105276",
+   "title": "Torte de Lini 🐸🐸🐸🐸Position 3",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-21"
+  },
+  {
+   "hero": "silencer",
+   "id": "129072324",
+   "title": "Torte de Lini Position 5",
+   "role": "Support",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "skeleton_king",
+   "id": "128914193",
+   "title": "Torte de Lini Position 1 #",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-20"
+  },
+  {
+   "hero": "skywrath_mage",
+   "id": "286895078",
+   "title": "Torte de Lini Position 2",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "slardar",
+   "id": "129102427",
+   "title": "Torte de Lini Position 3 #",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-21"
+  },
+  {
+   "hero": "slark",
+   "id": "128956358",
+   "title": "Torte de Lini Position 1 #",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-21"
+  },
+  {
+   "hero": "snapfire",
+   "id": "1921553241",
+   "title": "Torte de Lini Position 4",
+   "role": "OffLane",
+   "patch": "7.41e",
+   "updated": "2026-08-06"
+  },
+  {
+   "hero": "sniper",
+   "id": "319109248",
+   "title": "Torte de Lini Position 2 #",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-20"
+  },
+  {
+   "hero": "spectre",
+   "id": "129400942",
+   "title": "Torte de Lini Position 1",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-21"
+  },
+  {
+   "hero": "storm_spirit",
+   "id": "129143802",
+   "title": "Torte de Lini Position 2",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-21"
+  },
+  {
+   "hero": "sven",
+   "id": "129079469",
+   "title": "Torte de Lini Position 1",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-21"
+  },
+  {
+   "hero": "techies",
+   "id": "309919893",
+   "title": "Torte de Lini Position 4",
+   "role": "Support",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "templar_assassin",
+   "id": "128748151",
+   "title": "Torte de Lini Position 1",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "terrorblade",
+   "id": "222265746",
+   "title": "Torte de Lini Position 1",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-21"
+  },
+  {
+   "hero": "tidehunter",
+   "id": "128912519",
+   "title": "Torte de Lini Position 3 #",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-21"
+  },
+  {
+   "hero": "tinker",
+   "id": "129157199",
+   "title": "Torte de Lini Position 2",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-22"
+  },
+  {
+   "hero": "tiny",
+   "id": "161358226",
+   "title": "Torte de Lini Position 1",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-22"
+  },
+  {
+   "hero": "treant",
+   "id": "129107725",
+   "title": "Torte de Lini Position 5 #",
+   "role": "Support",
+   "patch": "7.41f",
+   "updated": "2026-09-20"
+  },
+  {
+   "hero": "troll_warlord",
+   "id": "128753951",
+   "title": "Torte de Lini Position 1",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-21"
+  },
+  {
+   "hero": "tusk",
+   "id": "129069615",
+   "title": "Torte de Lini Position 4",
+   "role": "Support",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "undying",
+   "id": "128742802",
+   "title": "Torte de Lini Position 5",
+   "role": "Support",
+   "patch": "7.41f",
+   "updated": "2026-09-20"
+  },
+  {
+   "hero": "ursa",
+   "id": "254615876",
+   "title": "Torte de Lini Position 1",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-20"
+  },
+  {
+   "hero": "vengefulspirit",
+   "id": "129062086",
+   "title": "Torte de Lini Position 5",
+   "role": "Support",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "venomancer",
+   "id": "129096483",
+   "title": "Torte de Lini Position 5",
+   "role": "Support",
+   "patch": "7.41f",
+   "updated": "2026-09-22"
+  },
+  {
+   "hero": "viper",
+   "id": "129400259",
+   "title": "Torte de Lini Position 2",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "visage",
+   "id": "128903691",
+   "title": "Torte de Lini Position 3",
+   "role": "OffLane",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "void_spirit",
+   "id": "1921549643",
+   "title": "Torte de Lini Position 2",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-20"
+  },
+  {
+   "hero": "warlock",
+   "id": "128891336",
+   "title": "Torte de Lini Position 5",
+   "role": "Support",
+   "patch": "7.41f",
+   "updated": "2026-09-21"
+  },
+  {
+   "hero": "weaver",
+   "id": "301732264",
+   "title": "Torte de Lini Position 1",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "windrunner",
+   "id": "434659379",
+   "title": "Torte de Lini Position 2",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "winter_wyvern",
+   "id": "391458050",
+   "title": "Torte de Lini Position 5",
+   "role": "Support",
+   "patch": "7.41f",
+   "updated": "2026-09-20"
+  },
+  {
+   "hero": "wisp",
+   "id": "128734250",
+   "title": "Torte de Lini Position 5",
+   "role": "Support",
+   "patch": "7.41c",
+   "updated": "2026-09-25"
+  },
+  {
+   "hero": "witch_doctor",
+   "id": "129191918",
+   "title": "Torte de Lini Position 5",
+   "role": "Support",
+   "patch": "7.41f",
+   "updated": "2026-09-22"
+  },
+  {
+   "hero": "zuus",
+   "id": "129065509",
+   "title": "Torte de Lini Position 2",
+   "role": "Core",
+   "patch": "7.41f",
+   "updated": "2026-09-22"
+  }
+ ]
+}

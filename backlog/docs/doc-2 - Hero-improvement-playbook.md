@@ -3,7 +3,7 @@ id: doc-2
 title: Hero improvement playbook
 type: guide
 created_date: '2026-09-30 13:58'
-updated_date: '2026-09-30 14:33'
+updated_date: '2026-10-01 12:49'
 tags:
   - hero
   - process
@@ -27,11 +27,25 @@ How we improve heroes' in-game play (ability use, combos, counterplay) beyond th
 | Source | Cost | Best for | Trust |
 |---|---|---|---|
 | Valve ability data (d2vpkr `scripts/npc/heroes/npc_dota_hero_<name>.txt`, `resource/localization/abilities_english.txt`) | Very low, scriptable | Names, cast behaviour, values, formulas | Authoritative |
-| Torte de Lini guides (local cache: `dota 2 beta/game/dota/workshop/steampublic/*.item`) | Low | Combos and when to use each spell | Good; only guides opened in game are cached |
+| Torte de Lini guides (`node tools/tdl/fetch.cjs <hero>`, fetched from the Steam Workshop) | Low, works on any machine | Combos and when to use each spell; item usage tips | Good; see the notes below |
 | dotacoach (`/en/heroes/<slug>` and `/en/heroes/counters/<slug>`) | Low, pages are server-rendered | Strategy, counter strategy, synergy setups, counter items | Needs checking; some text is stale |
 | D2PT | Low | Builds, roles, matchups | Good for builds |
 | Liquipedia | Medium; blocks automated fetching | Edge-case mechanics | Good; paste by hand |
 | Videos | High | Deep dives on weak heroes | Values often outdated |
+
+## Torte de Lini guides
+
+`node tools/tdl/fetch.cjs <hero>` prints a hero's ability tips and item tips (internal hero name, e.g. `ancient_apparition`). It downloads the guide from the Steam Workshop through Steam's public API, so it needs no Dota install and no key; `tools/tdl/guides.json` maps heroes to Workshop guide IDs (136 guides, 126 heroes as of 2026-10-01). Downloads are cached in the git-ignored `tools/tdl/cache/`; `--refresh` re-downloads, `--all` caches everything.
+
+How to read them:
+
+- **Ability tips lean toward the laning stage.** They say little about mid- and late-game fights; use dotacoach and Valve's data for those.
+- **Some heroes have two guides** (different positions, or magic vs physical builds). They differ mainly in items. The script merges them and labels a tip with its guide only where the guides disagree.
+- **Ignore the item builds.** Builds, talents and skill orders come from D2PT (`docs/D2PT_BUILD_UPDATES.md`). The useful parts are the per-ability tips and the per-item usage tips; the item tips feed the item-usage work (TASK-21).
+- **Older-patch guides are kept on purpose.** A guide written for 7.41b-e still describes how the spell is used. Check anything numeric against Valve's data.
+- **Spirit Breaker has no guide in the index.** Use dotacoach and Valve's data for that hero.
+
+The index is rebuilt from a Dota install: open the missing hero's Torte de Lini guide in game once so Dota caches it, then run `node tools/tdl/build_index.cjs "<dota 2 beta>/game/dota/workshop/steampublic"`.
 
 ## Verification rule
 

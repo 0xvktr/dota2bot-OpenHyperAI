@@ -53,6 +53,7 @@ When user says "update for patch X.XX" or provides patch notes:
 3. Each ability has a `ConsiderX()` function returning desire + target
 4. See "Skill / Ability System" in `docs/ARCHITECTURE.md`
 5. Ability names and `GetSpecialValueInt/Float` keys must exist in Valve's data: `node tests/valve_ability_check.cjs` checks them (a wrong key silently reads 0)
+6. For how players use each spell, `node tools/tdl/fetch.cjs <hero>` prints Torte de Lini's ability and item tips (reference only -- never paste guide text). The full process is the Backlog doc "Hero improvement playbook" (`backlog doc view doc-2`)
 
 ## Important Rules
 

@@ -500,6 +500,7 @@ talent preferences are positional (a swapped talent changes what `{x, y}` picks)
 | **Liquipedia** | `https://liquipedia.net/dota2/HERO_NAME` | Ability details, targeting, descriptions |
 | **Official patch notes** | `https://www.dota2.com/patches/X.XX` | Patch change summary |
 | **Valve Bot API docs** | `https://docs.moddota.com/lua_bots/` | Bot scripting API reference |
+| **Torte de Lini guides** | `node tools/tdl/fetch.cjs <hero>` (Steam Workshop, IDs in `tools/tdl/guides.json`) | Per-ability and per-item usage tips for hero logic work; reference only, never paste the text |
 
 ### Trust Hierarchy
 
