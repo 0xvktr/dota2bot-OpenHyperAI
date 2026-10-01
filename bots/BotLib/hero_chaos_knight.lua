@@ -11,6 +11,8 @@ local bDebugMode = ( 1 == 10 )
 local bot = GetBot()
 
 local J = require( GetScriptDirectory()..'/FunLib/jmz_func' )
+local ItemCastPolicy = require(GetScriptDirectory()..'/FunLib/item_cast_policy')
+local PowerTreads = require(GetScriptDirectory()..'/FunLib/power_treads')
 local Minion = dofile( GetScriptDirectory()..'/FunLib/aba_minion' )
 local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
@@ -133,6 +135,8 @@ local nKeepMana, nMP, nHP, nLV, hEnemyHeroList
 
 
 function X.SkillsComplement()
+    ItemCastPolicy.Clear(bot)
+    if PowerTreads.ActionLocked(bot) then return end
 
 	if J.CanNotUseAbility( bot ) or bot:IsInvisible() then return end
 
@@ -164,7 +168,7 @@ function X.SkillsComplement()
 	if ( castWDesire > 0 )
 	then
 
-		J.SetQueuePtToINT( bot, false )
+		J.SetQueuePtToINT( bot, false, abilityW )
 
 		bot:ActionQueue_UseAbilityOnEntity( abilityW, castWTarget )
 		return
@@ -173,11 +177,17 @@ function X.SkillsComplement()
 	castQDesire, castQTarget = X.ConsiderQ()
 	if ( castQDesire > 0 )
 	then
-
-		J.SetQueuePtToINT( bot, true )
-
-		bot:ActionQueue_UseAbilityOnEntity( abilityQ, castQTarget )
-		return
+        if not abilityQ:IsFullyCastable() then
+            local waiting = ItemCastPolicy.Request(bot, abilityQ, castQTarget, 'unit', function()
+                local desire, target = X.ConsiderQ()
+                return desire > 0 and target == castQTarget
+            end, J)
+            if waiting then return end
+        else
+            J.SetQueuePtToINT(bot, true, abilityQ)
+            bot:ActionQueue_UseAbilityOnEntity(abilityQ, castQTarget)
+            return
+        end
 	end
 
 
@@ -186,7 +196,7 @@ end
 
 function X.ConsiderQ()
 
-	if not abilityQ:IsFullyCastable() then return BOT_ACTION_DESIRE_NONE end
+	if not ItemCastPolicy.CanConsider(bot, abilityQ) then return BOT_ACTION_DESIRE_NONE end
 
 	local nCastRange = abilityQ:GetCastRange()
 	local nCastPoint = abilityQ:GetCastPoint()

@@ -8,6 +8,7 @@ local FightResponse = require(GetScriptDirectory()..'/FunLib/fight_response')
 local DebugDumps = require(GetScriptDirectory()..'/FunLib/debug_dumps')
 local WardUtility = require(GetScriptDirectory()..'/FunLib/aba_ward_utility')
 local PowerTreads = require(GetScriptDirectory()..'/FunLib/power_treads')
+local ItemCastPolicy = require(GetScriptDirectory()..'/FunLib/item_cast_policy')
 local X = {}
 local bot = GetBot()
 local botName = bot:GetUnitName()
@@ -1080,7 +1081,10 @@ function X.SetUseItem( hItem, hItemTarget, sCastType )
         and type(hItemTarget) ~= 'table' and hItemTarget.x ~= nil)
     if sCastType ~= 'none' and sCastType ~= 'twice' and sCastType ~= 'tree'
         and not ground and not (sCastType == 'unit' and type(hItemTarget) == 'table') then return false end
-    local queued = PowerTreads.PrepareItem(bot, hItem, hItemTarget, sCastType, J)
+    -- A selected cast is waiting for mana now; avoid inserting optional stat
+    -- switches before its restoration, especially interrupts and ally saves.
+    local enablingCast = ItemCastPolicy.RestoreDesire(bot, hItem, J) > 0
+    local queued = not enablingCast and PowerTreads.PrepareItem(bot, hItem, hItemTarget, sCastType, J)
 
     if hItem:GetName() == 'item_power_treads' then PowerTreads.RecordSwitch(bot) end
 
@@ -2224,7 +2228,7 @@ X.ConsiderItemDesire["item_enchanted_mango"] = function( hItem )
 	local hEffectTarget = nil
 	local sCastMotive = nil
 
-	if bot:GetMana() < 150
+	if ItemCastPolicy.RestoreDesire(bot, hItem, J) > 0
 	then
 		hEffectTarget = bot
 		sCastMotive = '自己吃'
@@ -3224,22 +3228,25 @@ X.ConsiderItemDesire["item_magic_stick"] = function( hItem )
 	local nHPrate = bot:GetHealth() / bot:GetMaxHealth()
 	local nMPrate = bot:GetMana() / bot:GetMaxMana()
 	local nCharges = hItem:GetCurrentCharges()
+	if ItemCastPolicy.RestoreDesire(bot, hItem, J) > 0 then
+		return BOT_ACTION_DESIRE_HIGH, bot, sCastType, 'Enable selected spell'
+	end
 
-	if ( nHPrate < 0.5 or nMPrate < 0.3 ) and nEnemyCount >= 1 and nCharges >= 1
+	if nHPrate < 0.5 and nEnemyCount >= 1 and nCharges >= 1
 	then
 		hEffectTarget = bot
 		sCastMotive = '用途1'
 		return BOT_ACTION_DESIRE_HIGH, hEffectTarget, sCastType, sCastMotive
 	end
 
-	if ( nHPrate + nMPrate < 1.1 and nCharges >= 7 and nEnemyCount >= 1 )
+	if ( nHPrate < 0.7 and nHPrate + nMPrate < 1.1 and nCharges >= 7 and nEnemyCount >= 1 )
 	then
 		hEffectTarget = bot
 		sCastMotive = '用途2'
 		return BOT_ACTION_DESIRE_HIGH, hEffectTarget, sCastType, sCastMotive
 	end
 
-	if ( nCharges >= 9 and bot:GetItemInSlot( 6 ) ~= nil and ( nHPrate <= 0.7 or nMPrate <= 0.6 ) )
+	if ( nCharges >= 9 and bot:GetItemInSlot( 6 ) ~= nil and nHPrate <= 0.7 )
 	then
 		hEffectTarget = bot
 		sCastMotive = '用途3'
@@ -3269,8 +3276,11 @@ X.ConsiderItemDesire["item_magic_wand"] = function( hItem )
 	local nLostHP = bot:GetMaxHealth() - bot:GetHealth()
 	local nLostMP = bot:GetMaxMana() - bot:GetMana()
 	local nCharges = hItem:GetCurrentCharges()
+	if sCastType == 'none' and ItemCastPolicy.RestoreDesire(bot, hItem, J) > 0 then
+		return BOT_ACTION_DESIRE_HIGH, bot, sCastType, 'Enable selected spell'
+	end
 
-	if ( ( nHPrate < 0.4 or nMPrate < 0.3 ) and nEnemyCount >= 1 and nCharges >= 1 )
+	if ( nHPrate < 0.4 and nEnemyCount >= 1 and nCharges >= 1 )
 	then
 		hEffectTarget = bot
 		sCastMotive = '用途1'
@@ -3284,7 +3294,7 @@ X.ConsiderItemDesire["item_magic_wand"] = function( hItem )
 		return BOT_ACTION_DESIRE_HIGH, hEffectTarget, sCastType, sCastMotive
 	end
 
-	if ( nCharges >= 19 and bot:GetItemInSlot( 6 ) ~= nil and ( nHPrate <= 0.6 or nMPrate <= 0.5 ) ) 
+	if ( nCharges >= 19 and bot:GetItemInSlot( 6 ) ~= nil and nHPrate <= 0.6 )
 	then
 		hEffectTarget = bot
 		sCastMotive = '用途3'
@@ -3546,10 +3556,7 @@ X.ConsiderItemDesire["item_mask_of_madness"] = function( hItem )
 		if nAttackTarget:IsHero()
 			or ( #nEnemyHeroInView == 0 and not bot:WasRecentlyDamagedByAnyHero( 2.0 ) )
 		then
-			if ( #nEnemyHeroInView == 0 )
-			or ( botName ~= "npc_dota_hero_sniper"
-				or botName ~= "npc_dota_hero_medusa"
-				or botName ~= "npc_dota_hero_faceless_void" and J.GetUltimateAbility(bot):GetCooldown() > 0)
+			if ItemCastPolicy.AllowMask(bot, #nEnemyHeroInView > 0)
 			then
 				bot:SetTarget( nAttackTarget )
 				hEffectTarget = nAttackTarget
@@ -6550,22 +6557,7 @@ end
 
 --item_soul_ring
 X.ConsiderItemDesire['item_soul_ring'] = function(item)
-
-	local sCastType = 'none'
-	local hEffectTarget = bot
-	local sCastMotive = nil
-	local aMode = bot:GetActiveMode()
-
-	local currMana = bot:GetMana() / bot:GetMaxMana()
-	local currHealth = bot:OriginalGetHealth() / bot:OriginalGetMaxHealth()
-
-	if (aMode == BOT_MODE_FARM or aMode == BOT_MODE_LANING)
-	and currHealth > 0.5 and currMana < 0.5
-	then
-		return BOT_ACTION_DESIRE_HIGH, hEffectTarget, sCastType, sCastMotive
-	end
-
-	return BOT_ACTION_DESIRE_NONE
+	return ItemCastPolicy.RestoreDesire(bot, item, J), bot, 'none', 'Enable selected spell'
 end
 
 -- 7.33 New Items

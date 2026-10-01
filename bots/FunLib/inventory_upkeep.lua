@@ -14,7 +14,18 @@ X.BackpackConsumables = {
     item_clarity = true, item_faerie_fire = true, item_flask = true, item_enchanted_mango = true,
 }
 -- Never swapped out of the main inventory to make room.
-X.KeepInMain = { item_tpscroll = true, item_travel_boots = true, item_travel_boots_2 = true }
+X.KeepInMain = {
+    item_tpscroll = true, item_power_treads = true, item_phase_boots = true,
+    item_guardian_greaves = true, item_arcane_boots = true, item_tranquil_boots = true,
+    item_boots = true, item_boots_of_bearing = true, item_travel_boots = true, item_travel_boots_2 = true,
+    item_magic_stick = true, item_magic_wand = true, item_holy_locket = true,
+    item_blink = true, item_overwhelming_blink = true, item_swift_blink = true, item_arcane_blink = true,
+    item_black_king_bar = true, item_armlet = true, item_bloodstone = true,
+    item_force_staff = true, item_hurricane_pike = true, item_glimmer_cape = true,
+    item_cyclone = true, item_wind_waker = true, item_lotus_orb = true,
+    item_sphere = true, item_mekansm = true, item_satanic = true, item_disperser = true,
+    item_aegis = true, item_rapier = true, item_gem = true, item_cheese = true, item_refresher_shard = true,
+}
 X.SwapCooldown = 6 -- seconds between backpack swaps (Dota also puts swapped items on a short cooldown)
 
 -- An empty main slot, else the cheapest item that is not protected. nil when nothing can be swapped.
@@ -76,6 +87,13 @@ function X.SwapInBackpackConsumable(bot, considerDesire, now)
         bot.backpackConsumableSwap = nil
         return false
     end
+    -- Restore a previously displaced item above, even during combat. Starting
+    -- a new swap can remove defensive stats and starts the backpack cooldown.
+    if not bot:IsAlive() or bot:IsChanneling() or bot:IsCastingAbility() or bot:IsUsingAbility()
+        or bot:NumQueuedActions() > 0 or bot:HasModifier('modifier_teleporting')
+        or bot:WasRecentlyDamagedByAnyHero(4) or bot:WasRecentlyDamagedByTower(4)
+        or bot:WasRecentlyDamagedByCreep(4)
+        or #bot:GetNearbyHeroes(1200, true, BOT_MODE_NONE) > 0 then return false end
     for slot = 6, 8 do
         local item = bot:GetItemInSlot(slot)
         if item ~= nil then

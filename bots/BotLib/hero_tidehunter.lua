@@ -133,7 +133,7 @@ function X.SkillsComplement()
 	then
 		J.SetReportMotive( bDebugMode, sMotive )
 
-		J.SetQueuePtToINT( bot, true )
+		J.SetQueuePtToINT( bot, true, abilityR )
 
 		bot:ActionQueue_UseAbility( abilityR )
 		return
@@ -145,7 +145,7 @@ function X.SkillsComplement()
 	then
 		J.SetReportMotive( bDebugMode, sMotive )
 
-		J.SetQueuePtToINT( bot, true )
+		J.SetQueuePtToINT( bot, true, abilityQ )
 		
 		if bot:HasScepter()
 		and castQTarget ~= nil
@@ -173,7 +173,7 @@ function X.SkillsComplement()
 	if DeadInTheWaterDesire > 0
 	then
 		J.SetReportMotive( bDebugMode, sMotive )
-		J.SetQueuePtToINT( bot, true )
+		J.SetQueuePtToINT( bot, true, DeadInTheWater )
 		bot:ActionQueue_UseAbilityOnEntity(DeadInTheWater, AnchorTarget)
 		return
 	end

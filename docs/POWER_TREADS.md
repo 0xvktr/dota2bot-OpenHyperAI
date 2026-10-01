@@ -54,7 +54,10 @@ bot:ActionQueue_UseAbilityOnLocation(ability, location)
 The third argument lets the policy skip zero-mana/urgent casts or select an
 illusion setting. Existing two-argument calls retain their INT preparation
 when safe. Direct hero casts that do not use this helper are not automatically
-rewritten. Soul Ring retains the existing order: ring, Treads, spell.
+rewritten. Soul Ring retains the existing order: ring, Treads, spell, but now
+requires an explicit ability and useful mana expenditure with a safe health
+reserve. Restoration for a selected low-mana cast skips optional switches.
+See [ITEM_CAST_POLICIES.md](ITEM_CAST_POLICIES.md) for TASK-36's intent policy.
 
 ## Verification
 

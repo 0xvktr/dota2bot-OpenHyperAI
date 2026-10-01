@@ -9,6 +9,7 @@ local RadiantFountain = Vector( -6619, -6336, 384 )
 local DireFountain = Vector( 6928, 6372, 392 )
 local ObjectiveLocations = require(GetScriptDirectory()..'/FunLib/objective_locations')
 local PowerTreads = require(GetScriptDirectory()..'/FunLib/power_treads')
+local ItemCastPolicy = require(GetScriptDirectory()..'/FunLib/item_cast_policy')
 local RadiantTormentorLoc = ObjectiveLocations.tormentor.day
 local DireTormentorLoc = ObjectiveLocations.tormentor.night
 
@@ -2802,19 +2803,15 @@ function J.SetQueueSwitchPtToINT( bot )
 end
 
 
-function J.SetQueueUseSoulRing( bot )
-    if PowerTreads.ActionLocked(bot) or bot:IsMuted() then return end
+function J.SetQueueUseSoulRing( bot, ability )
+    if not PowerTreads.CanSwitch(bot) or bot:IsSilenced() then return end
 
 	local sr = J.IsItemAvailable( "item_soul_ring" )
 
 	if sr ~= nil and sr:IsFullyCastable()
 	then
 		local nEnemyCount = J.GetEnemyCount( bot, 1600 )
-		local botHP = J.GetHP( bot )
-		local botMP = J.GetMP( bot )
-		if botHP > 0.35 + 0.1 * nEnemyCount
-			and botMP < 0.99 - 0.1 * nEnemyCount
-			and ( nEnemyCount <= 2 or botHP > botMP * 2.5 )
+		if ItemCastPolicy.SoulRingUseful(bot, sr, ability, nEnemyCount, false)
 		then
 			bot:ActionQueue_UseAbility( sr )
 			return
@@ -2832,7 +2829,7 @@ function J.SetQueuePtToINT( bot, bSoulRingUsed, ability )
     if PowerTreads.Threatened(bot, J) then return end
     local attribute = PowerTreads.AbilityStat(bot, ability)
     if attribute == nil then return end
-    if bSoulRingUsed then J.SetQueueUseSoulRing(bot) end
+    if bSoulRingUsed then J.SetQueueUseSoulRing(bot, ability) end
     -- Soul Ring may have just added an action owned by this helper.
     PowerTreads.Queue(bot, attribute, true)
 end

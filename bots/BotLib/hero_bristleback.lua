@@ -141,7 +141,7 @@ function X.SkillsComplement()
 
 	HairballDesire, HairballTarget = X.ConsiderHairball()
 	if HairballDesire > 0 then
-		J.SetQueuePtToINT(bot, true)
+		J.SetQueuePtToINT(bot, true, Hairball)
 		bot:ActionQueue_UseAbilityOnLocation(Hairball, HairballTarget)
 		return
 	end
@@ -168,7 +168,7 @@ function X.SkillsComplement()
 
 	QuillSprayDesire = X.ConsiderQuillSpray()
 	if QuillSprayDesire > 0 then
-		J.SetQueuePtToINT(bot, true)
+		J.SetQueuePtToINT(bot, true, QuillSpray)
 		bot:ActionQueue_UseAbility(QuillSpray)
 		return
 	end

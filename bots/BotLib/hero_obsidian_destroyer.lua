@@ -2,6 +2,8 @@ local X = {}
 local bot = GetBot()
 
 local J = require( GetScriptDirectory()..'/FunLib/jmz_func' )
+local ItemCastPolicy = require(GetScriptDirectory()..'/FunLib/item_cast_policy')
+local PowerTreads = require(GetScriptDirectory()..'/FunLib/power_treads')
 local Minion = dofile( GetScriptDirectory()..'/FunLib/aba_minion' )
 local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
@@ -55,7 +57,6 @@ end
 
 local ArcaneOrb             = bot:GetAbilityByName('obsidian_destroyer_arcane_orb')
 local AstralImprisonment    = bot:GetAbilityByName('obsidian_destroyer_astral_imprisonment')
-local EssenceAura           = bot:GetAbilityByName('obsidian_destroyer_essence_aura')
 local SanitysEclipse        = bot:GetAbilityByName('obsidian_destroyer_sanity_eclipse')
 local Objurgation           = bot:GetAbilityByName('obsidian_destroyer_objurgation')
 
@@ -64,34 +65,83 @@ local AstralImprisonmentDesire, AstralImprisonmentTarget
 local SanitysEclipseDesire, SanitysEclipseLocation
 local ObjurgationDesire
 
-function X.SkillsComplement()
-    if J.CanNotUseAbility(bot) then return end
+function X.OrbManaReserve()
+    local reserve = ItemCastPolicy.Ready(AstralImprisonment) and AstralImprisonment:GetManaCost() or 0
+    if #J.GetNearbyHeroes(bot, 1600, true, BOT_MODE_NONE) > 0 then
+        -- Preserve Astral plus the more expensive ready combat spell. Essence
+        -- Flux (obsidian_destroyer_equilibrium) is random; no proc is promised.
+        local eclipse = ItemCastPolicy.Ready(SanitysEclipse) and SanitysEclipse:GetManaCost() or 0
+        local barrier = ItemCastPolicy.Ready(Objurgation) and Objurgation:GetManaCost() or 0
+        reserve = reserve + math.max(eclipse, barrier)
+    end
+    return reserve
+end
 
-	if ArcaneOrb:IsTrained()
-	and ArcaneOrb:GetAutoCastState( ) == false
-	and bot:GetLevel() >= 9
-	then
-		ArcaneOrb:ToggleAutoCast()
-	end
+function X.CanSpendOrb(buffer)
+    local cost = math.max(ArcaneOrb:GetManaCost(),
+        bot:GetMana() * ArcaneOrb:GetSpecialValueInt('mana_cost_percentage') / 100)
+    return ArcaneOrb:IsTrained() and bot:GetMana() - cost >= X.OrbManaReserve() + (buffer or 0)
+end
+
+function X.UpdateOrbAutocast()
+    if not ArcaneOrb:IsTrained() then return end
+    local target = bot:GetAttackTarget()
+    local current = ArcaneOrb:GetAutoCastState()
+    -- IsValidTarget is hero-only in this repository; IsValid also accepts
+    -- creeps so the reserve policy does not silently disable farm autocast.
+    local useful = J.IsValid(target) and J.CanBeAttacked(target)
+        and J.CanCastOnNonMagicImmune(target)
+        and J.IsInRange(bot, target, bot:GetAttackRange() + 50)
+        and not J.IsSuspiciousIllusion(target)
+        and not target:HasModifier('modifier_abaddon_borrowed_time')
+        and not target:HasModifier('modifier_dazzle_shallow_grave')
+        and not target:HasModifier('modifier_templar_assassin_refraction_absorb')
+        and (target:IsHero() or target:GetHealth() > bot:GetAttackDamage())
+    -- Leave cheap last hits to ordinary attacks; allow healthy farm targets.
+    -- A small restart buffer prevents toggling at the reserve boundary.
+    local desired = useful == true and X.CanSpendOrb(current and 0 or bot:GetMaxMana() * 0.05)
+    if current ~= desired then ArcaneOrb:ToggleAutoCast() end
+end
+
+local function castOrRequest(ability, target, kind, consider)
+    if ability:IsFullyCastable() then
+        ItemCastPolicy.Clear(bot)
+        if kind == 'unit' then bot:Action_UseAbilityOnEntity(ability, target)
+        elseif kind == 'ground' then bot:Action_UseAbilityOnLocation(ability, target)
+        else bot:Action_UseAbility(ability) end
+        return true
+    end
+    return ItemCastPolicy.Request(bot, ability, target, kind, function()
+        local desire, freshTarget = consider()
+        if desire <= 0 then return false end
+        if kind == 'ground' then
+            return freshTarget ~= nil and GetUnitToLocationDistance(bot, freshTarget) <= ability:GetCastRange()
+                and (freshTarget - target):Length2D() < 50
+        end
+        return kind == 'none' or freshTarget == target
+    end, J)
+end
+
+function X.SkillsComplement()
+    ItemCastPolicy.Clear(bot)
+    if PowerTreads.ActionLocked(bot) or J.CanNotUseAbility(bot) then return end
+    X.UpdateOrbAutocast()
 
     ObjurgationDesire = X.ConsiderObjurgation()
-    if ObjurgationDesire > 0
+    if ObjurgationDesire > 0 and castOrRequest(Objurgation, nil, 'none', X.ConsiderObjurgation)
     then
-        bot:Action_UseAbility(Objurgation)
         return
     end
 
     SanitysEclipseDesire, SanitysEclipseLocation = X.ConsiderSanitysEclipse()
-    if SanitysEclipseDesire > 0
+    if SanitysEclipseDesire > 0 and castOrRequest(SanitysEclipse, SanitysEclipseLocation, 'ground', X.ConsiderSanitysEclipse)
     then
-        bot:Action_UseAbilityOnLocation(SanitysEclipse, SanitysEclipseLocation)
         return
     end
 
     AstralImprisonmentDesire, AstralImprisonmentTarget = X.ConsiderAstralImprisonment()
-    if AstralImprisonmentDesire > 0
+    if AstralImprisonmentDesire > 0 and castOrRequest(AstralImprisonment, AstralImprisonmentTarget, 'unit', X.ConsiderAstralImprisonment)
     then
-        bot:Action_UseAbilityOnEntity(AstralImprisonment, AstralImprisonmentTarget)
         return
     end
 
@@ -106,6 +156,7 @@ end
 function X.ConsiderArcaneOrb()
     if not ArcaneOrb:IsFullyCastable()
     or ArcaneOrb:GetAutoCastState()
+    or not X.CanSpendOrb()
     then
         return BOT_ACTION_DESIRE_NONE, nil
     end
@@ -121,6 +172,9 @@ function X.ConsiderArcaneOrb()
         local nInRangeAlly = J.GetNearbyHeroes(bot,800, false, BOT_MODE_NONE)
 
 		if J.IsValidTarget(weakestTarget)
+        and J.CanBeAttacked(weakestTarget)
+        and J.CanCastOnNonMagicImmune(weakestTarget)
+        and J.IsInRange(bot, weakestTarget, nAttackRange)
         and not J.IsSuspiciousIllusion(weakestTarget)
         and not weakestTarget:HasModifier('modifier_abaddon_borrowed_time')
         and not weakestTarget:HasModifier('modifier_dazzle_shallow_grave')
@@ -181,7 +235,7 @@ function X.ConsiderArcaneOrb()
 end
 
 function X.ConsiderAstralImprisonment()
-    if not AstralImprisonment:IsFullyCastable()
+    if not ItemCastPolicy.CanConsider(bot, AstralImprisonment)
     then
         return BOT_ACTION_DESIRE_NONE, nil
     end
@@ -413,7 +467,7 @@ function X.ConsiderAstralImprisonment()
 end
 
 function X.ConsiderSanitysEclipse()
-    if not SanitysEclipse:IsFullyCastable()
+    if not ItemCastPolicy.CanConsider(bot, SanitysEclipse)
     then
         return BOT_ACTION_DESIRE_NONE, 0
     end
@@ -458,7 +512,7 @@ function X.ConsiderSanitysEclipse()
 end
 
 function X.ConsiderObjurgation()
-    if not Objurgation:IsFullyCastable()
+    if not ItemCastPolicy.CanConsider(bot, Objurgation)
     then
         return BOT_ACTION_DESIRE_NONE
     end

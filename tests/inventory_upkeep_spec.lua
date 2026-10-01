@@ -1,5 +1,6 @@
 -- Backpack consumable swaps and orphaned-component sales (bots/FunLib/inventory_upkeep.lua).
 package.path = './?.lua;'..package.path
+BOT_MODE_NONE = 0
 local Upkeep = dofile('bots/FunLib/inventory_upkeep.lua')
 
 local costs = { item_clarity = 50, item_tango = 90, item_magic_wand = 450, item_blink = 2250, item_bottle = 675,
@@ -14,6 +15,16 @@ local function makeBot(slots)
     function bot:DistanceFromFountain() return self.dist.fountain end
     function bot:DistanceFromSecretShop() return self.dist.secret end
     function bot:DistanceFromSideShop() return self.dist.side end
+    function bot:IsAlive() return true end
+    function bot:IsChanneling() return self.channeling == true end
+    function bot:IsCastingAbility() return false end
+    function bot:IsUsingAbility() return false end
+    function bot:NumQueuedActions() return self.queued or 0 end
+    function bot:HasModifier() return self.teleporting == true end
+    function bot:WasRecentlyDamagedByAnyHero() return self.heroDamage == true end
+    function bot:WasRecentlyDamagedByTower() return self.towerDamage == true end
+    function bot:WasRecentlyDamagedByCreep() return self.creepDamage == true end
+    function bot:GetNearbyHeroes() return self.enemies or {} end
     local function item(name, slot) return { GetName = function() return name end, slot = slot } end
     function bot:GetItemInSlot(i)
         if type(self.slots[i]) == 'string' then self.slots[i] = item(self.slots[i], i) end
@@ -62,15 +73,15 @@ assert(rejected.lastBackpackSwapTime == nil and rejected.backpackConsumableSwap 
 rejected.rejectSwap = false
 assert(Upkeep.SwapInBackpackConsumable(rejected, want(1), 101), 'rejection must not start a cooldown')
 
-local competing = makeBot({ [0] = 'item_magic_wand', 'item_blink', 'item_blink', 'item_blink',
+local competing = makeBot({ [0] = 'item_bracer', 'item_blink', 'item_blink', 'item_blink',
     'item_blink', 'item_blink', [6] = 'item_clarity', [7] = 'item_flask' })
 assert(Upkeep.SwapInBackpackConsumable(competing, want(1), 100))
 assert(not Upkeep.SwapInBackpackConsumable(competing, want(1), 112), 'do not rotate another consumable over the first')
 assert(competing:GetItemInSlot(0):GetName() == 'item_clarity')
 assert(Upkeep.SwapInBackpackConsumable(competing, want(0), 113), 'restore equipment when use is cancelled')
-assert(competing:GetItemInSlot(0):GetName() == 'item_magic_wand')
+assert(competing:GetItemInSlot(0):GetName() == 'item_bracer')
 
-local changed = makeBot({ [0] = 'item_magic_wand', 'item_blink', 'item_blink', 'item_blink',
+local changed = makeBot({ [0] = 'item_bracer', 'item_blink', 'item_blink', 'item_blink',
     'item_blink', 'item_blink', [6] = 'item_clarity' })
 assert(Upkeep.SwapInBackpackConsumable(changed, want(1), 100))
 changed.slots[0] = 'item_black_king_bar'
@@ -78,15 +89,15 @@ assert(not Upkeep.SwapInBackpackConsumable(changed, want(0), 112), 'do not overw
 changed.slots[3] = nil
 assert(Upkeep.SwapInBackpackConsumable(changed, want(0), 113))
 assert(changed:GetItemInSlot(0):GetName() == 'item_black_king_bar')
-assert(changed:GetItemInSlot(3):GetName() == 'item_magic_wand', 'restore into another empty slot')
+assert(changed:GetItemInSlot(3):GetName() == 'item_bracer', 'restore into another empty slot')
 
-local expired = makeBot({ [0] = 'item_magic_wand', 'item_blink', 'item_blink', 'item_blink',
+local expired = makeBot({ [0] = 'item_bracer', 'item_blink', 'item_blink', 'item_blink',
     'item_blink', 'item_blink', [6] = 'item_clarity' })
 assert(Upkeep.SwapInBackpackConsumable(expired, want(1), 100))
 assert(Upkeep.SwapInBackpackConsumable(expired, want(1), 121), 'restore if a desired consumable never gets used')
-assert(expired:GetItemInSlot(0):GetName() == 'item_magic_wand')
+assert(expired:GetItemInSlot(0):GetName() == 'item_bracer')
 
-local sold = makeBot({ [0] = 'item_magic_wand', 'item_blink', 'item_blink', 'item_blink',
+local sold = makeBot({ [0] = 'item_bracer', 'item_blink', 'item_blink', 'item_blink',
     'item_blink', 'item_blink', [6] = 'item_clarity' })
 assert(Upkeep.SwapInBackpackConsumable(sold, want(1), 100))
 sold.slots[0], sold.slots[6] = nil, nil -- consumption plus sale or combination of displaced item
@@ -110,6 +121,32 @@ assert(not Upkeep.SwapInBackpackConsumable(inMain, want(1), 100), 'nothing to do
 local protected = makeBot({ [0] = 'item_travel_boots', [1] = 'item_travel_boots', [2] = 'item_travel_boots',
     [3] = 'item_travel_boots', [4] = 'item_travel_boots', [5] = 'item_travel_boots', [6] = 'item_clarity' })
 assert(not Upkeep.SwapInBackpackConsumable(protected, want(1), 100), 'protected items are never displaced')
+
+for _, name in ipairs({ 'item_boots', 'item_phase_boots', 'item_power_treads', 'item_arcane_boots',
+    'item_tranquil_boots', 'item_guardian_greaves', 'item_boots_of_bearing', 'item_travel_boots',
+    'item_travel_boots_2', 'item_magic_wand', 'item_black_king_bar', 'item_force_staff', 'item_armlet' }) do
+    local full = makeBot({ [0]=name, name, name, name, name, name, [6]='item_clarity' })
+    assert(not Upkeep.SwapInBackpackConsumable(full, want(1), 100), 'must keep '..name)
+end
+for _, field in ipairs({ 'heroDamage', 'towerDamage', 'creepDamage', 'channeling', 'teleporting' }) do
+    local fighting = makeBot({ [0]='item_bracer', [6]='item_clarity' })
+    fighting[field] = true
+    assert(not Upkeep.SwapInBackpackConsumable(fighting, want(1), 100), field..' prevents new swaps')
+    assert(fighting.lastBackpackSwapTime == nil)
+    fighting[field] = false
+    assert(Upkeep.SwapInBackpackConsumable(fighting, want(1), 101), 'retry when safe')
+end
+local enemies = makeBot({ [0]='item_bracer', 'item_blink', 'item_blink', 'item_blink',
+    'item_blink', 'item_blink', [6]='item_clarity' })
+enemies.enemies = { {} }
+assert(not Upkeep.SwapInBackpackConsumable(enemies, want(1), 100), 'nearby enemy prevents losing defensive stats')
+enemies.enemies = {}; enemies.queued = 1
+assert(not Upkeep.SwapInBackpackConsumable(enemies, want(1), 100), 'pending combo prevents new swap')
+enemies.queued = 0
+assert(Upkeep.SwapInBackpackConsumable(enemies, want(1), 100))
+enemies.heroDamage = true; enemies.slots[0] = nil
+assert(Upkeep.SwapInBackpackConsumable(enemies, want(0), 107), 'restore displaced stats even during combat')
+assert(enemies:GetItemInSlot(0):GetName() == 'item_bracer')
 
 local seen
 local lookup = makeBot({ [0] = 'item_blink', [6] = 'item_clarity' })

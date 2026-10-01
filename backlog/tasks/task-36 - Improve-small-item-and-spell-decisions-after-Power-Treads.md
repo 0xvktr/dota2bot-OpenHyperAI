@@ -1,9 +1,11 @@
 ---
 id: TASK-36
 title: Improve small item and spell decisions after Power Treads
-status: To Do
-assignee: []
+status: Needs In-Game Test
+assignee:
+  - '@codex'
 created_date: '2026-10-01 09:36'
+updated_date: '2026-10-01 16:01'
 labels:
   - items
   - hero
@@ -22,6 +24,7 @@ references:
   - bots/BotLib/hero_obsidian_destroyer.lua
 documentation:
   - docs/POWER_TREADS.md
+  - docs/ITEM_CAST_POLICIES.md
 priority: medium
 type: enhancement
 ordinal: 40000
@@ -56,11 +59,42 @@ Recheck engine/item values against the pinned Valve data and current sources bef
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Mask of Madness respects documented hero-specific important-spell safeguards; regressions expose the previous always-true predicate and preserve valid farming use.
-- [ ] #2 Consumable preparation never backpacks protected boots or key actives or removes needed defensive stats in combat; rejected swaps and restoration of displaced items still work.
-- [ ] #3 Soul Ring use is justified by a valid useful impending cast with a safe health reserve, rather than only generic health/mana percentages; tests cover missing intent, unusable spells and safe pre-cast execution.
-- [ ] #4 Mango and charged Stick/Wand restoration can enable a valid important cast without wasting restoration on invalid or low-value actions; existing emergency healing is preserved.
-- [ ] #5 OD Arcane Orb autocast follows a documented mana-reserve policy that preserves important spell availability while allowing valuable Orb attacks and normal farming; current mana recovery is considered.
-- [ ] #6 New behavior preserves Power Treads preparation, action locks, target identity, emergency-save timing and channel/queue safety; meaningful offline regressions and existing relevant suites pass.
-- [ ] #7 Documentation records the chosen policies, evidence and remaining lobby checks, and identifies the narrow contributions to TASK-30 and TASK-26 without claiming those broader tasks complete.
+- [x] #1 Mask of Madness respects documented hero-specific important-spell safeguards; regressions expose the previous always-true predicate and preserve valid farming use.
+- [x] #2 Consumable preparation never backpacks protected boots or key actives or removes needed defensive stats in combat; rejected swaps and restoration of displaced items still work.
+- [x] #3 Soul Ring use is justified by a valid useful impending cast with a safe health reserve, rather than only generic health/mana percentages; tests cover missing intent, unusable spells and safe pre-cast execution.
+- [x] #4 Mango and charged Stick/Wand restoration can enable a valid important cast without wasting restoration on invalid or low-value actions; existing emergency healing is preserved.
+- [x] #5 OD Arcane Orb autocast follows a documented mana-reserve policy that preserves important spell availability while allowing valuable Orb attacks and normal farming; current mana recovery is considered.
+- [x] #6 New behavior preserves Power Treads preparation, action locks, target identity, emergency-save timing and channel/queue safety; meaningful offline regressions and existing relevant suites pass.
+- [x] #7 Documentation records the chosen policies, evidence and remaining lobby checks, and identifies the narrow contributions to TASK-30 and TASK-26 without claiming those broader tasks complete.
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. Add tested shared item policies: explicit ready cast intent for mana restoration, safe Soul Ring preparation, and hero-specific Mask of Madness spell readiness guards.
+2. Connect validated low-mana cast decisions in Sven and Outworld Destroyer; preserve targets, emergency timing, Power Treads locks and existing queues.
+3. Protect boots and important active items in consumable backpack swaps and gate new swaps during combat while retaining verified restoration/retries.
+4. Replace OD level-based Orb autocast with a live mana reserve for ready important spells and useful attack targets, without budgeting random Essence Flux procs.
+5. Add behavioral regressions, run build/objective suites, document policies and lobby checks, and finalize TASK-36 with only engine checks outstanding.
+
+The final low-mana integrations also include Chaos Knight Chaos Bolt, giving the Soul Ring cast-intent path a current purchaser. Existing queued Soul Ring purchasers pass their actual next spell to the shared helper.
+<!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Implemented all five policies. MoM now checks actual spell readiness for Sniper, Medusa and Faceless Void, preserving Drow and safe farm rules. Backpack preparation protects all boots/common defensive actives and waits for safe conditions; verified swap/retry/restoration behavior remains.
+Mana restoration accepts a short-lived selected cast only after revalidating target, readiness, mode, action locks and useful desire. One active item must bridge the deficit; no item means other spell decisions continue. Integrated Sven Storm Hammer, CK Chaos Bolt and OD Astral/Eclipse/Objurgation. Preserved emergency Stick/Wand healing and skipped optional Treads preparation for cast-enabling restoration. Soul Ring now uses real health after payment and an explicit next spell; existing queued purchasers were migrated to pass that spell.
+OD uses current percentage Orb expenditure, reserves ready Astral plus the greater ready Eclipse/Objurgation cost near enemies, and has an autocast restart buffer. Fixed the hero-only IsValidTarget trap so actual creep farming remains supported. Random Essence Flux recovery is never assumed in advance.
+Checked pinned Valve cf0d37a32c8df338a7832fd32a282747969e9a5f item/hero definitions: Soul Ring 170 mana / 170 health, Mango 100, Stick/Wand 15 per charge, Orb 20 percent current mana, hidden innate equilibrium proc chance 30 percent. Runtime item specials are used where exposed.
+Validation: node tests/run-builds.cjs passed (339 Lua files, 127 heroes / 253 migrated roles, 272 purchase lists, new actual generic item and OD/Sven/CK behavior suites, existing Power Treads and inventory scenarios). node tests/run-objectives.cjs passed including 42 objective, 25 feedback, 20 rotation, 11 gate probe and 14 support last-hit scenarios. Re-ran new item policy tests and Valve ability check after the final immunity guard; git diff --check passed. No lobby test was performed.
+AC checks record offline policy/test evidence, not live engine certification. Remaining engine scheduling, health payment/expiry, backpack cooldown, PT interactions and OD toggle/recovery checks are listed in docs/ITEM_CAST_POLICIES.md. TASK-30 and TASK-26 remain separate and were not closed. Changes are left in the working tree for review.
+
+User requested committing and pushing the TASK-36 implementation on 2026-10-01. Preparing the implementation commit on the current main branch; status remains Needs In-Game Test.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Implemented MoM spell safeguards, protected safe backpack swaps, cast-intent mana restoration and safe Soul Ring preparation, and mana-reserving OD Orb autocast. Actual generic item predicates, OD/Sven/CK hero decisions, Power Treads execution and inventory regressions pass alongside the full build/objective suites. Documented policy, pinned Valve evidence and lobby checks; Needs In-Game Test because live Dota execution remains unverified.
+<!-- SECTION:FINAL_SUMMARY:END -->

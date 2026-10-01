@@ -20,6 +20,7 @@ fs.writeFileSync('.test-tools/power-treads-hooks.lua',
     'return function(bot, J, PowerTreads, FightResponse, Services)\nlocal X = {}\n' +
     'local InventoryUpkeep, AlchemistScepter, LotusUsage, BossCombat = Services.inventory, Services.scepter, Services.lotus, Services.boss\n' +
     'local bDebugMode = false\nlocal aetherRange, botTarget, nMode, hNearbyEnemyHeroList, hNearbyEnemyTowerList\n' +
+    "local ItemCastPolicy = require('bots/FunLib/item_cast_policy')\n" +
     section('bots/FunLib/jmz_func.lua', 'function J.SetQueueSwitchPtToINT(', 'function J.IsOtherAllysTarget(') +
     section('bots/ability_item_usage_generic.lua', 'local function ItemUsageComplement()', 'function X.SetUseItem(') +
     'X.RunItemThink = ItemUsageComplement\n' +

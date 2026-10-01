@@ -11,6 +11,8 @@ local bDebugMode = ( 1 == 10 )
 local bot = GetBot()
 
 local J = require( GetScriptDirectory()..'/FunLib/jmz_func' )
+local ItemCastPolicy = require(GetScriptDirectory()..'/FunLib/item_cast_policy')
+local PowerTreads = require(GetScriptDirectory()..'/FunLib/power_treads')
 local Minion = dofile( GetScriptDirectory()..'/FunLib/aba_minion' )
 local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
@@ -81,7 +83,8 @@ local nKeepMana, nMP, nHP, nLV, hEnemyHeroList
 local botTarget
 
 function X.SkillsComplement()
-
+    ItemCastPolicy.Clear(bot)
+    if PowerTreads.ActionLocked(bot) then return end
 
 	J.ConsiderForMkbDisassembleMask( bot )
 	X.SvenConsiderTarget()
@@ -101,7 +104,7 @@ function X.SkillsComplement()
 	if ( castRDesire > 0 )
 	then
 
-		J.SetQueuePtToINT( bot, true )
+		J.SetQueuePtToINT( bot, true, abilityR )
 
 		bot:ActionQueue_UseAbility( abilityR )
 		return
@@ -111,19 +114,26 @@ function X.SkillsComplement()
 	castQDesire, castQTarget = X.ConsiderQ()
 	if ( castQDesire > 0 )
 	then
-
-		J.SetQueuePtToINT( bot, true )
-
-		bot:ActionQueue_UseAbilityOnEntity( abilityQ, castQTarget )
-		return
+        if not abilityQ:IsFullyCastable() then
+            local waiting = ItemCastPolicy.Request(bot, abilityQ, castQTarget, 'unit', function()
+                local desire, target = X.ConsiderQ()
+                return desire > 0 and target == castQTarget
+            end, J)
+            if waiting then return end
+        else
+            J.SetQueuePtToINT(bot, true, abilityQ)
+            bot:ActionQueue_UseAbilityOnEntity(abilityQ, castQTarget)
+            return
+        end
 
 	end
 
 	castEDesire = X.ConsiderE()
 	if ( castEDesire > 0 )
 	then
+        ItemCastPolicy.Clear(bot)
 
-		J.SetQueuePtToINT( bot, false )
+		J.SetQueuePtToINT( bot, false, abilityE )
 
 		bot:ActionQueue_UseAbility( abilityE )
 		return
@@ -134,7 +144,7 @@ end
 
 function X.ConsiderQ()
 
-	if not abilityQ:IsFullyCastable() then return 0 end
+	if not ItemCastPolicy.CanConsider(bot, abilityQ) then return 0 end
 
 	local nCastRange = abilityQ:GetCastRange()
 	

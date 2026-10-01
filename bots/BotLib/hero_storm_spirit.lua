@@ -101,7 +101,7 @@ function X.SkillsComplement()
 			if J.CanCastAbility(StaticRemnant)
 			and StaticRemnant:GetManaCost() + ElectricVortex:GetManaCost() > bot:GetMana() + 150
 			then
-				J.SetQueuePtToINT(bot, true)
+				J.SetQueuePtToINT(bot, true, ElectricVortex)
 				bot:ActionQueue_UseAbilityOnEntity(ElectricVortex, ElectricVortexTarget)
 				bot:ActionQueue_Delay(0.3 + 0.77)
 				bot:ActionQueue_UseAbility(StaticRemnant)
@@ -116,7 +116,7 @@ function X.SkillsComplement()
 	StaticRemnantDesire, StaticRemnantLocation = X.ConsiderStaticRemnant()
 	if StaticRemnantDesire > 0
 	then
-		J.SetQueuePtToINT(bot, true)
+		J.SetQueuePtToINT(bot, true, StaticRemnant)
 		bot:ActionQueue_UseAbility(StaticRemnant)
 		return
 	end

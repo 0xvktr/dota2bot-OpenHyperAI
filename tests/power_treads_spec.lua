@@ -13,6 +13,13 @@ local function item(name, manaCost)
     function h:GetPowerTreadsStat() return self.raw end
     function h:IsFullyCastable() return self.active end
     function h:GetManaCost() return self.manaCost end
+    function h:IsTrained() return true end
+    function h:IsNull() return false end
+    function h:IsHidden() return false end
+    function h:IsActivated() return true end
+    function h:IsPassive() return false end
+    function h:GetCooldownTimeRemaining() return 0 end
+    function h:GetSpecialValueInt() return 0 end
     return h
 end
 local treads = item('item_power_treads')
@@ -28,6 +35,8 @@ function bot:GetUnitName() return self.name end
 function bot:GetPrimaryAttribute() return self.primary end
 function bot:GetMaxHealth() return 1000 + (treads.raw == 0 and 220 or 0) end
 function bot:GetHealth() return self.hp * self:GetMaxHealth() end
+bot.OriginalGetHealth = bot.GetHealth
+bot.OriginalGetMaxHealth = bot.GetMaxHealth
 function bot:GetMaxMana() return 600 + (treads.raw == 1 and 120 or 0) end
 function bot:GetMana() return self.mp * self:GetMaxMana() end
 function bot:GetActiveMode() return self.mode end
@@ -252,11 +261,25 @@ idle(); assert(treads.raw == 2)
 -- Soul Ring still queues before INT and the spell; it cannot cancel channels.
 reset(0)
 local ring = item('item_soul_ring'); bot.slots[1] = ring
-J.SetQueuePtToINT(bot, true); bot:ActionQueue_UseAbility(spell)
-assert(#bot.queue == 3 and bot.queue[1].item == ring and bot.queue[2].item == treads and bot.queue[3].item == spell)
+bot.hp = 0.9
+local ringSpell = item('selected_spell', 150)
+J.SetQueuePtToINT(bot, true, ringSpell); bot:ActionQueue_UseAbility(ringSpell)
+assert(#bot.queue == 3 and bot.queue[1].item == ring and bot.queue[2].item == treads and bot.queue[3].item == ringSpell)
 execute()
 
 -- Illusions choose offensive stats, universal heroes choose AGI, Medusa survives on INT.
+reset(0)
+local CastPolicy = require('bots/FunLib/item_cast_policy')
+bot.mp = 0.1
+local enabledSpell = item('selected_interrupt', 150)
+local enablingMango = item('item_enchanted_mango'); enablingMango.restoreMana = 100
+bot.slots[1] = enablingMango
+assert(CastPolicy.Request(bot, enabledSpell, nil, 'none', function() return true end, J))
+X.SetUseItem(enablingMango, bot, 'none')
+assert(#bot.queue == 0 and #bot.actions == 1 and bot.actions[1].item == enablingMango,
+    'restoration for an impending cast must not wait for optional Treads switches')
+assert(treads.raw == 0 and bot:GetMana() >= enabledSpell:GetManaCost(), 'restoration retains defensive stats and enables spell')
+
 for _, name in ipairs({'naga_siren_mirror_image', 'terrorblade_conjure_image', 'phantom_lancer_doppelwalk'}) do
     reset(1)
     local illusion = item(name, 100)
