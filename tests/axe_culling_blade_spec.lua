@@ -8,15 +8,16 @@ bot.GetAbilityByName = function(_, name)
     if name == 'A6' then
         return { IsFullyCastable = function() return true end, GetLevel = function() return 3 end,
             GetCastRange = function() return 300 end, GetCastPoint = function() return 0.3 end,
-            GetManaCost = function() return 100 end }
+            GetManaCost = function() return 100 end, GetSpecialValueInt = function() return 475 end }
     end
     return { IsTrained = function() return name == 'T5' or (name == 'T8' and trainedDamage) end,
         GetSpecialValueInt = function() return name == 'T8' and 150 or 15 end }
 end
-local hp = 460
+local hp = 500
 local enemy = { CanBeSeen = function() return true end, GetHealth = function() return hp end,
     GetHealthRegen = function() return 0 end, IsInvulnerable = function() return false end,
     IsMagicImmune = function() return false end }
+J.IsItemAvailable = function() return nil end
 J.GetAroundEnemyHeroList = function() return { enemy } end
 J.IsValidHero = function() return true end
 J.IsHaveAegis = function() return false end

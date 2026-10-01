@@ -105,6 +105,7 @@ end
 
 function X.SkillsComplement()
     if bot:IsChanneling() or bot:IsUsingAbility() or bot:IsCastingAbility() then return end
+    if R.UsePendingGate() then return end
     if J.CanNotUseAbility(bot) then
         -- Ice Blast Release ignores silence; other stolen spells retain the normal cast gate.
         if bot:IsSilenced() and not J.HasQueuedAction(bot) then considerLinkedSpells(true) end

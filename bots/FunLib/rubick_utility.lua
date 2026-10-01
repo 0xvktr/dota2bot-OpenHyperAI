@@ -91,8 +91,12 @@ local function canReleaseWhileSilenced(ability)
         and not bot:HasModifier('modifier_item_forcestaff_active')
 end
 
+-- Gate travel must continue after the creating spell enters cooldown.
+X.UsePendingGate = AbyssalUnderlord.UsePendingGate
+
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
+    if X.UsePendingGate() then return true end
     if not ready(ability) or (J.CanNotUseAbility(bot) and not canReleaseWhileSilenced(ability))
         or bot:IsChanneling() or bot:IsCastingAbility() or bot:IsUsingAbility() then return false end
 

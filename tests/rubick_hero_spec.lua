@@ -158,7 +158,11 @@ local function fixture()
     J.Site={GetXUnitsTowardsLocation=function(u,target,range)
         return J.GetXUnitsTowardsLocation2(u:GetLocation(),target,range)
     end}
-    local R={ConsiderStolenSpell=function(a)
+    local R={UsePendingGate=function()
+        if not f.pendingGate or f.queued then return false end
+        bot:Action_UseAbilityOnEntity(ability('abyssal_underlord_portal_warp'),f.pendingGate)
+        return true
+    end,ConsiderStolenSpell=function(a)
         if a==nil or a:IsNull() or a:IsHidden() or a:IsPassive() or not a:IsFullyCastable()
             or f.queued then return false end
         if f.stolenCasts[a:GetName()] then bot:Action_UseAbility(a);return true end
@@ -221,6 +225,15 @@ for _,gate in ipairs({'channeling','queued','casting','using'}) do
         assert(#f.actions==0 and f.nativeCalls==0,'Interrupted '..gate)
     end)
 end
+
+check('Pending Gate precedes cooldown slots and silence',function()
+    local f=fixture()
+    f.silenced=true;f.pendingGate={}
+    f.slots[3]=ability('abyssal_underlord_dark_portal');f.slots[3].castable=false
+    f:tick()
+    assert(#f.actions==1 and f.actions[1].name=='abyssal_underlord_portal_warp')
+    assert(f.nativeCalls==0,'Gate entry must precede normal native decisions')
+end)
 
 check('Missing stolen slots',function()
     local f=fixture()

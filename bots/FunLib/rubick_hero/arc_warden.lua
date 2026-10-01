@@ -5,9 +5,25 @@ local J = require(GetScriptDirectory()..'/FunLib/jmz_func')
 local Flux
 local MagneticField
 local SparkWraith
--- local TempestDouble
+local FluxDesire, FluxTarget, MagneticFieldDesire, MagneticFieldLocation, SparkWraithDesire, SparkWraithLocation
 
 local botTarget
+
+local function ClampLocation(location, range)
+    local origin = bot:GetLocation()
+    local dx, dy = location.x - origin.x, location.y - origin.y
+    local distance = math.sqrt(dx * dx + dy * dy)
+    if distance > range then return Vector(origin.x + dx * range / distance, origin.y + dy * range / distance, location.z) end
+    return location
+end
+
+local function WraithClear(location, target, radius)
+    for _, creep in pairs(GetUnitList(UNIT_LIST_ENEMY_CREEPS)) do
+        if creep ~= target and J.IsValid(creep) and J.CanBeAttacked(creep)
+            and GetUnitToLocationDistance(creep, location) <= radius then return false end
+    end
+    return true
+end
 
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
@@ -55,187 +71,115 @@ function X.ConsiderStolenSpell(ability)
     return false
 end
 
+local function IsFluxIsolated(target)
+    local radius = Flux:GetSpecialValueInt('search_radius')
+    for _, unit in pairs(GetUnitList(UNIT_LIST_ENEMY_HEROES)) do
+        if unit ~= target and J.IsValid(unit) and J.IsInRange(target, unit, radius) then return false end
+    end
+    for _, unit in pairs(GetUnitList(UNIT_LIST_ENEMY_CREEPS)) do
+        if unit ~= target and J.IsValid(unit) and J.IsInRange(target, unit, radius) then return false end
+    end
+    return true
+end
+
 function X.ConsiderFlux()
-	if not Flux:IsFullyCastable() then return 0	end
-
-	local nCastRange = J.GetProperCastRange(false, bot, Flux:GetCastRange())
-	local nDot = Flux:GetSpecialValueInt( "damage_per_second" )
-	local nDuration = Flux:GetSpecialValueInt( "duration" )
-	local nDamage = nDot * nDuration
-
-	if J.IsValidHero( botTarget )
-		and J.CanCastOnNonMagicImmune( botTarget )
-		and J.CanCastOnTargetAdvanced( botTarget )
-		and J.CanKillTarget( botTarget, nDamage, DAMAGE_TYPE_MAGICAL )
-		and J.IsInRange( botTarget, bot, nCastRange )
-	then
-		return BOT_ACTION_DESIRE_HIGH, botTarget
-	end
-
-
-	if J.IsInTeamFight( bot, 1200 )
-	then
-		local npcMostDangerousEnemy = nil
-		local nMostDangerousDamage = 0
-
-		local tableNearbyEnemyHeroes = J.GetNearbyHeroes(bot, nCastRange, true, BOT_MODE_NONE )
-		for _, npcEnemy in pairs( tableNearbyEnemyHeroes )
-		do
-			if J.IsValid( npcEnemy )
-				and J.CanCastOnNonMagicImmune( npcEnemy )
-				and J.CanCastOnTargetAdvanced( npcEnemy )
-			then
-				local nDamage = npcEnemy:GetEstimatedDamageToTarget( false, bot, 3.0, DAMAGE_TYPE_ALL )
-				if ( nDamage > nMostDangerousDamage )
-				then
-					nMostDangerousDamage = nDamage
-					npcMostDangerousEnemy = npcEnemy
-				end
-			end
-		end
-
-		if ( npcMostDangerousEnemy ~= nil )
-		then
-			return BOT_ACTION_DESIRE_HIGH, npcMostDangerousEnemy
-		end
-	end
-
-	if ( bot:GetActiveMode() == BOT_MODE_ROSHAN )
-	then
-		if J.IsRoshan( botTarget )
-			and J.CanCastOnMagicImmune( botTarget )
-			and J.IsInRange( botTarget, bot, nCastRange )
-		then
-			return BOT_ACTION_DESIRE_LOW, botTarget
-		end
-	end
-
-
-	if J.IsGoingOnSomeone( bot )
-	then
-		if J.IsValidHero( botTarget )
-			and J.CanCastOnNonMagicImmune( botTarget )
-			and J.CanCastOnTargetAdvanced( botTarget )
-			and J.IsInRange( botTarget, bot, nCastRange + 40 )
-		then
-			return BOT_ACTION_DESIRE_HIGH, botTarget
-		end
-	end
-
-
-	if J.IsRetreating( bot )
-	then
-		local tableNearbyEnemyHeroes = J.GetNearbyHeroes(bot, nCastRange, true, BOT_MODE_NONE )
-		local nEnemyHeroes = J.GetNearbyHeroes(bot, 800, true, BOT_MODE_NONE )
-		local npcEnemy = tableNearbyEnemyHeroes[1]
-		if J.IsValid( npcEnemy )
-			and ( bot:IsFacingLocation( npcEnemy:GetLocation(), 10 ) or #nEnemyHeroes <= 1 )
-			and bot:WasRecentlyDamagedByHero( npcEnemy, 2.0 )
-			and J.CanCastOnNonMagicImmune( npcEnemy )
-			and J.CanCastOnTargetAdvanced( npcEnemy )
-		then
-			return BOT_ACTION_DESIRE_HIGH, npcEnemy
-		end
-	end
-
-	return BOT_ACTION_DESIRE_NONE, 0
-
+    if not Flux:IsFullyCastable() then return BOT_ACTION_DESIRE_NONE end
+    local range = Flux:GetCastRange()
+    local damage = Flux:GetSpecialValueInt('damage_per_second') * Flux:GetSpecialValueFloat('duration')
+    local enemies = J.GetNearbyHeroes(bot, range, true, BOT_MODE_NONE)
+    local function canFlux(enemy)
+        return J.IsValidHero(enemy) and J.IsInRange(bot, enemy, range)
+            and J.CanCastOnNonMagicImmune(enemy) and J.CanCastOnTargetAdvanced(enemy)
+            and not enemy:HasModifier('modifier_antimage_counterspell')
+            and not J.IsSuspiciousIllusion(enemy)
+            and not enemy:HasModifier('modifier_abaddon_borrowed_time')
+            and not enemy:HasModifier('modifier_oracle_false_promise_timer')
+    end
+    for _, enemy in pairs(enemies) do
+        -- Nearby friendly units pause damage; slow still works in a pack.
+        if canFlux(enemy) and IsFluxIsolated(enemy)
+            and not enemy:HasModifier('modifier_dazzle_shallow_grave')
+            and not enemy:HasModifier('modifier_templar_assassin_refraction_absorb')
+            and J.CanKillTarget(enemy, damage, DAMAGE_TYPE_MAGICAL) then
+            return BOT_ACTION_DESIRE_HIGH, enemy
+        end
+    end
+    if J.IsRetreating(bot) then
+        for _, enemy in pairs(enemies) do
+            if canFlux(enemy) and not J.IsDisabled(enemy)
+                and (J.IsChasingTarget(enemy, bot) or bot:WasRecentlyDamagedByHero(enemy, 2)) then
+                return BOT_ACTION_DESIRE_HIGH, enemy
+            end
+        end
+    end
+    if (J.IsGoingOnSomeone(bot) or (J.IsLaning(bot) and J.GetMP(bot) > 0.5))
+        and canFlux(botTarget) and IsFluxIsolated(botTarget) then
+        return BOT_ACTION_DESIRE_HIGH, botTarget
+    end
+    if J.IsInTeamFight(bot, 1200) then
+        local best, mostDamage = nil, -1
+        for _, enemy in pairs(enemies) do
+            if canFlux(enemy) and (IsFluxIsolated(enemy) or J.IsChasingTarget(enemy, bot)) then
+                local threat = enemy:GetEstimatedDamageToTarget(false, bot, 3, DAMAGE_TYPE_ALL)
+                if threat > mostDamage then best, mostDamage = enemy, threat end
+            end
+        end
+        if best ~= nil then return BOT_ACTION_DESIRE_HIGH, best end
+    end
+    return BOT_ACTION_DESIRE_NONE
 end
 
 function X.ConsiderMagneticField()
-	if not MagneticField:IsFullyCastable()
-	then
-		return BOT_ACTION_DESIRE_NONE, 0
-	end
-
-	local nRadius = MagneticField:GetSpecialValueInt( "radius" )
-	local nCastRange = J.GetProperCastRange(false, bot, MagneticField:GetCastRange())
-
-	if J.IsRetreating( bot )
-		and not bot:HasModifier( "modifier_arc_warden_magnetic_field" )
-	then
-		local tableNearbyEnemyHeroes = J.GetNearbyHeroes(bot, nCastRange, true, BOT_MODE_NONE )
-		for _, npcEnemy in pairs( tableNearbyEnemyHeroes )
-		do
-			if ( J.IsValid( npcEnemy ) and bot:WasRecentlyDamagedByHero( npcEnemy, 2.0 ) )
-			then
-				return BOT_ACTION_DESIRE_MODERATE, bot:GetLocation()
-			end
-		end
-	end
-
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN
-		and not bot:HasModifier( "modifier_arc_warden_magnetic_field" )
-	then
-		local botTarget = bot:GetAttackTarget()
-		if ( J.IsRoshan( botTarget ) and J.CanCastOnMagicImmune( botTarget ) and J.IsInRange( botTarget, bot, nCastRange ) )
-		then
-			return BOT_ACTION_DESIRE_LOW, bot:GetLocation()
-		end
-	end
-
-	if bot:GetActiveMode() == BOT_MODE_FARM
-		and not bot:HasModifier( "modifier_arc_warden_magnetic_field" )
-	then
-		local locationAoE = bot:FindAoELocation( true, false, bot:GetLocation(), 600, nRadius, 0, 0 )
-		if ( locationAoE.count >= 3 ) then
-			return BOT_ACTION_DESIRE_HIGH, bot:GetLocation()
-		end
-	end
-
-	if J.IsInTeamFight( bot, 1200 )
-	then
-		local locationAoE = bot:FindAoELocation( false, true, bot:GetLocation(), nCastRange, nRadius, 0, 0 )
-		if ( locationAoE.count >= 2 ) then
-			local targetAllies = J.GetAlliesNearLoc( locationAoE.targetloc, nRadius )
-			if J.IsValidHero( targetAllies[1] )
-				and not targetAllies[1]:HasModifier( "modifier_arc_warden_magnetic_field" )
-				and targetAllies[1]:GetAttackTarget() ~= nil
-				and GetUnitToUnitDistance( targetAllies[1], targetAllies[1]:GetAttackTarget() ) <= targetAllies[1]:GetAttackRange() + 50
-			then
-				return BOT_ACTION_DESIRE_HIGH, locationAoE.targetloc
-			end
-		end
-	end
-
-	if J.IsDefending( bot ) or J.IsPushing( bot ) and not bot:HasModifier( "modifier_arc_warden_magnetic_field" )
-	then
-		local tableNearbyEnemyCreeps = bot:GetNearbyLaneCreeps( 800, true )
-		local tableNearbyEnemyTowers = bot:GetNearbyTowers( 800, true )
-		if ( tableNearbyEnemyCreeps ~= nil and #tableNearbyEnemyCreeps >= 3 )
-			or ( tableNearbyEnemyTowers ~= nil and #tableNearbyEnemyTowers >= 1 )
-		then
-			return BOT_ACTION_DESIRE_LOW, bot:GetLocation()
-		end
-	end
-
-
-	if J.IsGoingOnSomeone( bot )
-	then
-		local botTarget = bot:GetTarget()
-		if J.IsValidHero( botTarget ) and  J.IsInRange( botTarget, bot, nCastRange )
-		then
-			local tableNearbyAttackingAlliedHeroes = J.GetNearbyHeroes(bot, nCastRange, false, BOT_MODE_ATTACK )
-			for _, npcAlly in pairs( tableNearbyAttackingAlliedHeroes )
-			do
-				if J.IsValid( npcAlly )
-					and ( J.IsInRange( npcAlly, bot, nCastRange ) and not npcAlly:HasModifier( "modifier_arc_warden_magnetic_field" ) )
-					and ( J.IsValid( npcAlly:GetAttackTarget() ) and GetUnitToUnitDistance( npcAlly, npcAlly:GetAttackTarget() ) <= npcAlly:GetAttackRange() )
-				then
-					return BOT_ACTION_DESIRE_MODERATE, npcAlly:GetLocation()
-				end
-			end
-		end
-	end
-
-	return BOT_ACTION_DESIRE_NONE, 0
+    if not MagneticField:IsFullyCastable() then return BOT_ACTION_DESIRE_NONE end
+    local range = MagneticField:GetCastRange()
+    local radius = MagneticField:GetSpecialValueInt('radius')
+    local allies = J.GetAlliesNearLoc(bot:GetLocation(), range)
+    local seen = {}; table.insert(allies, bot)
+    for _, ally in pairs(allies) do
+        if not seen[ally] and J.IsValidHero(ally) and (not ally:IsIllusion() or ally:HasModifier('modifier_arc_warden_tempest_double'))
+            and J.IsInRange(bot, ally, range)
+            and not ally:HasModifier('modifier_arc_warden_magnetic_field') then
+            seen[ally] = true
+            for _, enemy in pairs(J.GetNearbyHeroes(ally, 1200, true, BOT_MODE_NONE)) do
+                if J.IsValidHero(enemy) and enemy:GetAttackTarget() == ally
+                    and not J.IsInRange(enemy, ally, radius)
+                    and (J.IsRetreating(ally) or J.GetHP(ally) < 0.45) then
+                    return BOT_ACTION_DESIRE_HIGH, ally:GetLocation(), true
+                end
+            end
+        end
+    end
+    -- Both Arc Warden and Rubick can use the current Field to activate a river rune.
+    if bot:GetActiveMode() == BOT_MODE_RUNE then
+        for _, rune in pairs({RUNE_POWERUP_1, RUNE_POWERUP_2}) do
+            local location = GetRuneSpawnLocation(rune)
+            if GetRuneStatus(rune) == RUNE_STATUS_AVAILABLE
+                and GetUnitToLocationDistance(bot, location) <= range then
+                return BOT_ACTION_DESIRE_HIGH, location
+            end
+        end
+    end
+    for _, ally in pairs(allies) do
+        local attackTarget = ally:GetAttackTarget()
+        if J.IsValidHero(ally) and (not ally:IsIllusion() or ally:HasModifier('modifier_arc_warden_tempest_double'))
+            and J.IsInRange(bot, ally, range)
+            and not ally:HasModifier('modifier_arc_warden_magnetic_field')
+            and J.IsValid(attackTarget)
+            and J.IsInRange(ally, attackTarget, ally:GetAttackRange() + 50)
+            and (J.IsInTeamFight(bot, 1200) or J.IsGoingOnSomeone(bot)
+                or J.IsPushing(bot) or J.IsDefending(bot) or J.IsDoingRoshan(bot)
+                or J.IsDoingTormentor(bot) or (J.IsFarming(bot) and J.IsAllowedToSpam(bot, MagneticField:GetManaCost()))) then
+            return BOT_ACTION_DESIRE_HIGH, ally:GetLocation()
+        end
+    end
+    return BOT_ACTION_DESIRE_NONE
 end
 
 function X.ConsiderSparkWraith()
 	if not SparkWraith:IsFullyCastable() then	return 0 end
 
 	local nRadius = SparkWraith:GetSpecialValueInt( "radius" )
-	local nCastRange = J.GetProperCastRange(false, bot, SparkWraith:GetCastRange())
+	local nCastRange = SparkWraith:GetCastRange()
 	local nDamage = SparkWraith:GetSpecialValueInt( "spark_damage_base" )
 	local nDelay = SparkWraith:GetSpecialValueFloat( "base_activation_delay" ) + SparkWraith:GetCastPoint()
 
@@ -244,8 +188,9 @@ function X.ConsiderSparkWraith()
 	then
 		if J.CanKillTarget( botTarget, nDamage, DAMAGE_TYPE_MAGICAL )
 			and J.IsInRange( botTarget, bot, nCastRange )
+            and WraithClear(botTarget:GetExtrapolatedLocation(nDelay), botTarget, nRadius)
 		then
-			return BOT_ACTION_DESIRE_MODERATE, botTarget:GetExtrapolatedLocation( nDelay )
+			return BOT_ACTION_DESIRE_MODERATE, ClampLocation(botTarget:GetExtrapolatedLocation( nDelay ), nCastRange)
 		end
 	end
 
@@ -257,17 +202,17 @@ function X.ConsiderSparkWraith()
 			and J.IsInRange( botTarget, bot, nCastRange )
 			and J.GetHP( botTarget ) > 0.2
 		then
-			return BOT_ACTION_DESIRE_LOW, botTarget:GetLocation()
+			return BOT_ACTION_DESIRE_LOW, ClampLocation(botTarget:GetLocation(), nCastRange)
 		end
 	end
 
 
 	if J.IsInTeamFight( bot, 1200 )
 	then
-		local locationAoE = bot:FindAoELocation( true, true, bot:GetLocation(), 1000, nRadius, 0, 0 )
+		local locationAoE = bot:FindAoELocation( true, true, bot:GetLocation(), nCastRange, nRadius, nDelay, 0 )
 		if locationAoE.count >= 2
 		then
-			return BOT_ACTION_DESIRE_HIGH, locationAoE.targetloc
+			return BOT_ACTION_DESIRE_HIGH, ClampLocation(locationAoE.targetloc, nCastRange)
 		end
 	end
 
@@ -278,11 +223,12 @@ function X.ConsiderSparkWraith()
 		if J.IsValidHero( botTarget )
 			and J.CanCastOnNonMagicImmune( botTarget )
 			and J.IsInRange( botTarget, bot, nCastRange )
+            and WraithClear(botTarget:GetExtrapolatedLocation(nDelay), botTarget, nRadius)
 		then
-			return BOT_ACTION_DESIRE_MODERATE, botTarget:GetExtrapolatedLocation( nDelay )
+			return BOT_ACTION_DESIRE_MODERATE, ClampLocation(botTarget:GetExtrapolatedLocation( nDelay ), nCastRange)
 		end
 
-		local locationAoE = bot:FindAoELocation( true, true, bot:GetLocation(), 1400, nRadius, 2.0, 0 )
+		local locationAoE = bot:FindAoELocation( true, true, bot:GetLocation(), nCastRange, nRadius, nDelay, 0 )
 		if locationAoE.count >= 1
 			and not bot:HasModifier( "modifier_silencer_curse_of_the_silent" )
 		then
@@ -290,7 +236,7 @@ function X.ConsiderSparkWraith()
 			if nCreep == nil
 				or bot:HasModifier( "modifier_arc_warden_tempest_double" )
 			then
-				return BOT_ACTION_DESIRE_HIGH, locationAoE.targetloc
+				return BOT_ACTION_DESIRE_HIGH, ClampLocation(locationAoE.targetloc, nCastRange)
 			end
 		end
 
@@ -305,7 +251,7 @@ function X.ConsiderSparkWraith()
 		do
 			if ( J.IsValid( npcEnemy ) and bot:WasRecentlyDamagedByHero( npcEnemy, 1.0 ) and J.CanCastOnNonMagicImmune( npcEnemy ) )
 			then
-				return BOT_ACTION_DESIRE_HIGH, bot:GetLocation()
+				return BOT_ACTION_DESIRE_HIGH, ClampLocation(bot:GetLocation(), nCastRange)
 			end
 		end
 	end
@@ -314,13 +260,13 @@ function X.ConsiderSparkWraith()
 		or J.IsPushing( bot )
 		or J.IsDefending( bot )
 	then
-		local locationAoE = bot:FindAoELocation( true, false, bot:GetLocation(), 1400, nRadius, 2.0, 0 )
+		local locationAoE = bot:FindAoELocation( true, false, bot:GetLocation(), nCastRange, nRadius, nDelay, 0 )
 		if locationAoE.count > 2
 			and not bot:HasModifier( "modifier_silencer_curse_of_the_silent" )
 		then
 			if bot:HasModifier( "modifier_arc_warden_tempest_double" )
 			then
-				return BOT_ACTION_DESIRE_HIGH, locationAoE.targetloc
+				return BOT_ACTION_DESIRE_HIGH, ClampLocation(locationAoE.targetloc, nCastRange)
 			end
 
 			local nLaneCreeps = bot:GetNearbyLaneCreeps( 1400, true )
@@ -328,12 +274,12 @@ function X.ConsiderSparkWraith()
 			then
 				if J.GetMP( bot ) > 0.62
 				then
-					return BOT_ACTION_DESIRE_HIGH, locationAoE.targetloc
+					return BOT_ACTION_DESIRE_HIGH, ClampLocation(locationAoE.targetloc, nCastRange)
 				end
 			else
 				if J.GetMP( bot ) > 0.75
 				then
-					return BOT_ACTION_DESIRE_HIGH, locationAoE.targetloc
+					return BOT_ACTION_DESIRE_HIGH, ClampLocation(locationAoE.targetloc, nCastRange)
 				end
 			end
 		end
@@ -343,9 +289,9 @@ function X.ConsiderSparkWraith()
 
 	if SparkWraith:GetLevel() >= 3 and bot:GetActiveMode() ~= BOT_MODE_LANING and J.IsAllowedToSpam( bot, 80 )
 	then
-		local locationAoE = bot:FindAoELocation( true, true, bot:GetLocation(), 1400, nRadius, 2.0, 0 )
+		local locationAoE = bot:FindAoELocation( true, true, bot:GetLocation(), nCastRange, nRadius, nDelay, 0 )
 		if locationAoE.count >= 2 then
-			return BOT_ACTION_DESIRE_HIGH, locationAoE.targetloc
+			return BOT_ACTION_DESIRE_HIGH, ClampLocation(locationAoE.targetloc, nCastRange)
 		end
 	end
 
@@ -375,7 +321,7 @@ function X.ConsiderSparkWraith()
 				local castLocation = J.GetLocationTowardDistanceLocation( nTargetHero, J.GetEnemyFountain(), 350 - i )
 				if GetUnitToLocationDistance( bot, castLocation ) <= nCastRange
 				then
-					return BOT_ACTION_DESIRE_MODERATE, castLocation
+					return BOT_ACTION_DESIRE_MODERATE, ClampLocation(castLocation, nCastRange)
 				end
 			end
 		end
@@ -416,7 +362,7 @@ function X.ConsiderSparkWraith()
 		if IsLocationPassable( castLocation )
 			and not bot:HasModifier( "modifier_silencer_curse_of_the_silent" )
 		then
-			return BOT_ACTION_DESIRE_MODERATE, castLocation
+			return BOT_ACTION_DESIRE_MODERATE, ClampLocation(castLocation, nCastRange)
 		end
 	end
 

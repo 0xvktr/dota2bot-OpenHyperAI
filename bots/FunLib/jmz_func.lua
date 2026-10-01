@@ -6337,6 +6337,8 @@ function J.GetTechiesMinesInLoc(loc, nRadius)
 	return nMinesList
 end
 
+J.HasBreakModifier = require(GetScriptDirectory() .. '/FunLib/break_state')
+
 function J.CheckBitfieldFlag(bitfield, flag)
     return ((bitfield / flag) % 2) >= 1
 end

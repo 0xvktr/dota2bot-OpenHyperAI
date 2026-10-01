@@ -19,7 +19,7 @@ for (const name of heroNames) {
 const lua = [
     'bots/FunLib/rubick_utility.lua', 'bots/FunLib/spell_prob_list.lua',
     ...fs.readdirSync('bots/FunLib/rubick_hero').filter(f => f.endsWith('.lua')).map(f => 'bots/FunLib/rubick_hero/' + f),
-    'bots/FunLib/lone_druid_items.lua', 'bots/BotLib/hero_lone_druid_bear.lua',
+    'bots/FunLib/break_state.lua', 'bots/FunLib/minion_lib/primal_split.lua', 'bots/FunLib/lone_druid_items.lua', 'bots/BotLib/hero_lone_druid_bear.lua',
     ...heroNames.flatMap(n => [`bots/BotLib/hero_${n}.lua`, `${buildsDir}/${n}.lua`]),
     'bots/FunLib/hero_build_preferences.lua', 'bots/FunLib/alchemist_scepter.lua', 'bots/FunLib/inventory_upkeep.lua', 'bots/FunLib/debug_dumps.lua', 'bots/FunLib/lane_pull.lua', 'bots/mode_roam_generic.lua', 'bots/FunLib/aba_ward_utility.lua', 'bots/mode_ward_generic.lua', 'bots/FunLib/aba_item.lua',
     'bots/FunLib/aba_hero_pos_weights.lua', 'bots/FretBots/BonusTimers.lua', 'bots/Buff/NeutralItems.lua',
@@ -139,6 +139,19 @@ run(['tests/neutral_consumers_spec.lua'], 'Neutral consumer wiring passed');
 run(['tests/alchemist_scepter_spec.lua'], 'Alchemist Scepter gift scenarios passed');
 run(['tests/axe_culling_blade_spec.lua'], 'Axe Culling Blade talent scenario passed');
 run(['tests/ancient_apparition_combo_spec.lua'], 'Ancient Apparition combo scenarios passed');
+run(['tests/dazzle_ability_spec.lua'], 'Dazzle ability scenarios passed');
+run(['tests/abaddon_ability_spec.lua'], 'Abaddon ability scenarios passed');
+run(['tests/underlord_ability_spec.lua'], 'Underlord ability scenarios passed');
+run(['tests/alchemist_ability_spec.lua'], 'Alchemist ability scenarios passed');
+run(['tests/antimage_ability_spec.lua'], 'Anti-Mage ability decisions passed');
+run(['tests/arc_warden_ability_spec.lua'], 'Arc Warden ability scenarios passed');
+run(['tests/axe_ability_spec.lua'], 'Axe ability scenarios passed');
+run(['tests/bane_ability_spec.lua'], 'Bane ability scenarios passed');
+run(['tests/batrider_ability_spec.lua'], 'Batrider ability scenarios passed');
+run(['tests/beastmaster_ability_spec.lua'], 'Beastmaster ability scenarios passed');
+run(['tests/brewmaster_ability_spec.lua'], 'Brewmaster ability scenarios passed');
+run(['tests/break_state_spec.lua'], 'Break state scenarios passed');
+run(['tests/brewmaster_split_spec.lua'], 'Brewmaster split scenarios passed');
 run(['tests/rubick_handlers_spec.lua'], 'Rubick specialized handler scenarios passed');
 run(['tests/rubick_stolen_spec.lua'], 'Rubick stolen dispatcher, cast shapes, target masks, radii, support intent and channel safety passed');
 run(['tests/rubick_hero_spec.lua'], 'Rubick hero behavior checks passed:');

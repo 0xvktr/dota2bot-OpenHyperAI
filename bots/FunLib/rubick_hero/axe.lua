@@ -10,6 +10,21 @@ local botTarget
 
 local nMP, hEnemyList, hAllyList
 
+local function AbilityCastRange(ability)
+    local range = ability:GetCastRange()
+    if J.IsItemAvailable('item_aether_lens') ~= nil then range = range + 225 end
+    local supremacy = bot:GetAbilityByName('rubick_arcane_supremacy')
+    if supremacy ~= nil and supremacy:IsTrained() and not J.HasBreakModifier(bot) then
+        range = range + supremacy:GetSpecialValueInt('cast_range')
+    end
+    return range
+end
+
+local function ValidEnemy(enemy)
+    return J.IsValidHero(enemy) and enemy:CanBeSeen() and not enemy:IsInvulnerable()
+        and not J.IsSuspiciousIllusion(enemy)
+end
+
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
     local abilityName = ability:GetName()
@@ -61,191 +76,98 @@ function X.ConsiderStolenSpell(ability)
 end
 
 function X.ConsiderBerserkersCall()
-	if not BerserkersCall:IsFullyCastable() then return 0 end
+    if not BerserkersCall:IsFullyCastable() then return BOT_ACTION_DESIRE_NONE end
+    local radius = BerserkersCall:GetSpecialValueInt('radius')
 
-	local nRadius = BerserkersCall:GetSpecialValueInt( 'radius' )
-	local nManaCost = BerserkersCall:GetManaCost()
-	local nInRangeEnemyList = J.GetAroundEnemyHeroList( nRadius - 50 )
-
-	for _, npcEnemy in pairs( nInRangeEnemyList )
-	do
-		if npcEnemy:IsChanneling()
-			and not npcEnemy:IsMagicImmune()
-		then
-			return BOT_ACTION_DESIRE_HIGH
-		end
-	end
-	
-	if J.IsGoingOnSomeone( bot )
-	then
-		if J.IsValidHero( botTarget )
-			and J.IsInRange( botTarget, bot, nRadius - 90 )
-			and J.CanCastOnNonMagicImmune( botTarget )			
-			and not J.IsDisabled( botTarget )
-		then
-			return BOT_ACTION_DESIRE_HIGH
-		end
-	end
-
-	if ( J.IsPushing( bot ) or J.IsDefending( bot ) or J.IsFarming( bot ) )
-		and J.IsAllowedToSpam( bot, nManaCost )
-		and bot:GetAttackTarget() ~= nil
-		and DotaTime() > 6 * 60
-		and #hAllyList <= 2 
-		and #hEnemyList == 0
-	then
-		local laneCreepList = bot:GetNearbyLaneCreeps( nRadius - 50, true )
-		if #laneCreepList >= 4
-			and not laneCreepList[1]:HasModifier( "modifier_fountain_glyph" )
-		then
-			return BOT_ACTION_DESIRE_HIGH
-		end
-	end
-
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN
-	then
-		if J.IsRoshan( botTarget )
-			and not J.IsDisabled( botTarget )
-			and not botTarget:IsDisarmed()
-			and J.IsInRange( botTarget, bot, nRadius )
-            and J.IsAttacking(bot)
-		then
-			return BOT_ACTION_DESIRE_HIGH
-		end
-	end
-	
-
-	return BOT_ACTION_DESIRE_NONE
-
-
+    local enemies = J.GetAroundEnemyHeroList(radius)
+    for _, enemy in pairs(enemies) do
+        if ValidEnemy(enemy) and enemy:IsChanneling() then return BOT_ACTION_DESIRE_HIGH end
+    end
+    if J.IsGoingOnSomeone(bot) and ValidEnemy(botTarget)
+        and J.IsInRange(bot, botTarget, radius - 30) and not J.IsDisabled(botTarget) then
+        -- Call pierces debuff immunity and has no unit-target reflection check.
+        return BOT_ACTION_DESIRE_HIGH
+    end
+    if J.IsInTeamFight(bot, 1200) or J.IsRetreating(bot) then
+        for _, enemy in pairs(enemies) do
+            if ValidEnemy(enemy) and not J.IsDisabled(enemy)
+                and (not J.IsRetreating(bot) or bot:WasRecentlyDamagedByAnyHero(3)) then
+                return BOT_ACTION_DESIRE_HIGH
+            end
+        end
+    end
+    if (J.IsFarming(bot) or J.IsPushing(bot) or J.IsDefending(bot))
+        and #hEnemyList == 0 and J.GetHP(bot) > 0.5
+        and J.IsAllowedToSpam(bot, BerserkersCall:GetManaCost()) then
+        local lanes = bot:GetNearbyLaneCreeps(radius, true)
+        local neutrals = bot:GetNearbyNeutralCreeps(radius)
+        if (#lanes >= 4 and not lanes[1]:HasModifier('modifier_fountain_glyph'))
+            or (J.IsFarming(bot) and #neutrals >= 3) then return BOT_ACTION_DESIRE_HIGH end
+    end
+    if J.IsDoingRoshan(bot) and J.IsRoshan(botTarget)
+        and J.IsInRange(bot, botTarget, radius) and J.IsAttacking(bot) then
+        return BOT_ACTION_DESIRE_HIGH
+    end
+    return BOT_ACTION_DESIRE_NONE
 end
-
 
 function X.ConsiderBattleHunger()
-	if not BattleHunger:IsFullyCastable() then return 0 end
-
-	local nSkillLV = BattleHunger:GetLevel()
-	local nCastRange = J.GetProperCastRange(false, bot, BattleHunger:GetCastRange())
-	local nManaCost = BattleHunger:GetManaCost()
-	local nDuration = BattleHunger:GetSpecialValueInt( 'duration' )
-	local nDamage = BattleHunger:GetSpecialValueInt( 'damage_per_second' ) * nDuration
-	local nInRangeEnemyList = J.GetAroundEnemyHeroList( nCastRange )
-	local nInBonusEnemyList = J.GetAroundEnemyHeroList( nCastRange + 200 )
-
-	for _, npcEnemy in pairs( nInRangeEnemyList )
-	do 
-		if J.IsValid( npcEnemy )
-			and J.CanCastOnNonMagicImmune( npcEnemy )
-			and J.CanCastOnTargetAdvanced( npcEnemy )
-			and J.WillMagicKillTarget( bot, npcEnemy, nDamage , nDuration )
-			and not npcEnemy:HasModifier( 'modifier_axe_battle_hunger_self' )
-		then
-			return BOT_ACTION_DESIRE_HIGH, npcEnemy
-		end
-	
-	end
-	
-	if J.IsGoingOnSomeone( bot )
-	then
-		if J.IsValidHero( botTarget )
-			and J.IsInRange( botTarget, bot, nCastRange )
-			and J.CanCastOnNonMagicImmune( botTarget )			
-			and J.CanCastOnTargetAdvanced( botTarget )
-			and not botTarget:HasModifier( 'modifier_axe_battle_hunger_self' )
-		then
-			return BOT_ACTION_DESIRE_HIGH, botTarget
-		end
-	end
-	
-	if J.IsInTeamFight( bot, 1200 )
-	then
-		local npcWeakestEnemy = nil
-		local npcWeakestEnemyHealth = 100000
-
-		for _, npcEnemy in pairs( nInBonusEnemyList )
-		do
-			if J.IsValid( npcEnemy )
-				and not npcEnemy:HasModifier( 'modifier_axe_battle_hunger_self' )
-				and J.CanCastOnNonMagicImmune( npcEnemy )
-				and J.CanCastOnTargetAdvanced( npcEnemy )
-			then
-				local npcEnemyHealth = npcEnemy:GetHealth()
-				if ( npcEnemyHealth < npcWeakestEnemyHealth )
-				then
-					npcWeakestEnemyHealth = npcEnemyHealth
-					npcWeakestEnemy = npcEnemy
-				end
-			end
-		end
-
-		if npcWeakestEnemy ~= nil
-		then
-			return BOT_ACTION_DESIRE_HIGH, npcWeakestEnemy
-		end
-	end
-
-	if J.IsLaning( bot ) and nMP > 0.5
-	then
-		for _, npcEnemy in pairs( nInRangeEnemyList )
-		do 
-			if J.IsValid( npcEnemy )
-				and J.CanCastOnNonMagicImmune( npcEnemy )
-				and J.CanCastOnTargetAdvanced( npcEnemy )
-				and npcEnemy:GetAttackTarget() == nil
-				and not npcEnemy:HasModifier( 'modifier_axe_battle_hunger_self' )
-			then
-				return BOT_ACTION_DESIRE_HIGH, npcEnemy
-			end
-		
-		end	
-	end
-	
-	if J.IsRetreating( bot )
-	then
-		for _, npcEnemy in pairs( nInRangeEnemyList )
-		do
-			if J.IsValid( npcEnemy )
-				and J.CanCastOnNonMagicImmune( npcEnemy )
-				and J.CanCastOnTargetAdvanced( npcEnemy )
-				and not npcEnemy:HasModifier( 'modifier_axe_battle_hunger_self' )
-			then
-				return BOT_ACTION_DESIRE_HIGH, npcEnemy
-			end
-		end
-	end
-
-	if J.IsFarming( bot )
-		and nSkillLV >= 2
-		and J.IsAllowedToSpam( bot, nManaCost * 0.25 )
-	then
-		local neutralCreepList = bot:GetNearbyNeutralCreeps( nCastRange + 100 )
-
-		local targetCreep = J.GetMostHpUnit( neutralCreepList )
-
-		if J.IsValid( targetCreep )
-			and not J.IsRoshan( targetCreep )
-			and not targetCreep:HasModifier( 'modifier_axe_battle_hunger_self' )
-			and ( targetCreep:GetMagicResist() < 0.3 )
-			and not J.CanKillTarget( targetCreep, bot:GetAttackDamage() * 2.88, DAMAGE_TYPE_PHYSICAL )
-		then
-			return BOT_ACTION_DESIRE_HIGH, targetCreep
-	    end
-	end
-
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN
-	then
-		if J.IsRoshan( botTarget )
-			and not J.IsDisabled( botTarget )
-			and J.IsInRange( botTarget, bot, nCastRange )
-			and not botTarget:HasModifier( 'modifier_axe_battle_hunger_self' )
-		then
-			return BOT_ACTION_DESIRE_HIGH, botTarget
-		end
-	end
-
-	return BOT_ACTION_DESIRE_NONE
+    if not BattleHunger:IsFullyCastable() then return BOT_ACTION_DESIRE_NONE end
+    local range = AbilityCastRange(BattleHunger)
+    local function CanHunger(enemy)
+        return ValidEnemy(enemy) and J.IsInRange(bot, enemy, range)
+            and J.CanCastOnNonMagicImmune(enemy) and J.CanCastOnTargetAdvanced(enemy)
+            and not enemy:HasModifier('modifier_antimage_counterspell')
+            and (BattleHunger:GetSpecialValueInt('should_stack') > 0
+                or not enemy:HasModifier('modifier_axe_battle_hunger'))
+    end
+    if J.IsGoingOnSomeone(bot) and CanHunger(botTarget) then
+        return BOT_ACTION_DESIRE_HIGH, botTarget
+    end
+    local enemies = J.GetAroundEnemyHeroList(range)
+    if J.IsRetreating(bot) and bot:WasRecentlyDamagedByAnyHero(3) then
+        for _, enemy in pairs(enemies) do
+            if CanHunger(enemy) and not J.IsDisabled(enemy) then return BOT_ACTION_DESIRE_HIGH, enemy end
+        end
+    end
+    if J.IsInTeamFight(bot, 1200) then
+        local weakest
+        for _, enemy in pairs(enemies) do
+            if CanHunger(enemy) and (weakest == nil or enemy:GetHealth() < weakest:GetHealth()) then weakest = enemy end
+        end
+        if weakest ~= nil then return BOT_ACTION_DESIRE_HIGH, weakest end
+    end
+    if J.IsLaning(bot) and nMP > 0.5 then
+        for _, enemy in pairs(enemies) do
+            if CanHunger(enemy) then
+                -- A nearby easy last hit would remove Hunger immediately.
+                local easyKill = false
+                for _, creep in pairs(bot:GetNearbyLaneCreeps(1600, false)) do
+                    if J.IsValid(creep) and J.IsInRange(enemy, creep, enemy:GetAttackRange() + 100)
+                        and creep:GetHealth() <= enemy:GetAttackDamage() * 1.2 then easyKill = true; break end
+                end
+                if not easyKill then return BOT_ACTION_DESIRE_HIGH, enemy end
+            end
+        end
+    end
+    if J.IsFarming(bot) and BattleHunger:GetLevel() >= 2
+        and J.IsAllowedToSpam(bot, BattleHunger:GetManaCost()) then
+        local creep = J.GetMostHpUnit(bot:GetNearbyNeutralCreeps(range))
+        if J.IsValid(creep) and J.IsInRange(bot, creep, range)
+            and J.CanCastOnNonMagicImmune(creep) and not J.IsRoshan(creep)
+            and not creep:HasModifier('modifier_axe_battle_hunger')
+            and not J.CanKillTarget(creep, bot:GetAttackDamage() * 2.88, DAMAGE_TYPE_PHYSICAL) then
+            return BOT_ACTION_DESIRE_HIGH, creep
+        end
+    end
+    if (J.IsDoingRoshan(bot) or J.IsDoingTormentor(bot)) and J.IsValid(botTarget)
+        and J.IsInRange(bot, botTarget, range) and J.IsAttacking(bot)
+        and J.CanCastOnNonMagicImmune(botTarget) and J.CanCastOnTargetAdvanced(botTarget)
+        and not botTarget:HasModifier('modifier_axe_battle_hunger') then
+        return BOT_ACTION_DESIRE_HIGH, botTarget
+    end
+    return BOT_ACTION_DESIRE_NONE
 end
-
 
 function X.ConsiderCullingBlade()
 
@@ -253,11 +175,11 @@ function X.ConsiderCullingBlade()
 	if not CullingBlade:IsFullyCastable() then return 0 end
 
 	local nSkillLV = CullingBlade:GetLevel()
-	local nCastRange = J.GetProperCastRange(false, bot, CullingBlade:GetCastRange())
+	local nCastRange = AbilityCastRange(CullingBlade)
 
 	local nKillDamage = CullingBlade:GetSpecialValueInt('damage')
 
-	local nInBonusEnemyList = J.GetAroundEnemyHeroList( nCastRange + 200 )
+	local nInBonusEnemyList = J.GetAroundEnemyHeroList( nCastRange )
 
 	for _, npcEnemy in pairs( nInBonusEnemyList )
 	do
@@ -266,9 +188,7 @@ function X.ConsiderCullingBlade()
 			and npcEnemy:GetHealth() + npcEnemy:GetHealthRegen() * 0.8 < nKillDamage
 			and not J.IsHaveAegis( npcEnemy )
 			and not npcEnemy:IsInvulnerable()
-			and not npcEnemy:IsMagicImmune()
 			and not X.HasSpecialModifier( npcEnemy )
-			and not X.IsKillBotAntiMage( npcEnemy )
 		then
 			return BOT_ACTION_DESIRE_HIGH, npcEnemy
 		end
@@ -284,34 +204,19 @@ function X.HasSpecialModifier( npcEnemy )
 
 	if npcEnemy:HasModifier( 'modifier_winter_wyvern_winters_curse' )
 		or npcEnemy:HasModifier( 'modifier_winter_wyvern_winters_curse_aura' )
-		or npcEnemy:HasModifier( 'modifier_antimage_spell_shield' )
+		or npcEnemy:HasModifier( 'modifier_antimage_counterspell' )
 		or npcEnemy:HasModifier( 'modifier_item_lotus_orb_active' )
 		or npcEnemy:HasModifier( 'modifier_item_aeon_disk_buff' )
 		or npcEnemy:HasModifier( 'modifier_item_sphere_target' )
 		or npcEnemy:HasModifier( 'modifier_illusion' )
+		or npcEnemy:HasModifier( 'modifier_arc_warden_tempest_double' )
 	then
 		return true
 	else
-		return false	
-	end
-
-end
-
-function X.IsKillBotAntiMage( npcEnemy )
-
-	if not npcEnemy:IsBot() 
-		or npcEnemy:GetUnitName() ~= 'npc_dota_hero_antimage'
-		or npcEnemy:IsStunned()
-		or npcEnemy:IsHexed()
-		or npcEnemy:IsNightmared()
-		or npcEnemy:IsChanneling()
-		or J.IsTaunted( npcEnemy )
-	then
 		return false
 	end
-	
-	return true
 
 end
+
 
 return X

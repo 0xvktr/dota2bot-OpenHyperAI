@@ -68,7 +68,7 @@ package.loaded['bots/FunLib/jmz_func']=J
 for _,name in ipairs({'abaddon','abyssal_underlord','alchemist','ancient_apparition','antimage','arc_warden',
     'axe','bane','batrider','beastmaster','bloodseeker','bounty_hunter','brewmaster','bristleback',
     'broodmother','centaur','chaos_knight','chen','clinkz','crystal_maiden','rattletrap'}) do
-    package.loaded['bots/FunLib/rubick_hero/'..name]={ConsiderStolenSpell=function(ability)
+    package.loaded['bots/FunLib/rubick_hero/'..name]={UsePendingGate=function() return false end,ConsiderStolenSpell=function(ability)
         handlerCalls=handlerCalls+1
         if specialized == true then action('specialized',ability) end
         return specialized

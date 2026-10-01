@@ -79,28 +79,88 @@ local BlinkVoidDesire, BlinkVoidLocation, BlinkVoidTarget
 
 local botTarget
 
+-- The primary target supplies the damage for every enemy in Mana Void's radius.
+local function CanDamageWithManaVoid(target)
+    return J.IsValidHero(target)
+        and J.CanCastOnNonMagicImmune(target)
+        and not J.IsSuspiciousIllusion(target)
+        and not target:HasModifier('modifier_arc_warden_tempest_double')
+        and not target:HasModifier('modifier_abaddon_borrowed_time')
+        and not target:HasModifier('modifier_dazzle_shallow_grave')
+        and not target:HasModifier('modifier_necrolyte_reapers_scythe')
+        and not target:HasModifier('modifier_oracle_false_promise_timer')
+        and not target:HasModifier('modifier_item_aeon_disk_buff')
+end
+
+local function GetManaVoidTarget(range, allowInterrupt, requireBlinkSafety)
+    local enemies = GetUnitList(UNIT_LIST_ENEMY_HEROES)
+    local radius = ManaVoid:GetSpecialValueInt('mana_void_aoe_radius')
+    local damagePerMana = ManaVoid:GetSpecialValueFloat('mana_void_damage_per_mana')
+    local best, bestKills, bestDamage = nil, 0, 0
+    for _, source in pairs(enemies) do
+        if CanDamageWithManaVoid(source)
+        and J.IsInRange(bot, source, range)
+        and J.CanCastOnTargetAdvanced(source)
+        and not source:HasModifier('modifier_antimage_counterspell')
+        and (not requireBlinkSafety or not J.IsInRange(bot, source, ManaVoid:GetCastRange()))
+        then
+            local safe = true
+            if requireBlinkSafety then
+                local allies = J.GetNearbyHeroes(source, 1600, true, BOT_MODE_NONE)
+                local defenders = J.GetNearbyHeroes(source, 1600, false, BOT_MODE_NONE)
+                safe = allies ~= nil and defenders ~= nil and #allies >= #defenders
+            end
+            if safe then
+                if allowInterrupt and source:IsChanneling() then
+                    return source
+                end
+                local damage = damagePerMana * math.max(0, source:GetMaxMana() - source:GetMana())
+                local kills, totalDamage = 0, 0
+                for _, victim in pairs(enemies) do
+                    if CanDamageWithManaVoid(victim)
+                    and not J.IsHaveAegis(victim)
+                    and J.IsInRange(source, victim, radius)
+                    then
+                        if J.CanKillTarget(victim, damage, DAMAGE_TYPE_MAGICAL) then kills = kills + 1 end
+                        totalDamage = totalDamage + math.min(victim:GetHealth(), victim:GetActualIncomingDamage(damage, DAMAGE_TYPE_MAGICAL))
+                    end
+                end
+                if kills > bestKills or (kills > 0 and kills == bestKills and totalDamage > bestDamage) then
+                    best, bestKills, bestDamage = source, kills, totalDamage
+                end
+            end
+        end
+    end
+    return best
+end
+
 function X.SkillsComplement()
 	if J.CanNotUseAbility(bot) then return end
 
 	botTarget = J.GetProperTarget(bot)
 
-	BlinkVoidDesire, BlinkVoidLocation, BlinkVoidTarget = X.ConsiderBlinkVoid()
-	if BlinkVoidDesire > 0
-	then
-		J.SetQueuePtToINT( bot, false )
-		bot:ActionQueue_UseAbilityOnLocation(Blink, BlinkVoidLocation)
-		bot:ActionQueue_Delay(0.1)
-		bot:ActionQueue_UseAbilityOnEntity(ManaVoid, BlinkVoidTarget)
-		return
-	end
+    CounterSpellDesire = X.ConsiderCounterSpell()
+    if CounterSpellDesire > 0 then
+        J.SetQueuePtToINT(bot, false, CounterSpell)
+        bot:ActionQueue_UseAbility(CounterSpell)
+        return
+    end
 
-	CounterSpellDesire = X.ConsiderCounterSpell()
-	if CounterSpellDesire > 0
-	then
-		J.SetQueuePtToINT(bot, false, CounterSpell)
-		bot:ActionQueue_UseAbility(CounterSpell)
-		return
-	end
+    ManaVoidDesire, ManaVoidTarget = X.ConsiderManaVoid()
+    if ManaVoidDesire > 0 then
+        J.SetQueuePtToINT(bot, false)
+        bot:ActionQueue_UseAbilityOnEntity(ManaVoid, ManaVoidTarget)
+        return
+    end
+
+    BlinkVoidDesire, BlinkVoidLocation, BlinkVoidTarget = X.ConsiderBlinkVoid()
+    if BlinkVoidDesire > 0 then
+        J.SetQueuePtToINT(bot, false)
+        bot:ActionQueue_UseAbilityOnLocation(Blink, BlinkVoidLocation)
+        bot:ActionQueue_Delay(0.1)
+        bot:ActionQueue_UseAbilityOnEntity(ManaVoid, BlinkVoidTarget)
+        return
+    end
 
 	BlinkFragmentDesire, BlinkFragmentLocation = X.ConsiderBlinkFragment()
 	if BlinkFragmentDesire > 0
@@ -114,14 +174,6 @@ function X.SkillsComplement()
 	then
 		J.SetQueuePtToINT(bot, false)
 		bot:ActionQueue_UseAbilityOnLocation(Blink, BlinkLocation)
-		return
-	end
-
-	ManaVoidDesire, ManaVoidTarget = X.ConsiderManaVoid()
-	if ManaVoidDesire > 0
-	then
-		J.SetQueuePtToINT(bot, false)
-		bot:ActionQueue_UseAbilityOnEntity(ManaVoid, ManaVoidTarget)
 		return
 	end
 
@@ -370,6 +422,7 @@ end
 
 function X.ConsiderCounterSpell()
 	if not CounterSpell:IsFullyCastable()
+    or bot:HasModifier('modifier_antimage_counterspell')
 	then
 		return BOT_ACTION_DESIRE_NONE
 	end
@@ -379,8 +432,7 @@ function X.ConsiderCounterSpell()
 		return BOT_ACTION_DESIRE_HIGH
 	end
 
-	if not bot:HasModifier('modifier_sniper_assassinate')
-	and not bot:IsMagicImmune()
+	if not bot:IsMagicImmune()
 	then
 		if J.IsWillBeCastUnitTargetSpell(bot, 1400)
 		then
@@ -392,85 +444,19 @@ function X.ConsiderCounterSpell()
 end
 
 function X.ConsiderManaVoid()
-	if not ManaVoid:IsFullyCastable()
-	then
-		return BOT_ACTION_DESIRE_NONE
-	end
+    if not ManaVoid:IsFullyCastable() then return BOT_ACTION_DESIRE_NONE end
 
-	local nCastRange = ManaVoid:GetCastRange()
-	local nRadius = ManaVoid:GetSpecialValueInt('mana_void_aoe_radius')
-	local nDamagaPerHealth = ManaVoid:GetSpecialValueFloat('mana_void_damage_per_mana')
-
-	if J.IsInTeamFight(bot, 1200)
-	then
-		local nCastTarget = nil
-		local nInRangeEnemy = J.GetNearbyHeroes(bot,nCastRange + 200, true, BOT_MODE_NONE)
-		for _, enemyHero in pairs(nInRangeEnemy)
-		do
-			local nDamage = nDamagaPerHealth * (enemyHero:GetMaxMana() - enemyHero:GetMana())
-			if J.IsValidHero(enemyHero)
-				and J.CanCastOnTargetAdvanced(enemyHero)
-				and J.CanCastOnNonMagicImmune(enemyHero)
-				and J.CanKillTarget(enemyHero, nDamage, DAMAGE_TYPE_MAGICAL)
-				and not J.IsHaveAegis(enemyHero)
-				and not J.IsSuspiciousIllusion(enemyHero)
-				and not enemyHero:HasModifier('modifier_arc_warden_tempest_double')
-				and not enemyHero:HasModifier('modifier_dazzle_shallow_grave')
-				and not enemyHero:HasModifier('modifier_necrolyte_reapers_scythe')
-				and not enemyHero:HasModifier('modifier_oracle_false_promise_timer')
-			then
-				nCastTarget = enemyHero
-				break
-				-- if J.IsCore(enemyHero)
-				-- then
-				-- 	nCastTarget = enemyHero
-				-- 	break
-				-- else
-				-- 	nCastTarget = enemyHero
-				-- end
-			end
-		end
-
-		if nCastTarget ~= nil
-		then
-			bot:SetTarget(nCastTarget)
-			return BOT_ACTION_DESIRE_HIGH, nCastTarget
-		end
-	end
-
-	if J.IsGoingOnSomeone(bot)
-	then
-		if J.IsValidHero(botTarget)
-		and J.IsInRange(bot, botTarget, nCastRange)
-		and J.CanCastOnNonMagicImmune(botTarget)
-		and J.CanCastOnTargetAdvanced(botTarget)
-		and not J.IsHaveAegis(botTarget)
-		and not J.IsSuspiciousIllusion(botTarget)
-		and not botTarget:HasModifier('modifier_arc_warden_tempest_double')
-		and not botTarget:HasModifier('modifier_dazzle_shallow_grave')
-		and not botTarget:HasModifier('modifier_necrolyte_reapers_scythe')
-		and not botTarget:HasModifier('modifier_oracle_false_promise_timer')
-		then
-			local nInRangeAlly = J.GetNearbyHeroes(botTarget, 1200, true, BOT_MODE_NONE)
-			local nTargetInRangeAlly = J.GetNearbyHeroes(botTarget, 1200, false, BOT_MODE_NONE)
-			local nDamage = nDamagaPerHealth * (botTarget:GetMaxMana() - botTarget:GetMana())
-
-			if nInRangeAlly ~= nil and nTargetInRangeAlly ~= nil
-			and #nInRangeAlly >= #nTargetInRangeAlly
-			then
-				if J.CanKillTarget(botTarget, nDamage, DAMAGE_TYPE_MAGICAL)
-				then
-					return BOT_ACTION_DESIRE_HIGH, botTarget
-				end
-			end
-		end
-	end
-
-	return 0
+    local target = GetManaVoidTarget(ManaVoid:GetCastRange(), true, false)
+    if target ~= nil then
+        return BOT_ACTION_DESIRE_HIGH, target
+    end
+    return BOT_ACTION_DESIRE_NONE
 end
 
 function X.ConsiderCounterSpellAlly()
-	if not CounterSpellAlly:IsTrained()
+	if CounterSpellAlly == nil
+    or CounterSpellAlly:IsHidden()
+    or not CounterSpellAlly:IsTrained()
 	or not CounterSpellAlly:IsFullyCastable()
 	then
 		return BOT_ACTION_DESIRE_NONE, nil
@@ -508,7 +494,8 @@ end
 function X.ConsiderBlinkFragment()
 	if not bot:HasScepter()
 	or not BlinkFragment
-	or not BlinkFragment:IsTrained()
+	or BlinkFragment:IsHidden()
+    or not BlinkFragment:IsTrained()
 	or not BlinkFragment:IsFullyCastable()
 	then
 		return BOT_ACTION_DESIRE_NONE, 0
@@ -536,7 +523,7 @@ function X.ConsiderBlinkFragment()
 
 				if nInRangeAlly ~= nil and nTargetInRangeAlly ~= nil
 				and #nInRangeAlly >= #nTargetInRangeAlly
-				and hp < enemyHero:GetHealth()
+				and enemyHero:GetHealth() < hp
 				then
 					hp = enemyHero:GetHealth()
 					target = enemyHero
@@ -578,57 +565,28 @@ function X.ConsiderBlinkFragment()
 end
 
 function X.ConsiderBlinkVoid()
-	if not Blink:IsFullyCastable()
-	or not ManaVoid:IsFullyCastable()
-	then
-		return BOT_ACTION_DESIRE_NONE, 0, nil
-	end
+    if not Blink:IsFullyCastable()
+    or not ManaVoid:IsFullyCastable()
+    or bot:IsRooted()
+    or bot:HasModifier('modifier_bloodseeker_rupture')
+    or J.IsRetreating(bot)
+    or Blink:GetManaCost() + ManaVoid:GetManaCost() > bot:GetMana()
+    then
+        return BOT_ACTION_DESIRE_NONE, 0, nil
+    end
 
-	if Blink:GetManaCost() + ManaVoid:GetManaCost() > bot:GetMana()
-	then
-		return BOT_ACTION_DESIRE_NONE, 0, nil
-	end
-
-	local nCastRange = Blink:GetSpecialValueInt('AbilityCastRange')
-	local nDamagaPerHealth = ManaVoid:GetSpecialValueFloat('mana_void_damage_per_mana')
-	local nCastTarget = nil
-
-	local nMaxRange = ManaVoid:GetCastRange() + nCastRange
-
-	local nEnemysHerosCanSeen = GetUnitList(UNIT_LIST_ENEMY_HEROES)
-	for _, enemyHero in pairs(nEnemysHerosCanSeen)
-	do
-		if J.IsValidHero(enemyHero)
-		and J.IsInRange(bot, enemyHero, nMaxRange)
-		and J.CanCastOnTargetAdvanced(enemyHero)
-		and J.CanCastOnNonMagicImmune(enemyHero)
-		and not J.IsSuspiciousIllusion(enemyHero)
-		and not enemyHero:HasModifier('modifier_arc_warden_tempest_double')
-		and not enemyHero:HasModifier('modifier_dazzle_shallow_grave')
-		and not enemyHero:HasModifier('modifier_necrolyte_reapers_scythe')
-		and not enemyHero:HasModifier('modifier_oracle_false_promise_timer')
-		then
-			local nInRangeAlly = J.GetNearbyHeroes(enemyHero, 1600, true, BOT_MODE_NONE)
-			local nInRangeEnemy = J.GetNearbyHeroes(enemyHero, 1600, false, BOT_MODE_NONE)
-			local nDamage = nDamagaPerHealth * (enemyHero:GetMaxMana() - enemyHero:GetMana())
-
-			if nInRangeAlly ~= nil and nInRangeEnemy ~= nil
-			and #nInRangeAlly >= #nInRangeEnemy
-			then
-				if J.CanKillTarget(enemyHero, nDamage, DAMAGE_TYPE_MAGICAL)
-				then
-					nCastTarget = enemyHero
-				end
-			end
-		end
-	end
-
-	if nCastTarget ~= nil
-	then
-		return BOT_ACTION_DESIRE_HIGH, nCastTarget:GetLocation(), nCastTarget
-	end
-
-	return BOT_ACTION_DESIRE_NONE, 0, nil
+    local blinkRange = Blink:GetSpecialValueInt('AbilityCastRange') - 1
+    local voidRange = ManaVoid:GetCastRange()
+    local target = GetManaVoidTarget(blinkRange + voidRange - 100, false, true)
+    if target ~= nil then
+        -- Stop short of the target: stay inside Void range without walking after Blink.
+        local destination = J.Site.GetXUnitsTowardsLocation(bot, target:GetLocation(),
+            math.min(blinkRange, GetUnitToUnitDistance(bot, target) - voidRange + 100))
+        if IsLocationPassable(destination) then
+            return BOT_ACTION_DESIRE_HIGH, destination, target
+        end
+    end
+    return BOT_ACTION_DESIRE_NONE, 0, nil
 end
 
 return X

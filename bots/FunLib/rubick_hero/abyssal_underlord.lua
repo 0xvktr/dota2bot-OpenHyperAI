@@ -8,6 +8,84 @@ local FiendsGate
 
 local botTarget
 
+local gateDestination, gateExpires, gateMinimumDistance, gateFountainOffset
+
+local function CastLocation(location, range)
+    local offset = location - bot:GetLocation()
+    if offset:Length2D() <= range then return location end
+    return bot:GetLocation() + offset:Normalized() * range
+end
+
+local function SafeGateLocation(location, minimumDistance)
+    return location ~= nil
+        and GetUnitToLocationDistance(bot, location) >= (minimumDistance or FiendsGate:GetSpecialValueInt('minimum_distance'))
+        and IsLocationPassable(location)
+        and not J.IsLocationInChrono(location)
+        and not J.IsLocationInBlackHole(location)
+        and not J.IsLocationInArena(location, 600)
+end
+
+function X.UsePendingGate()
+    if gateDestination == nil then return false end
+    if DotaTime() > gateExpires or not bot:IsAlive() or not SafeGateLocation(gateDestination, gateMinimumDistance) then
+        gateDestination = nil; return false
+    end
+    if bot:IsChanneling() then return true end
+    if bot:IsRooted() or bot:IsStunned() or bot:IsHexed() or bot:IsNightmared()
+        or bot:IsInvulnerable() or bot:IsUsingAbility() or bot:IsCastingAbility()
+        or J.HasQueuedAction(bot) or bot:HasModifier('modifier_doom_bringer_doom') then
+        return false
+    end
+    local warp = bot:GetAbilityByName('abyssal_underlord_portal_warp')
+    -- Valve marks this unit-targeted interaction as castable while hidden and silenced.
+    if warp == nil or not warp:IsFullyCastable() then return false end
+    local portals = J.GetUnderlordPortal()
+    if portals == nil then return false end
+    local arrivalRadius = 600
+    if (gateDestination - J.GetTeamFountain()):Length2D() < 600 then
+        arrivalRadius = arrivalRadius + gateFountainOffset
+    end
+    for i, portal in ipairs(portals) do
+        local other = portals[i == 1 and 2 or 1]
+        if J.IsValid(portal) and J.IsValid(other)
+            and J.IsInRange(bot, portal, warp:GetCastRange())
+            and GetUnitToLocationDistance(other, gateDestination) < arrivalRadius then
+            gateDestination = nil
+            bot:Action_UseAbilityOnEntity(warp, portal)
+            return true
+        end
+    end
+    return false
+end
+
+local function RememberGate(location)
+    gateDestination, gateExpires = location, DotaTime() + FiendsGate:GetSpecialValueInt('duration')
+    gateMinimumDistance = FiendsGate:GetSpecialValueInt('minimum_distance')
+    gateFountainOffset = FiendsGate:GetSpecialValueInt('distance_from_fountain')
+end
+
+local function EnemyCanBeHit(enemy)
+    return J.IsValidTarget(enemy) and J.CanCastOnNonMagicImmune(enemy)
+        and not J.IsSuspiciousIllusion(enemy)
+end
+
+local function FarmLocation(units, range, radius, minimum)
+    local best, bestCount = nil, minimum - 1
+    for _, unit in pairs(units) do
+        if J.IsValid(unit) and not unit:HasModifier('modifier_fountain_glyph') then
+            local location = CastLocation(unit:GetLocation(), range)
+            local count = 0
+            for _, other in pairs(units) do
+                if J.IsValid(other) and not other:HasModifier('modifier_fountain_glyph')
+                    and GetUnitToLocationDistance(other, location) <= radius then count = count + 1 end
+            end
+            if count > bestCount then best, bestCount = location, count end
+        end
+    end
+    return best
+end
+
+
 function X.ConsiderStolenSpell(ability)
     bot = GetBot()
     local abilityName = ability:GetName()
@@ -15,6 +93,7 @@ function X.ConsiderStolenSpell(ability)
     and abilityName ~= 'abyssal_underlord_firestorm'
     and abilityName ~= 'abyssal_underlord_dark_portal' then return nil end
 
+    if X.UsePendingGate() then return true end
     if J.CanNotUseAbility(bot) then return false end
 
     botTarget = J.GetProperTarget(bot)
@@ -33,10 +112,12 @@ function X.ConsiderStolenSpell(ability)
     if abilityName == 'abyssal_underlord_firestorm'
     then
         Firestorm = ability
-        FirestormDesire, FirestormLocation = X.ConsiderFirestorm()
+        local firestormOnAlly
+        FirestormDesire, FirestormLocation, firestormOnAlly = X.ConsiderFirestorm()
         if FirestormDesire > 0
         then
-            bot:Action_UseAbilityOnLocation(Firestorm, FirestormLocation)
+            if firestormOnAlly then bot:Action_UseAbilityOnEntity(Firestorm, FirestormLocation)
+            else bot:Action_UseAbilityOnLocation(Firestorm, FirestormLocation) end
             return true
         end
     end
@@ -47,6 +128,7 @@ function X.ConsiderStolenSpell(ability)
         FiendsGateDesire, FiendsGateLocation = X.ConsiderFiendsGate()
         if FiendsGateDesire > 0
         then
+            RememberGate(FiendsGateLocation)
             bot:Action_UseAbilityOnLocation(FiendsGate, FiendsGateLocation)
             return true
         end
@@ -55,226 +137,125 @@ function X.ConsiderStolenSpell(ability)
 end
 
 function X.ConsiderFirestorm()
-    if not Firestorm:IsFullyCastable()
-    then
-        return BOT_ACTION_DESIRE_NONE, 0
-    end
+    if not Firestorm:IsFullyCastable() then return BOT_ACTION_DESIRE_NONE end
+    local range, radius = Firestorm:GetCastRange(), Firestorm:GetSpecialValueInt('radius')
+    local delay = Firestorm:GetCastPoint()
 
-    local nCastRange = J.GetProperCastRange(false, bot, Firestorm:GetCastRange())
-    local nRadius = Firestorm:GetSpecialValueInt('radius')
-    local nCastPoint = Firestorm:GetCastPoint()
-
-    if J.IsInTeamFight(bot, 1200)
-    then
-        local nLocationAoE = bot:FindAoELocation(true, true, bot:GetLocation(), nCastRange + nRadius, nRadius, nCastPoint, 0)
-        local nInRangeEnemy = J.GetEnemiesNearLoc(nLocationAoE.targetloc, nRadius)
-
-        if nInRangeEnemy ~= nil and #nInRangeEnemy >= 2
-        then
-            return BOT_ACTION_DESIRE_HIGH, J.Site.GetXUnitsTowardsLocation(bot, nLocationAoE.targetloc, nCastRange)
-        end
-    end
-
-	if J.IsGoingOnSomeone(bot)
-	then
-		if J.IsValidTarget(botTarget)
-        and J.CanCastOnNonMagicImmune(botTarget)
-        and J.IsInRange(bot, botTarget, nCastRange + nRadius)
-        and not J.IsSuspiciousIllusion(botTarget)
-        and not botTarget:HasModifier('modifier_abaddon_borrowed_time')
-        and not botTarget:HasModifier('modifier_dazzle_shallow_grave')
-        and not botTarget:HasModifier('modifier_necrolyte_reapers_scythe')
-        and not botTarget:HasModifier('modifier_oracle_false_promise_timer')
-		then
-            local nInRangeAlly = J.GetNearbyHeroes(botTarget, 1200, true, BOT_MODE_NONE)
-            local nInRangeEnemy = J.GetNearbyHeroes(botTarget, 1200, false, BOT_MODE_NONE)
-
-            if nInRangeAlly ~= nil and nInRangeEnemy ~= nil
-            and #nInRangeAlly >= #nInRangeEnemy
-            then
-                nInRangeEnemy = J.GetEnemiesNearLoc(botTarget:GetLocation(), nCastRange + nRadius)
-
-                if nInRangeEnemy ~= nil and #nInRangeEnemy >= 1
-                then
-                    return BOT_ACTION_DESIRE_HIGH, J.Site.GetXUnitsTowardsLocation(bot, J.GetCenterOfUnits(nInRangeEnemy), nCastRange)
+    -- Shard can attach the storm to a frontliner instead of leaving it behind during a chase.
+    if Firestorm:GetSpecialValueInt('can_target_units') > 0 then
+        local allies = J.GetAlliesNearLoc(bot:GetLocation(), range)
+        table.insert(allies, bot)
+        for _, ally in pairs(allies) do
+            if J.IsValidHero(ally) and not ally:IsInvulnerable() and not J.IsSuspiciousIllusion(ally)
+                and J.IsGoingOnSomeone(ally) and J.IsInRange(bot, ally, range) then
+                local target = J.GetProperTarget(ally)
+                if EnemyCanBeHit(target) and J.IsInRange(ally, target, radius * 0.8) then
+                    return BOT_ACTION_DESIRE_HIGH, ally, true
                 end
-
-                return BOT_ACTION_DESIRE_HIGH, J.Site.GetXUnitsTowardsLocation(bot, botTarget:GetLocation(), nCastRange)
-            end
-		end
-	end
-
-    if J.IsPushing(bot)
-	then
-        local nEnemyLaneCreeps = bot:GetNearbyLaneCreeps(nCastRange + nRadius, true)
-        if nEnemyLaneCreeps ~= nil and #nEnemyLaneCreeps >= 4
-        then
-            return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(nEnemyLaneCreeps)
-        end
-	end
-
-    if J.IsFarming(bot)
-    then
-        if J.IsAttacking(bot)
-        then
-            local nNeutralCreeps = bot:GetNearbyNeutralCreeps(nCastRange + nRadius)
-            if nNeutralCreeps ~= nil and #nNeutralCreeps >= 3
-            and J.GetMP(bot) > 0.3
-            then
-                return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(nNeutralCreeps)
-            end
-
-            local nEnemyLaneCreeps = bot:GetNearbyLaneCreeps(nCastRange + nRadius, true)
-            if nEnemyLaneCreeps ~= nil and #nEnemyLaneCreeps >= 3
-            and J.GetMP(bot) > 0.3
-            then
-                return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(nEnemyLaneCreeps)
             end
         end
     end
 
-    if J.IsLaning(bot)
-	then
-        local nInRangeEnemy = J.GetNearbyHeroes(bot,1600, true, BOT_MODE_NONE)
-        local nEnemyLaneCreeps = bot:GetNearbyLaneCreeps(nCastRange + nRadius, true)
-
-        if nInRangeEnemy ~= nil and #nInRangeEnemy == 0
-        and nEnemyLaneCreeps ~= nil and #nEnemyLaneCreeps >= 4
-        and J.IsAttacking(bot)
-        and J.GetMP(bot) > 0.5
-        then
-            return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(nEnemyLaneCreeps)
+    if J.IsInTeamFight(bot, 1200) then
+        local aoe = bot:FindAoELocation(true, true, bot:GetLocation(), range, radius, delay, 0)
+        local location = CastLocation(aoe.targetloc, range)
+        local count = 0
+        for _, enemy in pairs(J.GetEnemiesNearLoc(location, radius)) do
+            if EnemyCanBeHit(enemy) and (enemy:GetExtrapolatedLocation(delay) - location):Length2D() <= radius then
+                count = count + 1
+            end
         end
-	end
+        if count >= 2 then return BOT_ACTION_DESIRE_HIGH, location end
+    end
 
-    if J.IsDoingRoshan(bot)
-    then
-        if J.IsRoshan(botTarget)
-        and J.CanCastOnNonMagicImmune(botTarget)
-        and J.IsInRange(bot, botTarget, 500)
-        and J.IsAttacking(bot)
-        then
-            return BOT_ACTION_DESIRE_HIGH, botTarget:GetLocation()
+    -- Follow a root or another ally disable even if the bot's active mode is not attack.
+    if EnemyCanBeHit(botTarget) and J.IsInRange(bot, botTarget, range + radius)
+        and (J.IsGoingOnSomeone(bot) or J.IsDisabled(botTarget))
+        and not botTarget:HasModifier('modifier_abaddon_borrowed_time') then
+        local predicted = J.IsDisabled(botTarget) and botTarget:GetLocation() or botTarget:GetExtrapolatedLocation(delay)
+        local location = CastLocation(predicted, range)
+        if (predicted - location):Length2D() <= radius then
+            return BOT_ACTION_DESIRE_HIGH, location
         end
     end
 
-    if J.IsDoingTormentor(bot)
-    then
-        if J.IsTormentor(botTarget)
-        and J.IsInRange(bot, botTarget, 500)
-        and J.IsAttacking(bot)
-        then
-            return BOT_ACTION_DESIRE_HIGH, botTarget:GetLocation()
+    if (J.IsPushing(bot) or J.IsDefending(bot) or J.IsFarming(bot)
+        or (J.IsLaning(bot) and Firestorm:GetLevel() >= 3))
+        and J.IsAllowedToSpam(bot, Firestorm:GetManaCost()) then
+        local creeps = bot:GetNearbyLaneCreeps(range + radius, true)
+        local location = FarmLocation(creeps, range, radius, 3)
+        if location ~= nil then return BOT_ACTION_DESIRE_HIGH, location end
+        if J.IsFarming(bot) and J.IsAttacking(bot) then
+            location = FarmLocation(bot:GetNearbyNeutralCreeps(range + radius), range, radius, 2)
+            if location ~= nil then return BOT_ACTION_DESIRE_HIGH, location end
         end
     end
 
-    return BOT_ACTION_DESIRE_NONE, 0
+    if (J.IsDoingRoshan(bot) or J.IsDoingTormentor(bot)) and J.IsValid(botTarget)
+        and J.IsInRange(bot, botTarget, range + radius) and J.IsAttacking(bot) then
+        return BOT_ACTION_DESIRE_HIGH, CastLocation(botTarget:GetLocation(), range)
+    end
+    return BOT_ACTION_DESIRE_NONE
 end
 
 function X.ConsiderPitOfMalice()
-    if not PitOfMalice:IsFullyCastable()
-    then
-        return BOT_ACTION_DESIRE_NONE, 0
-    end
-
-	local nCastRange = J.GetProperCastRange(false, bot, PitOfMalice:GetCastRange())
-	local nRadius = PitOfMalice:GetSpecialValueInt('radius')
-
-    local nEnemyHeroes = J.GetNearbyHeroes(bot,nCastRange + nRadius, true, BOT_MODE_NONE)
-    for _, enemyHero in pairs(nEnemyHeroes)
-    do
-        if J.IsValidHero(enemyHero)
-        and J.CanCastOnNonMagicImmune(enemyHero)
-        and enemyHero:IsChanneling()
-        and not J.IsSuspiciousIllusion(enemyHero)
-        then
-            return BOT_ACTION_DESIRE_HIGH, J.Site.GetXUnitsTowardsLocation(bot, enemyHero:GetLocation(), nCastRange)
+    if not PitOfMalice:IsFullyCastable() then return BOT_ACTION_DESIRE_NONE end
+    local range, radius = PitOfMalice:GetCastRange(), PitOfMalice:GetSpecialValueInt('radius')
+    local delay = PitOfMalice:GetCastPoint()
+    for _, enemy in pairs(J.GetNearbyHeroes(bot, range + radius, true, BOT_MODE_NONE)) do
+        if EnemyCanBeHit(enemy) and enemy:IsChanneling()
+            and not enemy:HasModifier('modifier_abyssal_underlord_pit_of_malice_ensare') then
+            return BOT_ACTION_DESIRE_HIGH, CastLocation(enemy:GetLocation(), range)
         end
     end
 
-	if J.IsGoingOnSomeone(bot)
-	then
-		if J.IsValidTarget(botTarget)
-        and J.CanCastOnNonMagicImmune(botTarget)
-        and J.IsInRange(bot, botTarget, nCastRange + nRadius)
-        and not J.IsSuspiciousIllusion(botTarget)
-        and not botTarget:HasModifier('modifier_necrolyte_reapers_scythe')
-		then
-            local nInRangeAlly = J.GetNearbyHeroes(botTarget, 1200, true, BOT_MODE_NONE)
-            local nInRangeEnemy = J.GetNearbyHeroes(botTarget, 1200, false, BOT_MODE_NONE)
+    if J.IsInTeamFight(bot, 1200) or J.IsPushing(bot) or J.IsDefending(bot) then
+        local aoe = bot:FindAoELocation(true, true, bot:GetLocation(), range, radius, delay, 0)
+        local location = CastLocation(aoe.targetloc, range)
+        local count = 0
+        for _, enemy in pairs(J.GetEnemiesNearLoc(location, radius)) do
+            if EnemyCanBeHit(enemy) and not enemy:IsRooted()
+                and (enemy:GetExtrapolatedLocation(delay) - location):Length2D() <= radius then count = count + 1 end
+        end
+        if count >= 2 then return BOT_ACTION_DESIRE_HIGH, location end
+    end
 
-            if nInRangeAlly ~= nil and nInRangeEnemy ~= nil
-            and #nInRangeAlly >= #nInRangeEnemy
-            then
-                nInRangeEnemy = J.GetEnemiesNearLoc(botTarget:GetLocation(), nCastRange + nRadius)
+    if J.IsGoingOnSomeone(bot) and EnemyCanBeHit(botTarget)
+        and J.IsInRange(bot, botTarget, range + radius) and not botTarget:IsRooted()
+        and not botTarget:HasModifier('modifier_necrolyte_reapers_scythe') then
+        local predicted = J.IsDisabled(botTarget) and botTarget:GetLocation() or botTarget:GetExtrapolatedLocation(delay)
+        local location = CastLocation(predicted, range)
+        if (predicted - location):Length2D() <= radius then
+            return BOT_ACTION_DESIRE_HIGH, location
+        end
+    end
 
-                if nInRangeEnemy ~= nil and #nInRangeEnemy >= 1
-                then
-                    return BOT_ACTION_DESIRE_HIGH, J.Site.GetXUnitsTowardsLocation(bot, J.GetCenterOfUnits(nInRangeEnemy), nCastRange)
-                end
-
-                return BOT_ACTION_DESIRE_HIGH, J.Site.GetXUnitsTowardsLocation(bot, botTarget:GetLocation(), nCastRange)
-            end
-		end
-	end
-
-	if J.IsRetreating(bot)
-	then
-        local nInRangeEnemy = J.GetNearbyHeroes(bot,1200, true, BOT_MODE_NONE)
-        for _, enemyHero in pairs(nInRangeEnemy)
-        do
-            if J.IsValidHero(enemyHero)
-            and J.CanCastOnNonMagicImmune(enemyHero)
-            and J.IsChasingTarget(enemyHero, bot)
-            and not J.IsSuspiciousIllusion(enemyHero)
-            and not J.IsDisabled(enemyHero)
-            then
-                local nInRangeAlly = J.GetNearbyHeroes(enemyHero, 1200, true, BOT_MODE_NONE)
-                local nTargetInRangeAlly = J.GetNearbyHeroes(enemyHero, 1200, false, BOT_MODE_NONE)
-
-                if nInRangeAlly ~= nil and nTargetInRangeAlly ~= nil
-                and ((#nTargetInRangeAlly > #nInRangeAlly)
-                    or bot:WasRecentlyDamagedByAnyHero(2.5))
-                and GetUnitToUnitDistance(bot, enemyHero) < nRadius + 100
-                then
-                    return BOT_ACTION_DESIRE_HIGH, bot:GetLocation()
+    if J.IsRetreating(bot) then
+        for _, enemy in pairs(J.GetNearbyHeroes(bot, range + radius, true, BOT_MODE_NONE)) do
+            if EnemyCanBeHit(enemy) and J.IsChasingTarget(enemy, bot) and not J.IsDisabled(enemy)
+                and bot:WasRecentlyDamagedByAnyHero(2.5) then
+                local predicted = enemy:GetExtrapolatedLocation(delay)
+                local location = CastLocation(predicted, range)
+                if (predicted - location):Length2D() <= radius then
+                    return BOT_ACTION_DESIRE_HIGH, location
                 end
             end
         end
     end
-
-	if J.IsPushing(bot) or J.IsDefending(bot)
-	then
-		local nLocationAoE = bot:FindAoELocation(true, true, bot:GetLocation(), nCastRange + nRadius, nRadius, 0, 0)
-        local nInRangeAlly = J.GetNearbyHeroes(bot,1200, false, BOT_MODE_NONE)
-        local nInRangeEnemy = J.GetEnemiesNearLoc(nLocationAoE.targetloc, nRadius)
-
-		if nInRangeAlly ~= nil and nInRangeEnemy ~= nil
-        and #nInRangeEnemy >= 1
-        and not (#nInRangeAlly > #nInRangeEnemy + 1)
-		then
-			return BOT_ACTION_DESIRE_HIGH, nLocationAoE.targetloc
-		end
-	end
-
-    if J.IsDoingRoshan(bot)
-    then
-        if J.IsRoshan(botTarget)
-        and J.CanCastOnNonMagicImmune(botTarget)
-        and J.IsInRange(bot, botTarget, 500)
-        and J.IsAttacking(bot)
-        then
-            return BOT_ACTION_DESIRE_HIGH, botTarget:GetLocation()
-        end
-    end
-
-    return BOT_ACTION_DESIRE_NONE, 0
+    -- Keep Pit mana for hero control rather than boss damage.
+    return BOT_ACTION_DESIRE_NONE
 end
 
 function X.ConsiderFiendsGate()
     if not FiendsGate:IsFullyCastable()
     then
         return BOT_ACTION_DESIRE_NONE, 0
+    end
+
+    -- Begin an escape while the long portal channel is still possible.
+    if J.IsRetreating(bot) and J.GetHP(bot) < 0.55 and bot:WasRecentlyDamagedByAnyHero(2.5) then
+        local fountain = J.GetTeamFountain()
+        if SafeGateLocation(fountain) then return BOT_ACTION_DESIRE_HIGH, fountain end
     end
 
     local nTeamFightLocation = J.GetTeamFightLocation(bot)
@@ -290,11 +271,11 @@ function X.ConsiderFiendsGate()
 
         if nInRangeAlly ~= nil and nInRangeEnemy ~= nil
         and #nInRangeAlly + 1 >= #nInRangeEnemy
-        and #nInRangeEnemy >= 1
+        and #nInRangeEnemy >= 1 and #nInRangeAlly >= 1
         then
             local targetLoc = J.GetCenterOfUnits(nInRangeAlly)
 
-            if IsLocationPassable(targetLoc)
+            if SafeGateLocation(targetLoc)
             and not J.IsLocationInChrono(targetLoc)
             and not J.IsLocationInBlackHole(targetLoc)
             and not J.IsLocationInArena(targetLoc, 600)
@@ -314,17 +295,17 @@ function X.ConsiderFiendsGate()
 		then
 			local nInRangeAlly = J.GetNearbyHeroes(botTarget, 1200, true, BOT_MODE_NONE)
             local nTargetInRangeAlly = J.GetNearbyHeroes(botTarget, 1200, false, BOT_MODE_NONE)
-            local nInRangeEnemy = J.GetNearbyHeroes(bot,1600, false, BOT_MODE_NONE)
+            local nInRangeEnemy = J.GetNearbyHeroes(bot,1600, true, BOT_MODE_NONE)
             local nEnemyTowers = bot:GetNearbyTowers(700, true)
 
 			if nInRangeAlly ~= nil and nTargetInRangeAlly ~= nil
             and nInRangeEnemy ~= nil and nEnemyTowers ~= nil
             and #nInRangeAlly >= #nTargetInRangeAlly
-            and #nInRangeEnemy == 0 and #nEnemyTowers == 0
+            and #nInRangeEnemy == 0 and #nEnemyTowers == 0 and #nInRangeAlly >= 1
             then
                 local targetLoc = J.GetCenterOfUnits(nInRangeAlly)
 
-                if IsLocationPassable(targetLoc)
+                if SafeGateLocation(targetLoc)
                 and not J.IsLocationInChrono(targetLoc)
                 and not J.IsLocationInBlackHole(targetLoc)
                 and not J.IsLocationInArena(targetLoc, 600)
@@ -356,7 +337,7 @@ function X.ConsiderFiendsGate()
             and not J.IsSuspiciousIllusion(allyTarget)
             then
                 local nTargetInRangeAlly = J.GetNearbyHeroes(allyTarget, 800, false, BOT_MODE_NONE)
-                local nInRangeEnemy = J.GetNearbyHeroes(bot,1600, false, BOT_MODE_NONE)
+                local nInRangeEnemy = J.GetNearbyHeroes(bot,1600, true, BOT_MODE_NONE)
                 local nEnemyTowers = bot:GetNearbyTowers(700, true)
 
                 if nAllyInRangeAlly ~= nil and nTargetInRangeAlly ~= nil
@@ -365,9 +346,9 @@ function X.ConsiderFiendsGate()
                 and nInRangeEnemy ~= nil and nEnemyTowers ~= nil
                 and #nInRangeEnemy == 0 and #nEnemyTowers == 0
                 then
-                    local targetLoc = J.GetCenterOfUnits(allyHero:GetExtrapolatedLocation(1))
+                    local targetLoc = allyHero:GetExtrapolatedLocation(1)
 
-                    if IsLocationPassable(targetLoc)
+                    if SafeGateLocation(targetLoc)
                     and not J.IsLocationInChrono(targetLoc)
                     and not J.IsLocationInBlackHole(targetLoc)
                     and not J.IsLocationInArena(targetLoc, 600)

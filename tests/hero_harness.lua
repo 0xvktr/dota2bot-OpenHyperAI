@@ -60,6 +60,7 @@ local J = {
         return abilities, talents, items, sells
     end,
 }
+J.HasBreakModifier = require('bots/FunLib/break_state')
 H.J = J
 package.loaded['bots/FunLib/jmz_func'] = J
 

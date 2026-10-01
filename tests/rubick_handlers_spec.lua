@@ -4,11 +4,14 @@ local bot, J = H.bot, H.J
 BOT_ACTION_DESIRE_NONE=0; BOT_ACTION_DESIRE_HIGH=1; BOT_ACTION_DESIRE_MODERATE=0.5
 BOT_MODE_NONE=0; BOT_MODE_ROSHAN=10; BOT_MODE_LANING=11
 TEAM_NEUTRAL=4; DAMAGE_TYPE_PHYSICAL=1; DAMAGE_TYPE_MAGICAL=2
-UNIT_LIST_ALLIES=1; UNIT_LIST_ALLIED_HEROES=2
+UNIT_LIST_ALLIES=1; UNIT_LIST_ALLIED_HEROES=2; UNIT_LIST_ENEMY_CREEPS=3
 local now, blocked, target, actions = 100, false, {}, {}
 function DotaTime() return now end
+function GetUnitToLocationDistance() return 100 end
 function GetLinearProjectiles() return {} end
 function GetUnitList() return {} end
+function bot:GetTeam() return 2 end
+function target:GetTeam() return 3 end
 function bot:GetLocation() return {x=0,y=0,z=0} end
 function bot:GetMana() return 1000 end
 function bot:GetMaxMana() return 1000 end
@@ -41,6 +44,8 @@ J.CanNotUseAbility=function() return blocked end
 J.GetProperTarget=function() return target end
 J.GetNearbyHeroes=function() return {} end
 J.GetAlliesNearLoc=function() return {} end
+J.GetModifierTime=function() return 0 end
+J.IsItemAvailable=function() return nil end
 J.SetQueuePtToINT=function() end
 J.SetQueueToInvisible=function() end
 local function Spell(name, values)
@@ -73,7 +78,7 @@ local cases={
     beastmaster={'beastmaster_primal_roar','beastmaster_summon_razorback','beastmaster_summon_raptor','beastmaster_wild_axes'},
     bloodseeker={'bloodseeker_blood_mist','bloodseeker_rupture','bloodseeker_bloodrage','bloodseeker_blood_bath'},
     bounty_hunter={'bounty_hunter_wind_walk','bounty_hunter_wind_walk_ally','bounty_hunter_track','bounty_hunter_shuriken_toss'},
-    brewmaster={'brewmaster_cinder_brew','brewmaster_thunder_clap'},
+    brewmaster={'brewmaster_cinder_brew','brewmaster_thunder_clap','brewmaster_primal_split'},
     bristleback={'bristleback_hairball','bristleback_bristleback','bristleback_viscous_nasal_goo','bristleback_quill_spray'},
     broodmother={'broodmother_spawn_spiderlings','broodmother_spin_web','broodmother_silken_bola','broodmother_insatiable_hunger'},
     centaur={'centaur_mount','centaur_work_horse','centaur_stampede','centaur_hoof_stomp','centaur_double_edge'},
@@ -145,7 +150,7 @@ assert(X.ConsiderStolenSpell(Spell('ancient_apparition_ice_blast_release'))==fal
 -- Persuasion counts only this bot's units and respects levels in its early branch.
 local creeps,allies={},{}
 function bot:GetNearbyNeutralCreeps() return creeps end
-function GetUnitList() return allies end
+function GetUnitList(kind) return kind==UNIT_LIST_ALLIES and allies or {} end
 local function Creep(level,owner,converted)
     return {GetLevel=function() return level end,IsAncientCreep=function() return false end,
         GetUnitName=function() return 'npc_dota_neutral_alpha_wolf' end,
@@ -176,13 +181,19 @@ J.IsHaveAegis=function() return false end
 J.GetAroundEnemyHeroList=function() return {target} end
 X=Load('axe');X.HasSpecialModifier=function() return false end;X.IsKillBotAntiMage=function() return false end
 assert(X.ConsiderStolenSpell(Spell('axe_culling_blade',{damage=275}))==true, 'use the current 275 execution threshold, not 250')
-J.GetNearbyHeroes=function() return {target} end
+J.GetNearbyHeroes=function(_,_,enemy) return enemy and {target} or {} end
+J.IsInRange=function() return true end
+J.CanCastOnTargetAdvanced=function() return true end
+J.CannotBeKilled=function() return false end
 J.CanCastOnNonMagicImmune=function() return true end
 J.IsSuspiciousIllusion=function() return false end
 J.CanKillTarget=function(_,damage) assert(damage==320); return true end
 X=Load('abaddon')
 local coil=Spell('abaddon_death_coil')
-coil.GetSpecialValueInt=function(_,key) assert(key=='damage_heal'); return 320 end
+coil.GetSpecialValueInt=function(_,key)
+    assert(key=='damage_heal' or key=='self_damage', 'Coil uses current heal and percentage self-cost fields')
+    return key=='damage_heal' and 320 or 40
+end
 assert(X.ConsiderStolenSpell(coil)==true, 'Mist Coil reads damage_heal')
 J.GetNearbyHeroes=function() return {} end
 J.CanKillTarget=function(_,damage) assert(damage==310); return true end
