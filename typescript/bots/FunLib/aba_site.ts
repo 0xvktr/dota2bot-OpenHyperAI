@@ -317,25 +317,27 @@ export const IsLargeCamp = function (camp: any): boolean {
     return camp.type === "large";
 };
 
-export const RefreshCamp = function (bot: Unit): LuaMultiReturn<[any[], number]> {
+// Keep availability independent of the bot that refreshes the registry. Eligibility
+// belongs at selection time, including when a caller passes another bot's camp list.
+export const RefreshCamp = function (_bot: Unit): LuaMultiReturn<[any[], number]> {
     const camps = GetNeutralSpawners();
     const allCampList: any[] = [];
-    const botLevel = bot.GetLevel();
-
     for (const aCamp of Object.values(camps)) {
         const camp = aCamp as any;
-        if ((botLevel <= 7 || bot.GetAttackDamage() <= 80) && !IsEnemyCamp(camp) && !IsLargeCamp(camp) && !IsAncientCamp(camp)) {
-            allCampList.push({ idx: camp.idx, cattr: camp });
-        } else if (botLevel <= 11 && !IsEnemyCamp(camp) && !IsAncientCamp(camp)) {
-            allCampList.push({ idx: camp.idx, cattr: camp });
-        } else if (botLevel <= 14 && !IsEnemyCamp(camp)) {
-            allCampList.push({ idx: camp.idx, cattr: camp });
-        } else {
-            allCampList.push({ idx: camp.idx, cattr: camp });
-        }
+        allCampList.push({ idx: camp.idx, cattr: camp });
     }
 
     return $multi(allCampList, allCampList.length);
+};
+
+export const CanFarmCamp = function (bot: Unit, camp: any): boolean {
+    const botLevel = bot.GetLevel();
+    if (botLevel <= 7 || bot.GetAttackDamage() <= 80) {
+        return !IsEnemyCamp(camp) && !IsLargeCamp(camp) && !IsAncientCamp(camp);
+    }
+    if (botLevel <= 11) return !IsEnemyCamp(camp) && !IsAncientCamp(camp);
+    if (botLevel <= 14) return !IsEnemyCamp(camp);
+    return true;
 };
 export const GetPosition = function (bot: Unit): number {
     if (bot.assignedRole) {
@@ -362,12 +364,14 @@ export const GetClosestNeutralSpwan = function (bot: Unit, availableCampList: an
     let closestCamp: any | null = null;
 
     for (const camp of availableCampList) {
-        let dist = GetUnitToLocationDistance(bot, camp.cattr.location);
-        if (IsEnemyCamp(camp)) dist *= 1.5;
+        if (CanFarmCamp(bot, camp.cattr)) {
+            let dist = GetUnitToLocationDistance(bot, camp.cattr.location);
+            if (IsEnemyCamp(camp.cattr)) dist *= 1.5;
 
-        if (IsTheClosestOne(bot, camp.cattr.location) && dist < minDist && (bot.GetLevel() >= 10 || !IsAncientCamp(camp))) {
-            minDist = dist;
-            closestCamp = camp;
+            if (IsTheClosestOne(bot, camp.cattr.location) && dist < minDist) {
+                minDist = dist;
+                closestCamp = camp;
+            }
         }
     }
 

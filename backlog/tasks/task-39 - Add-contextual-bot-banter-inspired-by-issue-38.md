@@ -5,7 +5,7 @@ status: Needs In-Game Test
 assignee:
   - '@codex'
 created_date: '2026-10-02 16:30'
-updated_date: '2026-10-02 16:42'
+updated_date: '2026-10-02 16:44'
 labels: []
 dependencies: []
 references:
@@ -39,6 +39,8 @@ Issue 38 asks for more personality through match-aware trash talk. Extend existi
 Implemented 200 original lines across en/zh/ru/ja and ten event categories, factual scoreboard/encounter detection, one reaction per observation, chance gates and bot/team/event cooldowns. Preserved master mute and intensity controls. Hardened standalone language commands during draft and match; cn aliases zh. Fixed reply-speaker indexing for mixed rosters and canonical Meepo clone exclusion while dead. Existing unrelated hero changes were preserved. Verification: node tests/run-builds.cjs passed (587 Lua syntax files, all registered regression suites); new banter suite passed 215 assertions and reply-member scenarios passed. TSTL compilation to a temporary output directory passed with four existing advanced_item_strategy truthiness warnings. git diff --check passed. No game installation, live match or daily-driver channel was touched. Remaining: local Dota lobby validation of callback delivery, shared hero-handle state and subjective banter pacing; checklist in docs/BOT_BANTER.md.
 
 User requested level 2 as the shipped default and commit/push. Updated Customize/general.lua and the settings documentation; reran the banter suite (215 assertions), reply-member scenarios and git diff --check successfully.
+
+Integrated newer origin/main High Five, farm eligibility and item cleanup changes before publication. The merged full regression runner passed, including 593 Lua syntax files, 215 banter assertions, reply-member scenarios and all registered suites. In-game validation remains pending.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

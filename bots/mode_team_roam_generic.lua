@@ -42,7 +42,7 @@ local SwappedFlaskTime    = -90
 local SwappedSmokeTime    = -90
 local SwappedRefresherShardTime = -90
 local SwappedMoonshardTime = -90
-local lastCheckBotToDropTime = 0
+local lastEarlyItemSaleCheck = 0
 
 local IsAvoidingAbilityZone = false
 
@@ -1487,7 +1487,7 @@ function ItemOpsDesire()
         ConsiderDroppedTime = DotaTime()
     end
 
-    TrySellOrDropItem()
+    TrySellEarlyBackpackItems()
     SwapSmokeSupport()
     TrySwapInvItemForCheese()
     TrySwapInvItemForRefresherShard()
@@ -1669,12 +1669,13 @@ function TrySwapInvItemForRefresherShard()
 	end
 end
 
-function TrySellOrDropItem()
-	if DotaTime() > 0 and DotaTime() - lastCheckBotToDropTime > 3
+function TrySellEarlyBackpackItems()
+	if DotaTime() > 0 and DotaTime() - lastEarlyItemSaleCheck > 3
 	then
-		lastCheckBotToDropTime = DotaTime()
+		lastEarlyItemSaleCheck = DotaTime()
 
-		-- 再尝试丢/卖掉
+		-- Keep surplus items until we can sell them. Field drops can be picked
+		-- straight back up by the normal pickup logic, causing a cleanup loop.
 		if bot:GetLevel() >= 6 and bot:GetNetWorth() >= 14000 and Utils.CountBackpackEmptySpace(bot) <= 1 then
 			for i = 1, #Item['tEarlyConsumableItem']
 			do
@@ -1685,8 +1686,6 @@ function TrySellOrDropItem()
 					local distance = bot:DistanceFromFountain()
 					if distance <= 300 then
 						bot:ActionImmediate_SellItem( bot:GetItemInSlot( itemSlot ))
-					elseif distance >= 3000 then
-						bot:Action_DropItem( bot:GetItemInSlot( itemSlot ), bot:GetLocation() )
 					end
 				end
 			end
