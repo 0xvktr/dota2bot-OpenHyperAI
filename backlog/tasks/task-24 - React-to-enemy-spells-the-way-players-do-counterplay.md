@@ -4,7 +4,7 @@ title: React to enemy spells the way players do (counterplay)
 status: To Do
 assignee: []
 created_date: '2026-09-30 13:58'
-updated_date: '2026-10-02 16:24'
+updated_date: '2026-10-02 16:49'
 labels:
   - teamfight
 dependencies: []
@@ -13,6 +13,8 @@ references:
   - 'https://dotacoach.gg/en/heroes/counters/ancient-apparition'
 documentation:
   - backlog/docs/doc-2 - Hero-improvement-playbook.md
+  - docs/HERO_PASS_TRACKER.md
+  - docs/HERO_PASS_REPORT.md
 priority: medium
 type: feature
 ordinal: 27000
@@ -353,4 +355,6 @@ Witch Doctor (TASK-13.92):
 
 Zeus (TASK-13.98):
 - TASK-24: respect actual block/reflection, immunity, spell resistance/barriers, lost vision, controlled landing, and Nimbus destruction; actual ally setup enables global support. Long-range burst, silences and mobility can deny safe spell access.
+
+Hero tracking consolidation (2026-10-02): historical TASK-13.x records now live in docs/HERO_PASS_REPORT.md, with old-ID/archive links and current status in docs/HERO_PASS_TRACKER.md. This task retains its independent scope and pending criteria. Lobby validation is coordinated by TASK-13.125.
 <!-- SECTION:NOTES:END -->

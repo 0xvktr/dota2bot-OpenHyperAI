@@ -4,7 +4,7 @@ title: Document weak-hero reasons and sync the Customize appendix
 status: To Do
 assignee: []
 created_date: '2026-09-29 21:29'
-updated_date: '2026-09-30 13:59'
+updated_date: '2026-10-02 16:49'
 labels:
   - draft
   - weak-hero
@@ -15,6 +15,8 @@ references:
   - bots/Customize/general.lua
 documentation:
   - backlog/docs/doc-1 - OpenAI-Five-lessons-for-the-bot-scripts.md
+  - docs/HERO_PASS_TRACKER.md
+  - docs/HERO_PASS_REPORT.md
 priority: low
 ordinal: 16000
 ---
@@ -35,4 +37,6 @@ WeakHeroes in hero_selection.lua limits bot-execution-quality risks, but nothing
 
 <!-- SECTION:NOTES:BEGIN -->
 OpenAI Five (doc-1, section 8) rated Earthshaker low because it never mastered Fissure's geometry. Skills needing precise geometry are a natural criterion for the weak-hero list.
+
+Hero tracking consolidation (2026-10-02): historical TASK-13.x records now live in docs/HERO_PASS_REPORT.md, with old-ID/archive links and current status in docs/HERO_PASS_TRACKER.md. This task retains its independent scope and pending criteria. Lobby validation is coordinated by TASK-13.125.
 <!-- SECTION:NOTES:END -->

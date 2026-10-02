@@ -3,7 +3,7 @@ id: doc-2
 title: Hero improvement playbook
 type: guide
 created_date: '2026-09-30 13:58'
-updated_date: '2026-10-01 12:49'
+updated_date: '2026-10-02 16:52'
 tags:
   - hero
   - process
@@ -16,9 +16,9 @@ How we improve heroes' in-game play (ability use, combos, counterplay) beyond th
 
 1. **Roster-wide sweep (once, then after every patch).** A script checks every `bots/BotLib/hero_*.lua` against Valve's ability data: ability names, talent names and the value keys read with `GetSpecialValueInt`/`GetSpecialValueFloat`. A wrong key silently returns 0 and a wrong talent name silently never trains, so these bugs never show up as errors. Findings are fixed in batches. Commands: `node tests/valve/refresh.cjs` (after a patch) and `node tests/valve_ability_check.cjs` (also part of `node tests/run-builds.cjs`); intentional exceptions go in `tests/valve/allowlist.json` with a reason (TASK-23).
 2. **Standard hero pass (every hero, roughly 30-60 minutes).**
-   - Build a checklist from Valve's ability data, the hero's Torte de Lini ability tips and dotacoach's Strategy section.
+   - Build a checklist from Valve's ability data, the hero's Torte de Lini ability tips and dotacoach's full Strategy, Counter Strategy and Matchup advice.
    - Compare it with the cast order in `SkillsComplement()` and each `ConsiderX()`.
-   - Fix the gaps, add an offline spec (`tests/hero_harness.lua` pattern), then move the task to *Needs In-Game Test*.
+   - Fix the gaps and add an offline spec (`tests/hero_harness.lua` pattern). Record the completed offline pass and pending lobby checklist in the roster tracker/report; the shared validation campaign stays *Needs In-Game Test*. A hero with its own independent task follows the same evidence rule.
    - Ideas that describe how to play **against** the hero go to the counterplay task, not the hero file.
 3. **Deep dive (heroes on the `WeakHeroes` list only).** Adds videos, Liquipedia mechanics and a fixed-roster test game. The goal is a recorded decision on whether the hero leaves the weak list.
 
@@ -68,7 +68,10 @@ Guide, site and video text is not ours. Turn it into logic and short comments in
 
 ## Tracking in Backlog
 
-- TASK-13 is the umbrella. Create a subtask per hero (`backlog task create -p TASK-13 ...`) only when work on that hero starts, so the board doesn't fill with idle tasks.
-- Each hero subtask uses the standard pass as its acceptance criteria and ends in *Needs In-Game Test*.
-- Heroes on the `WeakHeroes` list get the `weak-hero` label and the "Weak heroes playable" milestone.
-- Run a hero's ability pass after its D2PT build migration has landed: both touch the same `hero_*.lua` file.
+- TASK-13 is the umbrella. Use `docs/HERO_PASS_TRACKER.md` for the roster status table and active task links, and `docs/HERO_PASS_REPORT.md` for per-hero source reviews, changes, offline verification and lobby checklists.
+- Routine roster sweeps and standard passes update those documents rather than creating one subtask per hero. Record the patch, sources, stale claims, native/copied-spell findings, focused checks and remaining engine-only limitations in the hero's report section.
+- One lobby validation campaign owns live testing in manageable batches. An offline pass leaves that hero's lobby status Pending; record game settings, observed results and evidence before marking a scenario passed. Known failures or retained limitations must have an explicit disposition and a linked task where independent investigation is needed.
+- Keep separate tasks for explicitly deferred heroes, confirmed bugs and substantial deep dives. The current deferred passes are Invoker, Lone Druid (including Spirit Bear) and Rubick's own pass; changes to copied spells do not complete Rubick's own pass. Deferral is not authorization to start those heroes.
+- Heroes on the `WeakHeroes` list keep their flag until a recorded deep-dive and lobby decision supports removal. Keep weak-hero labels and the "Weak heroes playable" milestone on the campaign and applicable independent tasks, with per-hero flags and decisions in the tracker/report.
+- The old TASK-13.1 through TASK-13.124 records are archived as superseded tracking, not marked Done. The tracker maps each historical ID to its report section and unchanged archived source. Consult the active tracker instead of executing historical plans in those records.
+- Run a hero's ability pass after its D2PT build migration has landed: both touch the same `hero_*.lua` file. Item findings feed TASK-21, enemy counterplay feeds TASK-24, and role-specific spell behavior remains separate in TASK-37.

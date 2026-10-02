@@ -4,7 +4,7 @@ title: Validate Ancient Apparition ability rework in a lobby
 status: Needs In-Game Test
 assignee: []
 created_date: '2026-09-29 21:29'
-updated_date: '2026-10-01 10:42'
+updated_date: '2026-10-02 16:49'
 labels:
   - hero
   - weak-hero
@@ -14,6 +14,9 @@ references:
   - bots/BotLib/hero_ancient_apparition.lua
   - bots/FunLib/rubick_hero/ancient_apparition.lua
   - tests/ancient_apparition_combo_spec.lua
+documentation:
+  - docs/HERO_PASS_TRACKER.md
+  - docs/HERO_PASS_REPORT.md
 priority: high
 ordinal: 1000
 ---
@@ -37,4 +40,6 @@ AA's ability logic was reworked from Torte de Lini's guide tips and Valve's 7.41
 
 <!-- SECTION:NOTES:BEGIN -->
 Done: combo order (Cold Feet before Vortex, Vortex pulls toward the curse origin), AoE Cold Feet talent is special_bonus_unique_ancient_apparition_1 and stays unit-targeted, Ice Blast radius = radius_min + radius_grow * seconds travelled, fight/snipe aiming, Release by tracer progress or flight time (think throttle skipped the old 100-unit window), Release ignores silence, enemy tracers ignored. Rubick's stolen copy got the same Ice Blast fixes.
+
+Hero tracking consolidation (2026-10-02): historical TASK-13.x records now live in docs/HERO_PASS_REPORT.md, with old-ID/archive links and current status in docs/HERO_PASS_TRACKER.md. This task retains its independent scope and pending criteria. Lobby validation is coordinated by TASK-13.125.
 <!-- SECTION:NOTES:END -->

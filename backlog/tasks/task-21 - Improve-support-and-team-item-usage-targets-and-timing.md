@@ -4,13 +4,16 @@ title: 'Improve support and team item usage: targets and timing'
 status: To Do
 assignee: []
 created_date: '2026-09-29 22:03'
-updated_date: '2026-10-02 16:24'
+updated_date: '2026-10-02 16:49'
 labels:
   - teamfight
 dependencies: []
 references:
   - bots/ability_item_usage_generic.lua
   - tools/tdl/fetch.cjs
+documentation:
+  - docs/HERO_PASS_TRACKER.md
+  - docs/HERO_PASS_REPORT.md
 priority: medium
 ordinal: 21000
 ---
@@ -345,4 +348,6 @@ Witch Doctor (TASK-13.92):
 
 Zeus (TASK-13.98):
 - TASK-21: current Shard toggle, actual Scepter Nimbus and Bolt dependency, Lens reach, defensive positioning, and useful Refresher mana reserve need shared item follow-up. Builds and generic item policy remain unchanged.
+
+Hero tracking consolidation (2026-10-02): historical TASK-13.x records now live in docs/HERO_PASS_REPORT.md, with old-ID/archive links and current status in docs/HERO_PASS_TRACKER.md. This task retains its independent scope and pending criteria. Lobby validation is coordinated by TASK-13.125.
 <!-- SECTION:NOTES:END -->
