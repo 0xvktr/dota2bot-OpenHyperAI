@@ -4,6 +4,8 @@ local bot = GetBot()
 local J = require( GetScriptDirectory()..'/FunLib/jmz_func' )
 local Minion = dofile( GetScriptDirectory()..'/FunLib/aba_minion' )
 local SPL = require( GetScriptDirectory()..'/FunLib/spell_list' )
+local SpellDecisions = require(GetScriptDirectory()..'/FunLib/rubick_hero/morphling')
+X.UseStrengthShift = SpellDecisions.UseStrengthShift
 local M = dofile( GetScriptDirectory()..'/FunLib/morphling_utility' )
 local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
@@ -74,10 +76,10 @@ if bot.IsMorphling == nil then bot.IsMorphling = true end
 local nAGIRatio = 1
 local nSTRRatio = 1
 
-local AGI_BASE = 24
-local STR_BASE = 23
-local AGI_GROWTH_RATE = 3.9
-local STR_GROWTH_RATE = 3.2
+local AGI_BASE = 16
+local STR_BASE = 33
+local AGI_GROWTH_RATE = 2.6
+local STR_GROWTH_RATE = 4.2
 
 -- do similar thing as Rubick's
 -- TODO: Update some bot fields from select heroes to not give errors
@@ -104,6 +106,7 @@ end
 local nMorphTime = {0, math.huge}
 
 function X.SkillsComplement()
+    if X.UseStrengthShift() then return end
     if J.CanNotUseAbility(bot) then return end
 
     nAllyHeroes = bot:GetNearbyHeroes(1600, false, BOT_MODE_NONE)
@@ -150,8 +153,10 @@ function X.SkillsComplement()
             if bot.IsMorphling == false and not MorphReplicate:IsHidden() and J.CanCastAbility(MorphReplicate) and MorphedHeroName ~= '' then
                 for i = 0, 6 do
                     local hAbility = bot:GetAbilityInSlot(i)
-                    if hAbility ~= nil and not hAbility ~= MorphReplicate then
+                    if hAbility ~= nil and hAbility ~= MorphReplicate and hAbility:IsTrained() and not hAbility:IsHidden() then
                         HandleSpell(hAbility)
+                        if J.HasQueuedAction(bot) or bot:IsCastingAbility() or bot:IsUsingAbility() then return end
+                        break -- Each native hero handler already considers its complete spell set.
                     end
                 end
             end
@@ -170,6 +175,14 @@ function X.SkillsComplement()
     if bot.IsMorphling then
         X.SetRatios()
 
+        local interruptTarget = SpellDecisions.AdaptiveTarget(AdaptiveStrikeAGI, true)
+        if interruptTarget ~= nil then
+            J.SetQueuePtToINT(bot, false, AdaptiveStrikeAGI)
+            bot:ActionQueue_UseAbilityOnEntity(AdaptiveStrikeAGI, interruptTarget)
+            return
+        end
+
+        local Type
         AtttributeShiftDesire, Type = X.ConsiderAtttributeShift()
         if AtttributeShiftDesire > 0
         then
@@ -185,15 +198,15 @@ function X.SkillsComplement()
         WaveformDesire, WaveformLocation = X.ConsiderWaveform()
         if WaveformDesire > 0
         then
-            J.SetQueuePtToINT(bot, false)
-            bot:ActionQueue_UseAbilityOnLocation(Waveform, WaveformLocation)
+            J.SetQueuePtToINT(bot, false, Waveform)
+            bot:ActionQueue_UseAbilityOnLocation(Waveform, SpellDecisions.Clamp(WaveformLocation, Waveform))
             return
         end
 
         AdaptiveStrikeAGIDesire, AdaptiveStrikeAGITarget = X.ConsiderAdaptiveStrikeAGI()
         if AdaptiveStrikeAGIDesire > 0
         then
-            J.SetQueuePtToINT(bot, false)
+            J.SetQueuePtToINT(bot, false, AdaptiveStrikeAGI)
             bot:ActionQueue_UseAbilityOnEntity(AdaptiveStrikeAGI, AdaptiveStrikeAGITarget)
             return
         end
@@ -210,11 +223,11 @@ function X.SkillsComplement()
 end
 
 function X.ConsiderWaveform()
-    if not J.CanCastAbility(Waveform) then
+    if not J.CanCastAbility(Waveform) or bot:IsRooted() or bot:HasModifier('modifier_bloodseeker_rupture') then
         return BOT_ACTION_DESIRE_NONE, 0
     end
 
-    local nCastRange = J.GetProperCastRange(false, bot, Waveform:GetCastRange())
+    local nCastRange = SpellDecisions.Range(Waveform)
 	local nCastPoint = Waveform:GetCastPoint()
 	local nSpeed = Waveform:GetSpecialValueInt('speed')
     local nDamage = Waveform:GetAbilityDamage()
@@ -274,7 +287,7 @@ function X.ConsiderWaveform()
                     end
                 end
 
-                if GetUnitToLocationDistance(bot, vLocation) > nCastRange and GetUnitToLocationDistance(bot, vLocation) < nCastRange + 350 then
+                if GetUnitToLocationDistance(bot, vLocation) > nCastRange and GetUnitToLocationDistance(bot, vLocation) < nCastRange + nRadius then
                     if IsLocationPassable(vLocation) then
                         if J.IsInLaningPhase() then
                             if not bTowerNearby then
@@ -367,7 +380,7 @@ function X.ConsiderAdaptiveStrikeAGI()
         return BOT_ACTION_DESIRE_NONE, nil
     end
 
-    local nCastRange = J.GetProperCastRange(false, bot, AdaptiveStrikeAGI:GetCastRange())
+    local nCastRange = SpellDecisions.Range(AdaptiveStrikeAGI)
     local nCastPoint = AdaptiveStrikeAGI:GetCastPoint()
 	local nMinAGI = AdaptiveStrikeAGI:GetSpecialValueFloat('damage_min')
 	local nMaxAGI = AdaptiveStrikeAGI:GetSpecialValueFloat('damage_max')
@@ -377,7 +390,7 @@ function X.ConsiderAdaptiveStrikeAGI()
     local nSpeed = AdaptiveStrikeAGI:GetSpecialValueInt('projectile_speed')
     local nManaAfter = J.GetManaAfter(AdaptiveStrikeAGI:GetManaCost())
     local nManaThreshold = (150 / bot:GetMana())
-    local bUsingMax = nCurrAGI > nCurrSTR * 1.5
+    local bUsingMax = nCurrAGI >= nCurrSTR * 1.5
 
 	if bUsingMax then
 		nDamage = nDamage + nMaxAGI * nCurrAGI
@@ -391,7 +404,7 @@ function X.ConsiderAdaptiveStrikeAGI()
         and J.CanCastOnNonMagicImmune(enemyHero)
         and J.CanCastOnTargetAdvanced(enemyHero)
         then
-            if enemyHero:HasModifier('modifier_teleporting') then
+            if enemyHero:IsChanneling() or enemyHero:HasModifier('modifier_teleporting') then
                 return BOT_ACTION_DESIRE_HIGH, enemyHero
             end
 
@@ -455,7 +468,7 @@ function X.ConsiderAdaptiveStrikeAGI()
 		end
 	end
 
-    if J.IsRetreating(bot) and not J.IsRealInvisible(bot) and not bUsingMax then
+    if J.IsRetreating(bot) and not J.IsRealInvisible(bot) then
 		for _, enemyHero in pairs(nEnemyHeroes) do
 			if  J.IsValidHero(enemyHero)
             and J.IsInRange(bot, enemyHero, nCastRange)
@@ -533,7 +546,7 @@ function X.ConsiderAdaptiveStrikeAGI()
 		and J.IsInRange(bot, botTarget, nCastRange)
         and J.IsAttacking(bot)
 		then
-			return BOT_ACTION_DESIRE_HIGH
+			return BOT_ACTION_DESIRE_HIGH, botTarget
 		end
 	end
 
@@ -559,7 +572,7 @@ function X.ConsiderAtttributeShift()
 
     local nCurrAGI = bot:GetAttributeValue(ATTRIBUTE_AGILITY)
 	local nCurrSTR = bot:GetAttributeValue(ATTRIBUTE_STRENGTH)
-    local nCurrAGIRatio = nCurrAGI / nCurrSTR * 1.5
+    local nCurrAGIRatio = nCurrAGI / math.max(1, nCurrSTR * 1.5)
 
     local nNearbyEnemyCount = 0
     for _, id in pairs(GetTeamPlayers(GetOpposingTeam())) do
@@ -763,12 +776,12 @@ function X.ConsiderAtttributeShift()
 end
 
 function X.ConsiderMorph()
-    if not J.CanCastAbility(Morph)
+    if not J.CanCastAbility(Morph) or Morph:GetAutoCastState()
     then
         return BOT_ACTION_DESIRE_NONE, nil
     end
 
-    local nCastRange = J.GetProperCastRange(false, bot, Morph:GetCastRange())
+    local nCastRange = SpellDecisions.Range(Morph)
     local nInRangeEnemy = J.GetEnemiesNearLoc(bot:GetLocation(), nCastRange)
 
 	if J.IsGoingOnSomeone(bot)
@@ -875,21 +888,12 @@ function X.SetRatios()
     elseif bot:GetLevel() >= 17 then count = 1
     end
 
-    -- morphling's primary in flow is str
-    -- but accumulation's x3 applies to agility...
-    -- nAddedAGI = nAddedAGI + count * 3 + count * 2 -- from innate
-    -- nAddedSTR = nAddedSTR + count * 2 -- from innate
-    if primaryAttribute == ATTRIBUTE_AGILITY then
-        nAddedAGI = nAddedAGI + count * 3 + count * 2 -- from innate
-        nAddedSTR = nAddedSTR + count * 2 -- from innate
-    elseif primaryAttribute == ATTRIBUTE_STRENGTH then
-        nAddedAGI = nAddedAGI + count * 2 -- from innate
-        nAddedSTR = nAddedSTR + count * 3 + count * 2 -- from innate
-    end
+    nAddedAGI = nAddedAGI + count * 2
+    nAddedSTR = nAddedSTR + count * 2
 
     -- Stats Talents
-    local talent__AGI = bot:GetAbilityInSlot(14)
-	local talent__STR = bot:GetAbilityInSlot(16)
+    local talent__AGI = bot:GetAbilityByName('special_bonus_agility_15')
+	local talent__STR = bot:GetAbilityByName('special_bonus_strength_35')
 
     if talent__AGI ~= nil and talent__AGI:IsTrained() then
         nAddedAGI = nAddedAGI + talent__AGI:GetSpecialValueInt('value')
@@ -911,8 +915,8 @@ function X.SetRatios()
     local nEffAGI = nBaseAGI + nShiftedAGI - nAddedAGI
     local nEffSTR = nBaseSTR + nShiftedSTR - nAddedSTR
 
-    nAGIRatio = nEffAGI / (nEffAGI + nEffSTR)
-    nSTRRatio = nEffSTR / (nEffAGI + nEffSTR)
+    nAGIRatio = nEffAGI / math.max(1, nEffAGI + nEffSTR)
+    nSTRRatio = nEffSTR / math.max(1, nEffAGI + nEffSTR)
 
     -- if math.floor(DotaTime()) % 3 == 0 then
     --     print(nAGIRatio, nSTRRatio)

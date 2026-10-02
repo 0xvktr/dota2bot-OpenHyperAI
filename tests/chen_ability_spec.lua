@@ -29,7 +29,7 @@ function Unit:IsStunned() return self.stunned==true end
 function Unit:IsHexed() return self.hexed==true end
 function Unit:IsRooted() return self.rooted==true end
 function Unit:IsNightmared() return self.nightmared==true end
-function Unit:HasModifier(n) return self.mods[n]==true end
+function Unit:HasModifier(n) return n=='modifier_item_aghanims_shard' and self.shard==true or self.mods[n]==true end
 function Unit:WasRecentlyDamagedByAnyHero() return self.recent==true end
 function Unit:GetNearbyHeroes(r,enemy)
     local out={};for _,u in ipairs(enemy and enemies or allies) do if math.abs(u.x-self.x)<=r then out[#out+1]=u end end;return out
@@ -65,7 +65,6 @@ function bot:GetAbilityByName(n) return spells[n] end
 function bot:GetMana() return self.mana end
 function bot:GetMaxMana() return 1000 end
 function bot:HasScepter() return self.scepter==true end
-function bot:HasShard() return self.shard==true end
 function bot:GetNearbyNeutralCreeps() return neutrals end
 function bot:GetNearbyCreeps() return creeps end
 function bot:Action_UseAbility(a) actions[#actions+1]={ability=a} end

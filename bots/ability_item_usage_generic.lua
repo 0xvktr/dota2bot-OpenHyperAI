@@ -8326,6 +8326,30 @@ end
 function AbilityUsageThink()
 	if RefreshBotHandle() then return end
     if GateProbe.Active(bot) then return end
+	-- Chains is legal during the observed Sleight state, including its invulnerability.
+	if BotBuild ~= nil and BotBuild.UseChainsDuringSleight ~= nil
+		and BotBuild.UseChainsDuringSleight() then return end
+	-- Consume may exit an observed Infest host while the hero is invulnerable.
+	if BotBuild ~= nil and BotBuild.UseConsume ~= nil
+		and BotBuild.UseConsume() then return end
+	if BotBuild ~= nil and BotBuild.UseHealingWardDuringSlash ~= nil
+		and BotBuild.UseHealingWardDuringSlash() then return end
+	if BotBuild ~= nil and BotBuild.ConsiderEggSunRay ~= nil
+		and BotBuild.ConsiderEggSunRay() then return end
+	if BotBuild ~= nil and BotBuild.ConsiderPhaseJaunt ~= nil
+		and BotBuild.ConsiderPhaseJaunt() then return end
+	if BotBuild ~= nil and BotBuild.ConsiderSnowballContinuation ~= nil
+		and BotBuild.ConsiderSnowballContinuation() then return end
+
+	if BotBuild ~= nil and BotBuild.UseSmokeDuringTricks ~= nil
+		and BotBuild.UseSmokeDuringTricks() then return end
+
+	if BotBuild ~= nil and BotBuild.UseBallFlightSpells ~= nil
+		and BotBuild.UseBallFlightSpells() then return end
+
+	if BotBuild ~= nil and BotBuild.ConsiderDissimilatePortal ~= nil
+		and BotBuild.ConsiderDissimilatePortal() then return end
+
 	if bot:IsInvulnerable() or not bot:IsHero() or not bot:IsAlive() or not string.find(botName, "hero") or bot:IsIllusion() then return end
 	if bot.lastAbilityFrameProcessTime == nil then bot.lastAbilityFrameProcessTime = DotaTime() end
 	if DotaTime() > 30 and (DotaTime() - bot.lastAbilityFrameProcessTime < (bot.frameProcessTime * (1 + Customize.ThinkLess))) and bot.isBear == nil then return end

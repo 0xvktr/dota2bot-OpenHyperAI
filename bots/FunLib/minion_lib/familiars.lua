@@ -10,7 +10,9 @@ local bot
 local StoneForm
 local IsAttackingSomethingNotHero = false
 function X.Think(ownerBot, hMinionUnit)
-	if J.CanNotUseAbility(hMinionUnit) then return end
+	if not U.IsValidUnit(hMinionUnit) or hMinionUnit:GetTeam()~=ownerBot:GetTeam() or hMinionUnit:GetPlayerID()~=ownerBot:GetPlayerID()
+        or not string.find(hMinionUnit:GetUnitName(),'npc_dota_visage_familiar') then return false end
+    if J.CanNotUseAbility(hMinionUnit) or hMinionUnit:NumQueuedActions()>0 or hMinionUnit:HasModifier('modifier_visage_summon_familiars_stone_form_buff') then return true end
 
 	bot = ownerBot
 	StoneForm = hMinionUnit:GetAbilityByName('visage_summon_familiars_stone_form')
@@ -18,83 +20,54 @@ function X.Think(ownerBot, hMinionUnit)
 	hMinionUnit.cast_desire = X.ConsiderStoneForm(hMinionUnit, StoneForm)
 	if hMinionUnit.cast_desire > 0
 	then
-		hMinionUnit:Action_UseAbilityOnLocation(StoneForm, hMinionUnit:GetLocation())
-		return
+		hMinionUnit:Action_UseAbility(StoneForm)
+        hMinionUnit.visageStoneAttemptTime=DotaTime()
+        ownerBot.visageStoneRequestTime=DotaTime()
+        ownerBot.visageStoneRequestLocation=hMinionUnit:GetLocation()
+		return true
 	end
 
 	hMinionUnit.retreat_desire, hMinionUnit.retreat_location = X.ConsiderFamiliarRetreat(hMinionUnit)
 	if hMinionUnit.retreat_desire > 0
 	then
 		hMinionUnit:Action_MoveToLocation(hMinionUnit.retreat_location + RandomVector(75))
-		return
+		return true
 	end
 
 	hMinionUnit.attack_desire, hMinionUnit.attack_target = X.ConsiderFamiliarAttack(hMinionUnit)
 	if hMinionUnit.attack_desire > 0
 	then
 		hMinionUnit:Action_AttackUnit(hMinionUnit.attack_target, true)
-		return
+		return true
 	end
 
 	hMinionUnit.move_desire, hMinionUnit.move_location = X.ConsiderFamiliarMove(hMinionUnit)
 	if hMinionUnit.move_desire > 0
 	then
 		hMinionUnit:Action_MoveToLocation(hMinionUnit.move_location + RandomVector(75))
-		return
+		return true
 	end
+    return true
 end
 
-function X.ConsiderStoneForm(hMinionUnit, ability)
-	if not J.CanCastAbility(ability)
-	or hMinionUnit:HasModifier('modifier_visage_summon_familiars_stone_form_buff')
-	then
-		return BOT_ACTION_DESIRE_NONE
-	end
-
-	local nRadius = ability:GetSpecialValueInt('stun_radius')
-
-    local nFamiliarInRangeEnemy = hMinionUnit:GetNearbyHeroes(nRadius, true, BOT_MODE_NONE)
-
-	if J.IsRetreating(bot)
-	then
-		for _, enemyHero in pairs(nFamiliarInRangeEnemy)
-		do
-			if  J.IsValidHero(enemyHero)
-			and J.CanCastOnNonMagicImmune(enemyHero)
-			and J.IsChasingTarget(enemyHero, bot)
-			and not J.IsSuspiciousIllusion(enemyHero)
-			and not U.CantMove(enemyHero)
-            and bot:WasRecentlyDamagedByHero(enemyHero, 3.0)
-			then
-                return BOT_ACTION_DESIRE_HIGH
-			end
-		end
-	end
-
-	if J.GetHP(hMinionUnit) < 0.35
-	then
-		return BOT_ACTION_DESIRE_HIGH
-	end
-
-	for _, enemyHero in pairs(nFamiliarInRangeEnemy)
-	do
-		if  J.IsValidHero(enemyHero)
-		and J.CanCastOnNonMagicImmune(enemyHero)
-		and enemyHero:IsChanneling()
-		then
-			return BOT_ACTION_DESIRE_HIGH
-		end
-	end
-
-	local attackTarget = hMinionUnit:GetAttackTarget()
-	if  J.IsValidHero(attackTarget)
-	and not J.IsSuspiciousIllusion(attackTarget)
-	and not J.IsDisabled(attackTarget)
-	then
-		return BOT_ACTION_DESIRE_HIGH
-	end
-
-	return BOT_ACTION_DESIRE_NONE
+function X.ConsiderStoneForm(unit,ability)
+    if not J.CanCastAbility(ability) or unit:HasModifier('modifier_visage_summon_familiars_stone_form_buff')
+        or (unit.visageStoneAttemptTime~=nil and DotaTime()-unit.visageStoneAttemptTime<0.75) then return 0 end
+    if J.GetHP(unit)<0.35 then return BOT_ACTION_DESIRE_HIGH end
+    local radius=ability:GetSpecialValueInt('stun_radius');local delay=ability:GetSpecialValueFloat('stun_delay')
+    -- Record a request only; actual stone/stun state is observed on later ticks.
+    if bot.visageStoneRequestTime~=nil and DotaTime()-bot.visageStoneRequestTime<delay+0.15
+        and GetUnitToLocationDistance(unit,bot.visageStoneRequestLocation)<=radius*2 then return 0 end
+    for _,enemy in ipairs(unit:GetNearbyHeroes(radius,true,BOT_MODE_NONE)) do
+        if J.IsValidHero(enemy) and J.CanCastOnNonMagicImmune(enemy) and (J.GetCorrectLoc(enemy,delay)-unit:GetLocation()):Length2D()<=radius
+            and not enemy:HasModifier('modifier_faceless_void_chronosphere_freeze') and not enemy:HasModifier('modifier_enigma_black_hole_pull')
+            and not enemy:HasModifier('modifier_nyx_assassin_spiked_carapace') then
+            if enemy:IsChanneling() then return BOT_ACTION_DESIRE_HIGH end
+            if (enemy==unit:GetAttackTarget() or (J.IsRetreating(bot) and J.IsChasingTarget(enemy,bot) and bot:WasRecentlyDamagedByAnyHero(2)))
+                and (not enemy:IsStunned() or J.GetRemainStunTime(enemy)<=delay+0.15) then return BOT_ACTION_DESIRE_HIGH end
+        end
+    end
+    return 0
 end
 
 function X.ConsiderFamiliarRetreat(hMinionUnit)
@@ -119,8 +92,10 @@ function X.ConsiderFamiliarAttack(hMinionUnit)
 
 	local botTarget = J.GetProperTarget(bot)
 
-	if J.IsValidHero(botTarget)
-	or J.IsValidBuilding(botTarget)
+	if (J.IsValidHero(botTarget) or J.IsValidBuilding(botTarget))
+    and J.CanBeAttacked(botTarget) and not botTarget:HasModifier('modifier_fountain_glyph')
+    and not botTarget:HasModifier('modifier_item_blade_mail_reflect')
+    and GetUnitToUnitDistance(hMinionUnit,bot)<1600
 	then
 		IsAttackingSomethingNotHero = false
 		return BOT_ACTION_DESIRE_HIGH, botTarget

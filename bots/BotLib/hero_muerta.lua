@@ -3,6 +3,8 @@ local bDebugMode = ( 1 == 10 )
 local bot = GetBot()
 
 local J = require( GetScriptDirectory()..'/FunLib/jmz_func' )
+local SpellDecisions = require(GetScriptDirectory()..'/FunLib/rubick_hero/muerta')
+X.UseGunslinger = SpellDecisions.UseGunslinger
 local Minion = dofile( GetScriptDirectory()..'/FunLib/aba_minion' )
 
 local sTalentList = J.Skill.GetTalentList( bot )
@@ -61,11 +63,11 @@ Modifier or ability names not supported as of 5.5.2024
 
 --]]
 
-local abilityQ = bot:GetAbilityByName( sAbilityList[1] )
-local abilityW = bot:GetAbilityByName( sAbilityList[2] )
-local abilityE = bot:GetAbilityByName( sAbilityList[3] )
-local abilityR = bot:GetAbilityByName( sAbilityList[6] )
-local abilityAS = bot:GetAbilityByName( sAbilityList[4] )
+local abilityQ = bot:GetAbilityByName( 'muerta_dead_shot' )
+local abilityW = bot:GetAbilityByName( 'muerta_the_calling' )
+local abilityE = bot:GetAbilityByName( 'muerta_gunslinger' )
+local abilityR = bot:GetAbilityByName( 'muerta_pierce_the_veil' )
+local abilityAS = bot:GetAbilityByName( 'muerta_spectral_slug' )
 
 local castQDesire, castQTarget
 local castWDesire, castWLocation
@@ -105,65 +107,24 @@ function X.Think()
 end
 
 function X.SkillsComplement()
-
-	X.ConsiderTarget()
-	J.ConsiderForMkbDisassembleMask( bot )
-
-	-- TODO(7.41e): Gunslinger's toggle now works while silenced and no longer breaks invisibility,
-	-- but this gate skips it when silenced or invisible. Consider handling the toggle before the gate.
-	if J.CanNotUseAbility( bot ) or bot:IsInvisible() then return end
-
-	-- Re-fetch ability handles each tick for safety against Aghs upgrades
-	abilityQ = bot:GetAbilityByName( sAbilityList[1] )
-	abilityW = bot:GetAbilityByName( sAbilityList[2] )
-	abilityE = bot:GetAbilityByName( sAbilityList[3] )
-	abilityR = bot:GetAbilityByName( sAbilityList[6] )
-	abilityAS = bot:GetAbilityByName( sAbilityList[4] )
-
-	-- Cache per-tick variables
-	botTarget = J.GetProperTarget(bot)
-
-    castQDesire, castQTarget = X.ConsiderQ()
-    if castQDesire > 0
-    then
-        bot:Action_UseAbilityOnEntity(abilityQ, castQTarget)
-        -- bot:Action_UseAbilityOnTree(abilityQ, castQTarget) -- dont know how to choose release angle.
+    if X.UseGunslinger() then return end
+    if J.CanNotUseAbility(bot) or bot:IsInvisible() then return end
+    X.ConsiderTarget()
+    J.ConsiderForMkbDisassembleMask(bot)
+    botTarget = J.GetProperTarget(bot)
+    abilityQ = bot:GetAbilityByName('muerta_dead_shot')
+    abilityW = bot:GetAbilityByName('muerta_the_calling')
+    abilityR = bot:GetAbilityByName('muerta_pierce_the_veil')
+    abilityAS = bot:GetAbilityByName('muerta_spectral_slug')
+    -- Defense and a reachable magical attack window take priority over routine poke.
+    if SpellDecisions.ShouldVeil(abilityR) then
+        J.SetQueuePtToINT(bot, true, abilityR)
+        bot:ActionQueue_UseAbility(abilityR)
         return
     end
-
-	castRDesire = X.ConsiderR()
-	if ( castRDesire > 0 )
-	then
-		J.SetQueuePtToINT( bot, true )
-		bot:ActionQueue_UseAbility( abilityR )
-		return
-	end
-
-	castWDesire, castWLocation = X.ConsiderW()
-	if ( castWDesire > 0 )
-	then
-		J.SetQueuePtToINT( bot, false )
-		bot:ActionQueue_UseAbilityOnLocation( abilityW, castWLocation )
-		return
-	end
-	
-	castEDesire = X.ConsiderE()
-	if ( castEDesire > 0 )
-	then
-		bot:Action_ClearActions( false )
-		bot:ActionQueue_UseAbility( abilityE )
-		return
-	end
-
-	castASDesire, castASTarget = X.ConsiderAS()
-	if ( castASDesire > 0 )
-	then
-		J.SetQueuePtToINT( bot, true )
-		bot:ActionQueue_UseAbilityOnEntity( abilityAS, castASTarget )
-		return
-	end
-
-
+    if abilityAS ~= nil and SpellDecisions.ConsiderStolenSpell(abilityAS) then return end
+    if SpellDecisions.ConsiderStolenSpell(abilityQ) then return end
+    SpellDecisions.ConsiderStolenSpell(abilityW)
 end
 
 function X.ConsiderTarget()
@@ -171,7 +132,7 @@ function X.ConsiderTarget()
 		or bot:HasModifier( "modifier_item_hurricane_pike_range" )
 	then return end
 
-	local nAttackRange = math.max(1600, bot:GetAttackRange() + 60)
+	local nAttackRange = math.min(1600, bot:GetAttackRange() + 60)
 	local nInAttackRangeWeakestEnemyHero = J.GetAttackableWeakestUnit( bot, nAttackRange, true, true )
 
 	local npcTarget = J.GetProperTarget( bot )
@@ -189,398 +150,21 @@ function X.ConsiderTarget()
 end
 
 function X.ConsiderQ()
-	if not abilityQ:IsFullyCastable() then return 0 end
-
-	local nCastRange = J.GetProperCastRange(false, bot, abilityQ:GetCastRange())
-    local nDamage = abilityQ:GetSpecialValueInt('damage')
-	
-	-- local nCastPoint = abilityQ:GetCastPoint()
-	-- local nRadius = abilityQ:GetSpecialValueInt('bounce_range')
-    -- local nSpeed = abilityQ:GetSpecialValueInt('projectile_speed')
-    -- local nAbilityLevel = abilityQ:GetLevel()
-
-    local nEnemyHeroes = J.GetNearbyHeroes(bot,nCastRange, true, BOT_MODE_NONE)
-
-	-- Interrupt channeling enemies (high priority)
-	for _, enemyHero in pairs(nEnemyHeroes)
-	do
-		if J.IsValidHero( enemyHero )
-		and J.IsInRange( bot, enemyHero, nCastRange )
-		and J.CanCastOnNonMagicImmune( enemyHero )
-		and J.CanCastOnTargetAdvanced( enemyHero )
-		and enemyHero:IsChanneling()
-		and not J.IsSuspiciousIllusion(enemyHero)
-		then
-			return BOT_ACTION_DESIRE_HIGH, enemyHero, 'Q-InterruptChannel'
-		end
-	end
-
-	-- get the kill
-    for _, enemyHero in pairs(nEnemyHeroes)
-    do
-		if J.IsValidHero( enemyHero )
-		and J.IsInRange( bot, enemyHero, nCastRange )
-		and J.CanCastOnNonMagicImmune( enemyHero )
-		and J.CanCastOnTargetAdvanced( enemyHero )
-        and J.CanKillTarget(enemyHero, nDamage, DAMAGE_TYPE_PHYSICAL)
-        and not J.IsSuspiciousIllusion(enemyHero)
-		then
-			return BOT_ACTION_DESIRE_HIGH, enemyHero, 'Q-Kill'
-		end
-    end
-
-	--进攻
-	if J.IsGoingOnSomeone( bot )
-	then
-		if J.IsValidHero( botTarget )
-			and J.CanCastOnNonMagicImmune( botTarget )
-			and J.CanCastOnTargetAdvanced( botTarget )
-		then
-			return BOT_ACTION_DESIRE_HIGH, botTarget, 'Q-Attack'
-		end
-	end
-
-	--撤退
-	if J.IsRetreating( bot )
-	then
-		for _, npcEnemy in pairs( nEnemyHeroes )
-		do
-			if J.IsValidHero( npcEnemy )
-				and J.CanCastOnNonMagicImmune( npcEnemy )
-				and J.CanCastOnTargetAdvanced( npcEnemy )
-				and bot:WasRecentlyDamagedByHero( npcEnemy, 3.0 )
-			then
-				return BOT_ACTION_DESIRE_HIGH, botTarget, 'Q-Retreat'
-			end
-		end
-	end
-
-	if J.IsDoingRoshan(bot)
-    then
-        if J.IsRoshan(botTarget)
-        and J.IsInRange(bot, botTarget, nCastRange)
-        and J.IsAttacking(bot)
-        then
-            return BOT_ACTION_DESIRE_HIGH, botTarget
-        end
-    end
-
-    if J.IsDoingTormentor(bot)
-    then
-        if J.IsTormentor(botTarget)
-        and J.IsInRange(bot, botTarget, nCastRange)
-        and J.IsAttacking(bot)
-        then
-            return BOT_ACTION_DESIRE_HIGH, botTarget
-        end
-    end
-
-	return BOT_ACTION_DESIRE_NONE
+    local target=SpellDecisions.DeadShotTarget(abilityQ)
+    return target~=nil and BOT_ACTION_DESIRE_HIGH or BOT_ACTION_DESIRE_NONE,target
 end
-
 function X.ConsiderW()
-
-	if not abilityW:IsFullyCastable() then return 0 end
-
-	local nCastRange = abilityW:GetCastRange() + 200
-	local nSkillLV = abilityW:GetLevel()
-	local nRadius = abilityW:GetAOERadius()
-	local nCastPoint = abilityW:GetCastPoint()
-	local botLocation = bot:GetLocation()
-
-	local nEnemysHeroesInSkillRange = J.GetNearbyHeroes(bot, nCastRange, true, BOT_MODE_NONE )
-
-	-- Interrupt channeling enemies: center The Calling silence on them
-	for _, enemyHero in pairs(nEnemysHeroesInSkillRange)
-	do
-		if J.IsValidHero( enemyHero )
-		and J.IsInRange( bot, enemyHero, nCastRange )
-		and J.CanCastOnNonMagicImmune( enemyHero )
-		and enemyHero:IsChanneling()
-		and not J.IsSuspiciousIllusion(enemyHero)
-		then
-			return BOT_ACTION_DESIRE_HIGH, enemyHero:GetLocation()
-		end
-	end
-
-	local nCanHurtHeroLocationAoE = bot:FindAoELocation( true, true, botLocation, nCastRange, nRadius-30, 0.8, 0 )
-
-	--对多个敌方英雄使用
-	if #nEnemysHeroesInSkillRange >= 2
-		and ( nCanHurtHeroLocationAoE.cout ~= nil and nCanHurtHeroLocationAoE.cout >= 2 )
-		and bot:GetActiveMode() ~= BOT_MODE_LANING
-		and ( bot:GetActiveMode() ~= BOT_MODE_RETREAT or ( bot:GetActiveMode() == BOT_MODE_RETREAT and bot:GetActiveModeDesire() < 0.6 ) )
-	then
-		return BOT_ACTION_DESIRE_HIGH, nCanHurtHeroLocationAoE.targetloc
-	end
-
-	--对当前目标英雄使用
-	if J.IsGoingOnSomeone(bot)
-	then
-		if J.IsValidHero( botTarget )
-			and J.CanCastOnNonMagicImmune( botTarget )
-			and J.IsInRange( botTarget, bot, nCastRange + 300 )
-			and ( nSkillLV >= 3 or bot:GetMana() >= nKeepMana )
-		then
-
-			if botTarget:IsFacingLocation( J.GetEnemyFountain(), 30 )
-				and J.GetHP( botTarget ) < 0.4
-				and J.IsRunning( botTarget )
-			then
-				--追击减速当前目标
-				for i=0, 800, 200
-				do
-					local nCastLocation = J.GetLocationTowardDistanceLocation( botTarget, J.GetEnemyFountain(), nRadius + 800 - i )
-					if GetUnitToLocationDistance( bot, nCastLocation ) <= nCastRange + 200
-					then
-						return BOT_ACTION_DESIRE_HIGH, nCastLocation
-					end
-				end
-			end
-
-			--对当前目标使用技能
-			local npcTargetLocInFuture = J.GetCorrectLoc( botTarget, nCastPoint + 1.8 )
-			if J.GetLocationToLocationDistance( botTarget:GetLocation(), npcTargetLocInFuture ) > 300
-				and botTarget:GetMovementDirectionStability() > 0.4
-			then
-				return BOT_ACTION_DESIRE_HIGH, npcTargetLocInFuture
-			end
-
-			--近处预测将到近处来的目标
-			local castDistance = GetUnitToUnitDistance( bot, botTarget )
-			if botTarget:IsFacingLocation( botLocation, 30 ) and J.IsMoving( botTarget )
-			then
-				if castDistance > 400
-				then
-					castDistance = castDistance - 200
-				end
-				return BOT_ACTION_DESIRE_HIGH, J.GetUnitTowardDistanceLocation( bot, botTarget, castDistance )
-			end
-
-			--远处预测将到远处去的目标
-			if bot:IsFacingLocation( botTarget:GetLocation(), 30 )
-			then
-				if castDistance <= nCastRange - 200
-				then
-					castDistance = castDistance + 400
-				else
-					castDistance = nCastRange + 300
-				end
-				return BOT_ACTION_DESIRE_HIGH, J.GetUnitTowardDistanceLocation( bot, botTarget, castDistance )
-			end
-
-			--目标位置无规律
-			return BOT_ACTION_DESIRE_HIGH, J.GetLocationTowardDistanceLocation( botTarget, J.GetEnemyFountain(), nRadius/2 )
-
-		end
-	end
-
-	--撤退时
-	if J.IsRetreating( bot )
-		and not bot:IsInvisible()
-	then
-		local nCanHurtHeroLocationAoENearby = bot:FindAoELocation( true, true, botLocation, nCastRange - 400, nRadius, 1.5, 0 )
-		if nCanHurtHeroLocationAoENearby.count >= 2
-		then
-			return BOT_ACTION_DESIRE_HIGH, nCanHurtHeroLocationAoENearby.targetloc
-		end
-
-		if bot:GetActiveModeDesire() > 0.8
-		then
-			local nEnemyNearby = J.GetNearbyHeroes(bot, 800, true, BOT_MODE_NONE )
-			for _, npcEnemy in pairs( nEnemyNearby )
-			do
-				if J.IsValid( npcEnemy )
-					and bot:WasRecentlyDamagedByHero( npcEnemy, 2.0 )
-					and J.CanCastOnNonMagicImmune( npcEnemy )
-				then
-					local nCastLocation = ( botLocation + npcEnemy:GetLocation() )/2
-                    --对特定位置使用技能
-                    return BOT_ACTION_DESIRE_HIGH, nCastLocation
-				end
-			end
-		end
-	end
-
-	if J.IsFarming( bot ) and bot:GetMana() >= nKeepMana
-	then
-		local nNeutralCreeps = bot:GetNearbyNeutralCreeps( 800 )
-		if #nNeutralCreeps >= 4
-			and J.IsValid( botTarget )
-			and not J.CanKillTarget( botTarget, bot:GetAttackDamage() * 3.88 , DAMAGE_TYPE_PHYSICAL )
-		then
-			local nAoE = bot:FindAoELocation( true, false, botLocation, nCastRange, nRadius, 0.8, 0 )
-			if nAoE.count >= 5
-			then
-				return BOT_ACTION_DESIRE_HIGH, nAoE.targetloc
-			end
-		end
-	end
-
-	if bot:GetActiveMode() == BOT_MODE_ROSHAN
-	then
-		local nAttackTarget = bot:GetAttackTarget()
-		if J.IsValid( nAttackTarget )
-			and J.GetHP( nAttackTarget ) > 0.5
-			and J.IsInRange( nAttackTarget, bot, 600 )
-		then
-			local nAllies = J.GetNearbyHeroes(bot, 800, false, BOT_MODE_ROSHAN )
-			if #nAllies >= 4
-			then
-				return BOT_ACTION_DESIRE_HIGH, nAttackTarget:GetLocation()
-			end
-		end
-	end
-
-	return 0
+    local point=SpellDecisions.CallingPoint(abilityW)
+    return point~=nil and BOT_ACTION_DESIRE_HIGH or BOT_ACTION_DESIRE_NONE,point
 end
-
 function X.ConsiderE()
-	if not abilityE:IsTrained() or not abilityE:IsFullyCastable() then 
-        return BOT_ACTION_DESIRE_NONE 
-    end
-
-    if not abilityE:GetToggleState() then
-        return BOT_ACTION_DESIRE_HIGH
-    end
-	return BOT_ACTION_DESIRE_NONE
+    return BOT_ACTION_DESIRE_NONE -- Gunslinger is maintained by the guarded immediate utility.
 end
-
 function X.ConsiderR()
-
-	if not abilityR:IsFullyCastable() then return 0 end
-
-    local nAttackRange = bot:GetAttackRange()
-	local nEnemyHeroes = J.GetNearbyHeroes(bot, 1000, true, BOT_MODE_NONE )
-
-    if J.IsRetreating( bot )
-	then
-		if bot:WasRecentlyDamagedByAnyHero( 2.0 ) and #nEnemyHeroes > 0 and J.GetHP(bot) < 0.5
-		then
-			return BOT_ACTION_DESIRE_MODERATE
-		end
-	end
-
-	if J.IsWithoutTarget( bot ) and J.GetAttackProjectileDamageByRange( bot, 800 ) >= bot:GetHealth()
-	then
-		return BOT_ACTION_DESIRE_MODERATE
-	end
-
-	if J.IsGoingOnSomeone( bot ) and false
-	then
-		local npcTarget = bot:GetTarget()
-		if J.IsValidHero( npcTarget )
-			and J.IsInRange( npcTarget, bot, nAttackRange )
-		then
-            if J.GetHP(npcTarget) <= 0.7 then return BOT_ACTION_DESIRE_MODERATE end
-
-            if npcTarget:HasModifier('modifier_item_ethereal_blade_ethereal')
-            or npcTarget:HasModifier('modifier_necrophos_death_seeker_ethereal')
-            or npcTarget:HasModifier('modifier_necrolyte_sadist_active')
-            or npcTarget:HasModifier('modifier_pugna_decrepify')
-            or npcTarget:HasModifier('modifier_ghost_state')
-            then
-		        return BOT_ACTION_DESIRE_HIGH
-            end
-		end
-	end
-
-	if not bot:IsMagicImmune()
-    and not bot:IsInvulnerable()
-    and J.IsInTeamFight(bot)
-	then
-        if J.GetEnemyCount(bot, 1000) >= 2
-		then
-			return BOT_ACTION_DESIRE_HIGH
-		end
-    end
-	return 0
+    return SpellDecisions.ShouldVeil(abilityR) and BOT_ACTION_DESIRE_HIGH or BOT_ACTION_DESIRE_NONE
 end
-
 function X.ConsiderAS()
-
-	if not abilityAS:IsTrained()
-		or not abilityAS:IsFullyCastable()
-	then
-		return BOT_ACTION_DESIRE_NONE, 0
-	end
-
-	local nCastRange = abilityAS:GetCastRange() + 200
-	-- local nRadius = 100
-	-- local nCastPoint = abilityAS:GetCastPoint()
-	-- local nManaCost = abilityAS:GetManaCost()
-
-	local nInBonusEnemyList = J.GetAroundEnemyHeroList( nCastRange + 200 )
-
-	--撤退时保护自己
-	if J.IsRetreating( bot )
-		and ( bot:WasRecentlyDamagedByAnyHero( 3.0 ) or bot:GetActiveModeDesire() > 0.7 )
-	then
-		for _, npcEnemy in pairs( nInBonusEnemyList )
-		do
-			if J.IsValid( npcEnemy )
-				and J.CanCastOnNonMagicImmune( npcEnemy )
-				and J.CanCastOnTargetAdvanced( npcEnemy )
-				and not J.IsDisabled( npcEnemy )
-				and not npcEnemy:IsDisarmed()
-			then
-				local hCastTarget = npcEnemy
-				local sCastMotive = '撤退'
-				return BOT_ACTION_DESIRE_HIGH, hCastTarget, sCastMotive
-			end
-		end
-	end
-
-	--团战中对最能输出的人使用
-	if J.IsInTeamFight( bot, 1200 )
-	then
-		local npcStrongestEnemy = nil
-		local nStrongestPower = 0
-		local nEnemyCount = 0
-		
-		for _, npcEnemy in pairs( nInBonusEnemyList )
-		do
-			if J.IsValid( npcEnemy )
-				and J.CanCastOnNonMagicImmune( npcEnemy )
-			then
-				nEnemyCount = nEnemyCount + 1
-				if J.CanCastOnTargetAdvanced( npcEnemy )
-					and not J.IsDisabled( npcEnemy )
-					and not npcEnemy:IsDisarmed()
-				then
-					local npcEnemyPower = npcEnemy:GetEstimatedDamageToTarget( true, bot, 6.0, DAMAGE_TYPE_ALL )
-					if ( npcEnemyPower > nStrongestPower )
-					then
-						nStrongestPower = npcEnemyPower
-						npcStrongestEnemy = npcEnemy
-					end
-				end
-			end
-		end
-
-		if npcStrongestEnemy ~= nil and nEnemyCount >= 2
-			and J.IsInRange( bot, npcStrongestEnemy, nCastRange + 150 )
-		then
-			local hCastTarget = npcStrongestEnemy
-			local sCastMotive = '团战控制输出'
-			return BOT_ACTION_DESIRE_HIGH, hCastTarget, sCastMotive
-		end
-	end
-
-	if J.IsGoingOnSomeone( bot )
-	then
-		local targetHero = J.GetProperTarget( bot )
-		if J.IsValidHero( targetHero )
-			and J.IsInRange( bot, targetHero, nCastRange )
-			and J.CanCastOnNonMagicImmune( targetHero )
-		then
-			return BOT_ACTION_DESIRE_HIGH, targetHero
-		end
-	end
-
-	return BOT_ACTION_DESIRE_NONE, 0
-
+    local target=SpellDecisions.SlugTarget(abilityAS)
+    return target~=nil and BOT_ACTION_DESIRE_HIGH or BOT_ACTION_DESIRE_NONE,target
 end
-
-
 return X

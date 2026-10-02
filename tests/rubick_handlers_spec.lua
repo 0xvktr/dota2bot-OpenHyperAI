@@ -40,7 +40,6 @@ function bot:HasModifier() return false end
 function bot:GetAbilityByName() return nil end
 function bot:GetItemInSlot() return nil end
 function bot:GetActiveMode() return 0 end
-function bot:HasShard() return false end
 function bot:HasScepter() return false end
 function bot:GetAttackDamage() return 100 end
 for _,name in ipairs({'Action_UseAbility','Action_UseAbilityOnEntity','Action_UseAbilityOnLocation',
@@ -86,8 +85,25 @@ local function Spell(name, values)
     function a:GetSpecialValueFloat(key) return values and values[key] or 1.5 end
     return a
 end
+local clockDesire = 0
 local function Load(name)
-    return H.realDofile('bots/FunLib/rubick_hero/'..name..'.lua')
+    if name ~= 'rattletrap' then return H.realDofile('bots/FunLib/rubick_hero/'..name..'.lua') end
+    -- Spell decisions have their own behavioral suite. Stub their boundary here
+    -- so this fixture still verifies the real recognized/unknown/action contract.
+    local oldRequire = require
+    require = function(path)
+        if path ~= 'bots/FunLib/clockwerk_abilities' then return oldRequire(path) end
+        local decisions = {}
+        for _,key in ipairs({'Battery','Cogs','Flare','Hook','Jetpack','JetpackToggle','Overclock'}) do
+            decisions[key] = function()
+                return clockDesire, (key=='Flare' or key=='Hook') and target:GetLocation() or nil
+            end
+        end
+        return decisions
+    end
+    local module = H.realDofile('bots/FunLib/rubick_hero/'..name..'.lua')
+    require = oldRequire
+    return module
 end
 local cases={
     abaddon={'abaddon_aphotic_shield','abaddon_death_coil'},
@@ -126,6 +142,7 @@ local cases={
 local count=0
 for hero,names in pairs(cases) do
     for _,name in ipairs(names) do
+        clockDesire=0
         local X=Load(hero)
         for key in pairs(X) do
             if key:match('^Consider') and key ~= 'ConsiderStolenSpell' then
@@ -144,6 +161,7 @@ for hero,names in pairs(cases) do
         assert(X.ConsiderStolenSpell(Spell('unrecognized_spell'))==nil and #actions==0, hero..' unknown must preserve fallback')
         assert(X.ConsiderStolenSpell(ability)==false and #actions==0, hero..' blocked known spell must stop fallback')
         blocked=false
+        clockDesire=1
         for key in pairs(X) do
             if key:match('^Consider') and key ~= 'ConsiderStolenSpell' then
                 X[key]=function() return 1,target end

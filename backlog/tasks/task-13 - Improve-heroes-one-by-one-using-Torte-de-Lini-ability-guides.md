@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@codex'
 created_date: '2026-09-29 21:29'
-updated_date: '2026-10-01 18:12'
+updated_date: '2026-10-02 16:24'
 labels:
   - hero
 dependencies: []
@@ -17,6 +17,18 @@ references:
   - tests/hero_harness.lua
 documentation:
   - backlog/docs/doc-2 - Hero-improvement-playbook.md
+modified_files:
+  - bots/BotLib/hero_rubick.lua
+  - bots/FunLib/rubick_utility.lua
+  - bots/ability_item_usage_generic.lua
+  - tests/run-builds.cjs
+  - tests/rubick_hero_spec.lua
+  - tests/rubick_stolen_spec.lua
+  - tests/rubick_handlers_spec.lua
+  - tests/rubick_unknown_handlers_spec.lua
+  - tests/hero_cast_hooks_spec.lua
+  - tests/underlord_ability_spec.lua
+  - tests/od_item_policy_spec.lua
 priority: medium
 ordinal: 13000
 ---
@@ -61,4 +73,16 @@ Fifth standard batch completed offline: Dark Willow TASK13.23, Dawnbreaker TASK1
 Sixth standard batch completed offline: Dragon Knight TASK13.28, Drow Ranger TASK13.29, Earth Spirit TASK13.30, Earthshaker TASK13.31 and Elder Titan TASK13.32 each have3/3 standard-pass criteria checked and are Needs In-Game Test. Source audits include pinned Valve/localization, TDL and full dotacoach Strategy/Counter/Matchup with stale exclusions and lobby boundaries. Native and five dedicated Rubick handlers improved; narrow observed Glacier/Multishot, Magnetize Stone refresh and owned Astral Spirit/minion routing integrated. Independent review fixed short-TP Stomp timing, persisted Spirit touches and physical-immunity lethal estimates; final Roll/Smash/Grip/Echo timing and linkage scenarios added. Final suite exited0:368 Lua files,128 native/32 copy Valve checks with zero findings,127 heroes/253 roles,133 dispatches,68 Rubick cases and272 purchase lists. All five build/skill/talent prefixes unchanged; whitespace clean. TASK21/24 inputs recorded; role differentiation/draft work unchanged. No WeakHeroes flags changed or lobby launched. Engine-only copied grants, movement/upgrade details and Elder Titan alt-cast swap remain documented lobby checks. Parent remains In Progress for remaining roster; no new commit/push in this batch.
 
 Commit/push integration (2026-10-01): remote main advanced through6616fcb item policy and3c1501b early lane-defense. Rebase preserves both remote commits and all20 hero passes. BB Hairball/ordinary Quill retain selected ability handles for item/Treads policy. CK retains remote Clear/action lock and useful low-mana Chaos Bolt consideration, validated restoration in urgent/ordinary branches, and ability-aware normal Bolt/Rift/Phantasm prep; urgent Bolt retains immediate priority, and failed restoration allows other spells. Faithful CK tests cover enabling Mango, changed target, post-restoration reconsideration, no-item Rift fallback and queued lock. Independent merged review passed. Combined node tests/run-builds.cjs and node tests/run-objectives.cjs both exited0;375 Lua files,128 native/32 copy Valve checks with zero findings,133 copied dispatches,68 Rubick cases and272 purchase lists, plus remote item-policy and lane-defense/objective regressions. No game launched.
+
+2026-10-02: Started the requested 49-hero Ember Spirit through Pugna batch in hero-file alphabetical order, excluding Invoker and Lone Druid (including bear). User confirmed file order. Three disjoint hero ranges are being implemented with root-owned shared integration and per-hero Backlog/source/lobby records; no builds, draft policy or WeakHeroes flags will change. Public TDL guides, full dotacoach hero/Matchup pages and pinned Valve KV/localization downloaded as temporary research caches.
+
+2026-10-02: Requested Ember Spirit → Pugna batch completed offline in hero-file order, 49 heroes excluding Invoker and Lone Druid; includes Nature's Prophet and Shadow Fiend. TASK-13.33 through TASK-13.81 have all three standard-pass AC checked and are Needs In-Game Test. Per-hero source checklists, stale claims, native/copied changes, offline regressions and lobby limitations recorded. All 49 specs registered; Final integrated verification: node tests/run-builds.cjs, node tests/run-objectives.cjs, node tests/valve_ability_check.cjs and git diff --check passed. Build/skill/talent preference AST comparison passed for all 49 scoped heroes. Native and applicable copied regressions are registered in run-builds. Framework callbacks and unsupported-spell dispatch preservation are covered. No game launched; the recorded lobby checklist remains required.
+Item and counterplay observations appended to existing TASK-21/TASK-24. Weak-hero labels/milestone retained on applicable passes; deep hero mechanics remain distinct from this standard pass. Umbrella remains In Progress for the remaining roster.
+
+2026-10-02: Started the requested final standard batch: 43 heroes in hero-file order from queenofpain (Queen of Pain) through zuus (Zeus), including rattletrap (Clockwerk) and wisp (Io), excluding Rubick own standard pass. Native/copied fixes, full Dotacoach Strategy/Counter Strategy/Matchup review and focused regressions follow doc 2. First active passes are TASK-13.82 Queen of Pain, TASK-13.83 Snapfire and TASK-13.84 Tusk. Item and enemy counterplay observations will feed existing TASK-21/TASK-24. The earlier Ember Spirit through Pugna changes remain preserved. Invoker, Lone Druid and Rubick own passes remain deferred.
+
+2026-10-02 shared compatibility review: native Rubick shard query now uses the established actual modifier_item_aghanims_shard convention, without conducting its deferred own hero pass. Narrow same-API repairs applied to previously passed Chen, Dawnbreaker, Earthshaker, Elder Titan, Lina and Grimstroke and documented on their existing subtasks; focused checks passed. Shared integration preserves queued/channel/casting ownership and unsupported-spell dispatch behavior.
+
+2026-10-02: Requested Queen of Pain → Zeus batch completed offline in hero-file order, 43 heroes excluding Rubick own pass; includes Clockwerk and Io. All 43 newly created hero subtasks have all three standard-pass AC checked and are Needs In-Game Test. Per-hero source checklists, stale claims, native/copied changes, offline regressions and lobby limitations recorded. All 43 specs registered; Final integrated verification: node tests/run-builds.cjs, node tests/run-objectives.cjs, node tests/valve_ability_check.cjs and git diff --check passed. Build/skill/talent preference AST comparison passed for all 43 scoped heroes. Native and applicable copied regressions are registered in run-builds. Framework callbacks and unsupported-spell dispatch preservation are covered. No game launched; the recorded lobby checklist remains required.
+Item and counterplay observations appended to existing TASK-21/TASK-24. Weak-hero labels/milestone retained on applicable passes; deep hero mechanics remain distinct from this standard pass. Standard passes now cover 124 of 127 heroes. Invoker, Lone Druid and Rubick own passes remain explicitly deferred; umbrella remains In Progress for these and required lobby validation.
 <!-- SECTION:NOTES:END -->

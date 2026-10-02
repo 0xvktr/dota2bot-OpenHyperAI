@@ -186,7 +186,7 @@ end
 local function ShockHit(unit, point, delay)
     if not ShockAvailable() or not DamageUnit(unit) then return false end
     if (J.GetCorrectLoc(unit,delay)-point):Length2D()<=Aftershock:GetSpecialValueInt('aftershock_range') then return true end
-    if bot:HasShard() and Fissure~=nil and not Fissure:IsNull() then
+    if bot:HasModifier('modifier_item_aghanims_shard') and Fissure~=nil and not Fissure:IsNull() then
         for _,ridge in pairs(ridges) do
             if ridge.expires>DotaTime()+delay and LineHit(unit,ridge.origin,ridge.endpoint,
                 Fissure:GetSpecialValueInt('fissure_radius'),delay) then return true end

@@ -67,13 +67,14 @@ local J={
 package.loaded['bots/FunLib/jmz_func']=J
 for _,name in ipairs({'abaddon','abyssal_underlord','alchemist','ancient_apparition','antimage','arc_warden',
     'axe','bane','batrider','beastmaster','bloodseeker','bounty_hunter','brewmaster','bristleback',
-    'broodmother','centaur','chaos_knight','chen','clinkz','crystal_maiden','rattletrap','dark_seer','dark_willow','dawnbreaker','death_prophet','disruptor','doom_bringer','dragon_knight','drow_ranger','earth_spirit','earthshaker','elder_titan'}) do
-    package.loaded['bots/FunLib/rubick_hero/'..name]={UseGlacierDuringMultishot=function() return false end,UseMagnetizeStone=function() return false end,UseAstralSpirit=function() return false end,HandleAstralSpiritMinion=function() return false end,ObserveGlimpseHistory=function() end,UseShadowRealmDuringChannel=function() return false end,UsePendingConverge=function() return false end,UseFreezingFieldSpell=function() return false end,UseBarrageInvisibility=function() return false end,UsePendingStomp=function() return false end,UsePendingGate=function() return false end,ConsiderStolenSpell=function(ability)
+    'broodmother','centaur','chaos_knight','chen','clinkz','crystal_maiden','rattletrap','dark_seer','dark_willow','dawnbreaker','death_prophet','disruptor','doom_bringer','dragon_knight','drow_ranger','earth_spirit','earthshaker','elder_titan','leshrac','naga_siren','ember_spirit','lich','necrolyte','enchantress','life_stealer','lina','nevermore','night_stalker','enigma','lion','nyx_assassin','luna','faceless_void','lycan','obsidian_destroyer','furion','magnataur','ogre_magi','marci','mars','omniknight','grimstroke','gyrocopter','legion_commander','medusa','hoodwink','oracle','meepo','huskar','pangolier','mirana','jakiro','monkey_king','phantom_assassin','juggernaut','keeper_of_the_light','morphling','phantom_lancer','muerta','phoenix','largo','primal_beast','kez','puck','kunkka','pudge','pugna','snapfire','tusk','queenofpain','sniper','undying','ursa','razor','spectre','riki','vengefulspirit','witch_doctor','spirit_breaker','ringmaster','venomancer','storm_spirit','viper','sand_king','sven','shadow_demon','techies','visage','zuus','void_spirit','shadow_shaman','templar_assassin','shredder','terrorblade','warlock','slardar','slark','tidehunter','weaver','silencer','tinker','skeleton_king','windrunner','skywrath_mage','tiny','winter_wyvern','treant','wisp','troll_warlord'}) do
+    package.loaded['bots/FunLib/rubick_hero/'..name]={ObserveTetherState=function() end,IsRelocating=function() return false end,UseBattleStance=function() return false end,ConsiderStolenArcticBurnToggle=function() return false end,ConsiderStolenPowershotSafety=function() return false end,ConsiderStolenPoisonAutoCast=function() return false end,ConsiderStolenGeminateAutoCast=function() return false end,ObserveStolenTimeLapseHistory=function() end,UseShadowDanceSpells=function() return false end,UseSpellsDuringTimberChain=function() return false end,ConsiderStolenUpheavalSafety=function() return false end,UseDisabledRefraction=function() return false end,ConsiderStolenDissimilatePortal=function() return false end,UseLightningHands=function() return false end,UseCarnivalSouvenir=function() return false end,UseTameTheBeastsCrack=function() return false end,UseBallFlightSpells=function() return false end,IsCharging=function() return false end,UseChargeSupport=function() return false end,UseRestorationDuringChannel=function() return false end,UseSmokeDuringTricks=function() return false end,ConsiderStolenDisabledEnrage=function() return false end,ConsiderStolenTombstoneMinion=function() return false end,ConsiderStolenSnowballContinuation=function() return false end,ConsiderStolenLifeDrainContinuation=function() return false end,ConsiderStolenDismemberSupport=function() return false end,ConsiderStolenPhaseJaunt=function() return false end,UseRhapsodyOff=function() return false end,ConsiderStolenPrimalContinuation=function() return false end,ConsiderStolenEggSunRay=function() return false end,UseGunslinger=function() return false end,UseStrengthShift=function() return false end,UseIlluminateRelease=function() return false end,UseHealingWardDuringSlash=function() return false end,UseSharpshooterRelease=function() return false end,ConsiderStolenFortuneRelease=function() return false end,UseSplitShot=function() return false end,ConsiderSilencedSpell=function() return false end,StopDrain=function() return false end,UseConsume=function() return false end,UseChainsDuringSleight=function() return false end,UseDuringGaze=function() return false end,UsePulseNovaOff=function() return false end,UseGlacierDuringMultishot=function() return false end,UseMagnetizeStone=function() return false end,UseAstralSpirit=function() return false end,HandleLycanMinion=function() return false end,HandleAstralSpiritMinion=function() return false end,ObserveGlimpseHistory=function() end,UseShadowRealmDuringChannel=function() return false end,UsePendingConverge=function() return false end,UseFreezingFieldSpell=function() return false end,UseBarrageInvisibility=function() return false end,UsePendingStomp=function() return false end,UsePendingGate=function() return false end,ConsiderStolenSpell=function(ability)
         handlerCalls=handlerCalls+1
         if specialized == true then action('specialized',ability) end
         return specialized
     end}
 end
+function bot:GetAbilityByName() return nil end
 local R=dofile('bots/FunLib/rubick_utility.lua')
 local function ability(name, behavior, team, targetType)
     local a={name=name,behavior=behavior,team=team or 2,targetType=targetType or 1,
@@ -190,5 +191,23 @@ for _,state in ipairs({'dead','stunned','hexed','nightmared','queued','channelin
     elseif state=='queued' then queued=true elseif state=='channeling' then channeling=true
     elseif state=='casting' then casting=true else using=true end
     declined(ability('ancient_apparition_ice_blast_release',4),'AA silence exemption respects '..state)
+end
+-- Cooldown-insensitive autocast callbacks must run before ordinary cast readiness.
+for _,name in ipairs({'ConsiderGeminateAutoCast','ConsiderPoisonAutoCast'}) do
+    local original=R[name]
+    local candidate=ability('test_autocast',8);candidate.ready=false
+    R[name]=function()
+        if blocked or silenced or not alive or stunned or hexed or nightmared or queued
+            or channeling or casting or using then return false end
+        action('autocast',candidate);return true
+    end
+    reset();assert(R.ConsiderStolenSpell(candidate) and #actions==1 and actions[1].shape=='autocast' and handlerCalls==0)
+    for _,state in ipairs({'channeling','using','casting','silenced','queued'}) do
+        reset()
+        if state=='channeling' then channeling=true elseif state=='using' then using=true
+        elseif state=='casting' then casting=true elseif state=='silenced' then silenced=true else queued=true end
+        declined(candidate,'autocast callback preserves '..state)
+    end
+    R[name]=original
 end
 print('Rubick stolen dispatcher, cast shapes, target masks, radii, support intent and channel safety passed')

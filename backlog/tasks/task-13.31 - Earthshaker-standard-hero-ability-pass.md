@@ -5,7 +5,7 @@ status: Needs In-Game Test
 assignee:
   - '@codex'
 created_date: '2026-10-01 17:35'
-updated_date: '2026-10-01 18:02'
+updated_date: '2026-10-02 15:48'
 labels:
   - hero
 dependencies: []
@@ -13,6 +13,10 @@ references:
   - bots/BotLib/hero_earthshaker.lua
 documentation:
   - backlog/docs/doc-2 - Hero-improvement-playbook.md
+modified_files:
+  - bots/FunLib/rubick_hero/earthshaker.lua
+  - bots/BotLib/hero_earthshaker.lua
+  - tests/earthshaker_ability_spec.lua
 parent_task_id: TASK-13
 priority: medium
 ordinal: 71000
@@ -55,6 +59,8 @@ Lobby checks: live Scepter GetBehavior and documented self-target cast, cast spe
 TASK-21 candidates: prebuff Totem before Blink approach, BKB before exposing caster to disables, Euls setup and cast-speed alignment, Force reposition after combo, Refresher only with complete second combo mana. TASK-24 candidates: spread from nearby bodies including summons before Echo, chip caster to cancel Blink, respect long Fissure cast/wall crossing, immunity before control, terrain/flight escape and interrupt Scepter landing; strong dispels and reflection have current-mechanics limits. Source claims about obsolete Wraith King facets and no-budget double Echo are excluded; draft synergy with group control remains separate.
 
 Final integrated verification: node tests/run-builds.cjs exited0 after all final reviews/corrections. Exact five hero markers passed;368 Lua files parse,128 native/32 Rubick Valve checks with zero findings,127 heroes/253 roles,133 specialized dispatches,68 Rubick native behavior cases and272 purchase lists. All five native build/skill/talent prefixes remain byte-identical with HEAD; git diff --check passed. Shared dispatcher registers all five dedicated handlers; narrow observed Drow Glacier, Earth Spirit Magnetize Stone and owned Elder Titan Spirit/minion hooks are covered. TASK21/24 source-derived observations recorded. No engine lobby launched; remaining capability boundaries are in each task checklist.
+
+2026-10-02 integration API follow-up: replaced undocumented HasShard() calls with the existing modifier_item_aghanims_shard convention used by this repository. Fixtures use the actual modifier query, retaining shard state scenarios. Focused hero scenarios passed; builds and skill/talent preferences retained. Lobby verification remains required.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

@@ -72,372 +72,120 @@ function X.MinionThink(hMinionUnit)
 	Minion.MinionThink(hMinionUnit)
 end
 
-local GraveChill        = bot:GetAbilityByName('visage_grave_chill')
-local SoulAssumption    = bot:GetAbilityByName('visage_soul_assumption')
-local GravekeepersCloak = bot:GetAbilityByName('visage_gravekeepers_cloak')
-local SilentAsTheGrave  = bot:GetAbilityByName('visage_silent_as_the_grave')
-local SummonFamiliars   = bot:GetAbilityByName('visage_summon_familiars')
-
-local GraveChillDesire, GraveChillTarget
-local SoulAssumptionDesire, SoulAssumptionTarget
-local GravekeepersCloakDesire
-local SilentAsTheGraveDesire
-local SummonFamiliarsDesire
-
-local botTarget
-
-function X.SkillsComplement()
-	if J.CanNotUseAbility(bot) then return end
-
-    botTarget = J.GetProperTarget(bot)
-
-    GraveChillDesire, GraveChillTarget = X.ConsiderGraveChill()
-    if GraveChillDesire > 0
-    then
-        bot:Action_UseAbilityOnEntity(GraveChill, GraveChillTarget)
-        return
-    end
-
-    SoulAssumptionDesire, SoulAssumptionTarget = X.ConsiderSoulAssumption()
-    if SoulAssumptionDesire > 0
-    then
-        bot:Action_UseAbilityOnEntity(SoulAssumption, SoulAssumptionTarget)
-        return
-    end
-
-    GravekeepersCloakDesire = X.ConsiderGravekeepersCloak()
-    if GravekeepersCloakDesire > 0
-    then
-        bot:Action_UseAbility(GravekeepersCloak)
-        return
-    end
-
-    SilentAsTheGraveDesire = X.ConsiderSilentAsTheGrave()
-    if SilentAsTheGraveDesire > 0
-    then
-        bot:Action_UseAbility(SilentAsTheGrave)
-        return
-    end
-
-    -- Bugged. New facet in 7.36 modified the ability so Action_UseAbility only toggle the ability not using it, whoever there is no other api to cast this ability now.
-    SummonFamiliarsDesire = X.ConsiderSummonFamiliars()
-    if SummonFamiliarsDesire > 0
-    then
-        bot:Action_UseAbility(SummonFamiliars)
-        return
-    end
+local GraveChill,SoulAssumption,GravekeepersCloak,SilentAsTheGrave,SummonFamiliars
+local function Refresh()
+ bot=GetBot();GraveChill=bot:GetAbilityByName('visage_grave_chill');SoulAssumption=bot:GetAbilityByName('visage_soul_assumption');GravekeepersCloak=bot:GetAbilityByName('visage_gravekeepers_cloak');SilentAsTheGrave=bot:GetAbilityByName('visage_silent_as_the_grave');SummonFamiliars=bot:GetAbilityByName('visage_summon_familiars')
 end
-
+local function Range(ability)
+ local range=ability:GetCastRange()
+ for slot=0,5 do
+  local item=bot:GetItemInSlot(slot)
+  if item~=nil and not item:IsNull() and item:GetName()=='item_aether_lens' then range=range+item:GetSpecialValueInt('cast_range_bonus');break end
+ end
+ local passive=bot:GetAbilityByName('rubick_arcane_supremacy')
+ if passive~=nil and not passive:IsNull() and passive:IsTrained() and not J.HasBreakModifier(bot) then range=range+passive:GetSpecialValueInt('cast_range') end
+ return range
+end
+local function Enemy(unit)
+ return J.IsValid(unit) and J.CanCastOnNonMagicImmune(unit) and J.CanCastOnTargetAdvanced(unit) and not J.CannotBeKilled(bot,unit)
+  and not unit:HasModifier('modifier_item_blade_mail_reflect') and not unit:HasModifier('modifier_nyx_assassin_spiked_carapace')
+end
+local function Useful(enemy)
+ if J.IsGoingOnSomeone(bot) and enemy==J.GetProperTarget(bot) then return true end
+ if J.IsRetreating(bot) and J.IsChasingTarget(enemy,bot) then return true end
+ for _,ally in ipairs(J.GetNearbyHeroes(bot,1200,false,BOT_MODE_NONE)) do
+  if J.IsValidHero(ally) and not ally:IsIllusion() and ally:WasRecentlyDamagedByAnyHero(2) and J.IsChasingTarget(enemy,ally) then return true end
+ end
+ return false
+end
+local function FlightApproach()
+ local target=J.GetProperTarget(bot)
+ return bot:HasModifier('modifier_visage_silent_as_the_grave') and J.IsGoingOnSomeone(bot) and J.IsValidHero(target)
+  and GetUnitToUnitDistance(bot,target)>bot:GetAttackRange()+100 and not bot:WasRecentlyDamagedByAnyHero(1)
+end
 function X.ConsiderGraveChill()
-    if not GraveChill:IsFullyCastable()
-    then
-        return BOT_ACTION_DESIRE_NONE, nil
-    end
-
-    local nCastRange = J.GetProperCastRange(false, bot, GraveChill:GetCastRange())
-
-	if J.IsGoingOnSomeone(bot)
-	then
-        local target = nil
-        local atkSpd = 0
-        local nInRangeEnemy = J.GetNearbyHeroes(bot,nCastRange, true, BOT_MODE_NONE)
-        for _, enemyHero in pairs(nInRangeEnemy)
-        do
-            if J.IsValidTarget(enemyHero)
-            and J.CanCastOnNonMagicImmune(enemyHero)
-            and J.IsInRange(bot, enemyHero, nCastRange)
-            and not J.IsSuspiciousIllusion(enemyHero)
-            then
-                local nInRangeAlly = J.GetNearbyHeroes(enemyHero, 1200, true, BOT_MODE_NONE)
-                local nTargetInRangeAlly = J.GetNearbyHeroes(enemyHero, 1200, false, BOT_MODE_NONE)
-                local currAtkSpd = enemyHero:GetAttackSpeed()
-
-                if nInRangeAlly ~= nil and nTargetInRangeAlly ~= nil
-                and #nInRangeAlly >= #nTargetInRangeAlly
-                and currAtkSpd > atkSpd
-                then
-                    atkSpd = currAtkSpd
-                    target = enemyHero
-                end
-            end
-        end
-
-        if target ~= nil
-        then
-            return BOT_ACTION_DESIRE_HIGH, target
-        end
-	end
-
-	if J.IsRetreating(bot)
-	then
-        local nInRangeEnemy = J.GetNearbyHeroes(bot,nCastRange, true, BOT_MODE_NONE)
-        for _, enemyHero in pairs(nInRangeEnemy)
-        do
-            if J.IsValidHero(enemyHero)
-            and J.CanCastOnNonMagicImmune(enemyHero)
-            and J.IsChasingTarget(enemyHero, bot)
-            and not J.IsSuspiciousIllusion(enemyHero)
-            and not J.IsDisabled(enemyHero)
-            then
-                local nInRangeAlly = J.GetNearbyHeroes(enemyHero, 1200, true, BOT_MODE_NONE)
-                local nTargetInRangeAlly = J.GetNearbyHeroes(enemyHero, 1200, false, BOT_MODE_NONE)
-
-                if nInRangeAlly ~= nil and nTargetInRangeAlly ~= nil
-                and ((#nTargetInRangeAlly > #nInRangeAlly)
-                    or bot:WasRecentlyDamagedByAnyHero(1.5))
-                then
-                    return BOT_ACTION_DESIRE_HIGH, enemyHero
-                end
-            end
-        end
-	end
-
-    if J.IsDoingRoshan(bot)
-    then
-        if J.IsRoshan(botTarget)
-        and J.CanCastOnNonMagicImmune(botTarget)
-        and J.IsInRange(bot, botTarget, 500)
-        and J.IsAttacking(bot)
-        then
-            return BOT_ACTION_DESIRE_HIGH, botTarget
-        end
-    end
-
-    if J.IsDoingTormentor(bot)
-    then
-        if J.IsTormentor(botTarget)
-        and J.IsInRange(bot, botTarget, 500)
-        and J.IsAttacking(bot)
-        then
-            return BOT_ACTION_DESIRE_HIGH, botTarget
-        end
-    end
-
-    return BOT_ACTION_DESIRE_NONE, nil
+ if not J.CanCastAbility(GraveChill) or FlightApproach() then return 0 end
+ local range=Range(GraveChill);local choice,best=nil,-1
+ for _,enemy in ipairs(J.GetNearbyHeroes(bot,math.min(range,1600),true,BOT_MODE_NONE)) do
+  if Enemy(enemy) and GetUnitToUnitDistance(bot,enemy)<=range and not enemy:HasModifier('modifier_visage_grave_chill_debuff')
+   and (Useful(enemy) or J.IsInTeamFight(bot,1200) or (J.IsLaning(bot) and J.IsAllowedToSpam(bot,GraveChill:GetManaCost()))) then
+   local score=enemy:GetEstimatedDamageToTarget(false,bot,3,DAMAGE_TYPE_PHYSICAL)
+   if enemy:GetAttackTarget()~=nil then score=score+100 end
+   if enemy==J.GetProperTarget(bot) then score=score+50 end
+   if score>best then choice,best=enemy,score end
+  end
+ end
+ if choice~=nil then return BOT_ACTION_DESIRE_HIGH,choice end
+ local target=J.GetProperTarget(bot)
+ if (J.IsFarming(bot) or J.IsDoingRoshan(bot) or J.IsDoingTormentor(bot)) and Enemy(target) and J.IsAttacking(bot) and GetUnitToUnitDistance(bot,target)<=range
+  and not bot:HasModifier('modifier_visage_grave_chill_buff') and J.IsAllowedToSpam(bot,GraveChill:GetManaCost()) then return BOT_ACTION_DESIRE_HIGH,target end
+ return 0
 end
-
 function X.ConsiderSoulAssumption()
-    if not SoulAssumption:IsFullyCastable()
-    then
-        return BOT_ACTION_DESIRE_NONE, nil
-    end
-
-    local Stacks = 0
-	for i = 0, bot:NumModifiers()
-	do
-		if bot:GetModifierName(i) == 'modifier_visage_soul_assumption'
-        then
-			Stacks = bot:GetModifierStackCount(i)
-			break
-		end
-	end
-
-	local nCastRange = J.GetProperCastRange(false, bot, SoulAssumption:GetCastRange())
-	local nStackLimit = SoulAssumption:GetSpecialValueInt('stack_limit')
-	local nBaseDamage = SoulAssumption:GetSpecialValueInt('soul_base_damage')
-	local nChargeDamage = SoulAssumption:GetSpecialValueInt('soul_charge_damage')
-	local nTotalDamage = nBaseDamage + (Stacks * nChargeDamage)
-
-    local nEnemyHeroes = J.GetNearbyHeroes(bot,nCastRange, true, BOT_MODE_NONE)
-    for _, enemyHero in pairs(nEnemyHeroes)
-    do
-        if J.IsValidHero(enemyHero)
-        and J.CanCastOnNonMagicImmune(enemyHero)
-        and J.CanCastOnTargetAdvanced(enemyHero)
-        and J.CanKillTarget(enemyHero, nTotalDamage, DAMAGE_TYPE_MAGICAL)
-        and not J.IsSuspiciousIllusion(enemyHero)
-        and not enemyHero:HasModifier('modifier_abaddon_borrowed_time')
-        and not enemyHero:HasModifier('modifier_dazzle_shallow_grave')
-        and not enemyHero:HasModifier('modifier_necrolyte_reapers_scythe')
-        and not enemyHero:HasModifier('modifier_oracle_false_promise_timer')
-        and not enemyHero:HasModifier('modifier_templar_assassin_refraction_absorb')
-        then
-            return BOT_ACTION_DESIRE_HIGH, enemyHero
-        end
-    end
-
-    if J.IsGoingOnSomeone(bot)
-	then
-        local target = nil
-        local hp = 20000
-        local nInRangeEnemy = J.GetNearbyHeroes(bot,nCastRange, true, BOT_MODE_NONE)
-        for _, enemyHero in pairs(nInRangeEnemy)
-        do
-            if J.IsValidTarget(enemyHero)
-            and J.CanCastOnNonMagicImmune(enemyHero)
-            and J.CanCastOnTargetAdvanced(enemyHero)
-            and J.IsInRange(bot, enemyHero, nCastRange)
-            and not J.IsSuspiciousIllusion(enemyHero)
-            and not enemyHero:HasModifier('modifier_abaddon_borrowed_time')
-            and not enemyHero:HasModifier('modifier_dazzle_shallow_grave')
-            and not enemyHero:HasModifier('modifier_necrolyte_reapers_scythe')
-            and not enemyHero:HasModifier('modifier_oracle_false_promise_timer')
-            and not enemyHero:HasModifier('modifier_templar_assassin_refraction_absorb')
-            and Stacks == nStackLimit
-            then
-                local nInRangeAlly = J.GetNearbyHeroes(enemyHero, 1200, true, BOT_MODE_NONE)
-                local nTargetInRangeAlly = J.GetNearbyHeroes(enemyHero, 1200, false, BOT_MODE_NONE)
-                local currHP = enemyHero:GetHealth()
-
-                if nInRangeAlly ~= nil and nTargetInRangeAlly ~= nil
-                and #nInRangeAlly >= #nTargetInRangeAlly
-                and hp < currHP
-                then
-                    hp = currHP
-                    target = enemyHero
-                end
-            end
-        end
-
-        if target ~= nil
-        then
-            return BOT_ACTION_DESIRE_HIGH, target
-        end
-	end
-
-    if J.IsDoingRoshan(bot)
-    then
-        if J.IsRoshan(botTarget)
-        and J.CanCastOnNonMagicImmune(botTarget)
-        and J.CanCastOnTargetAdvanced(botTarget)
-        and J.IsInRange(bot, botTarget, 500)
-        and J.IsAttacking(bot)
-        and Stacks == nStackLimit
-        then
-            return BOT_ACTION_DESIRE_HIGH, botTarget
-        end
-    end
-
-    if J.IsDoingTormentor(bot)
-    then
-        if J.IsTormentor(botTarget)
-        and J.IsInRange(bot, botTarget, 500)
-        and J.IsAttacking(bot)
-        and Stacks == nStackLimit
-        then
-            return BOT_ACTION_DESIRE_HIGH, botTarget
-        end
-    end
-
-    return BOT_ACTION_DESIRE_NONE, nil
+ if not J.CanCastAbility(SoulAssumption) then return 0 end
+ local index=bot:GetModifierByName('modifier_visage_soul_assumption');local stacks=0;local remaining=0
+ if index>=0 then stacks=math.max(0,math.min(bot:GetModifierStackCount(index),SoulAssumption:GetSpecialValueInt('stack_limit')));remaining=bot:GetModifierRemainingDuration(index) end
+ local range=Range(SoulAssumption);local damage=SoulAssumption:GetSpecialValueInt('soul_base_damage')+stacks*SoulAssumption:GetSpecialValueInt('soul_charge_damage')
+ local choice,hp=nil,math.huge
+ for _,enemy in ipairs(J.GetNearbyHeroes(bot,math.min(range,1600),true,BOT_MODE_NONE)) do
+  if Enemy(enemy) and GetUnitToUnitDistance(bot,enemy)<=range then
+   local eta=SoulAssumption:GetCastPoint()+GetUnitToUnitDistance(bot,enemy)/SoulAssumption:GetSpecialValueInt('bolt_speed')
+   if J.WillKillTarget(enemy,damage,DAMAGE_TYPE_MAGICAL,eta) then return BOT_ACTION_DESIRE_HIGH,enemy end
+   if not FlightApproach() and (Useful(enemy) or J.IsInTeamFight(bot,1200)) and (stacks>=SoulAssumption:GetSpecialValueInt('stack_limit') or (stacks>=2 and remaining<1.5))
+    and enemy:GetHealth()<hp then choice,hp=enemy,enemy:GetHealth() end
+  end
+ end
+ if choice~=nil then return BOT_ACTION_DESIRE_HIGH,choice end
+ local target=J.GetProperTarget(bot)
+ if (J.IsDoingRoshan(bot) or J.IsDoingTormentor(bot)) and Enemy(target) and J.IsAttacking(bot) and GetUnitToUnitDistance(bot,target)<=range
+  and stacks>=SoulAssumption:GetSpecialValueInt('stack_limit') then return BOT_ACTION_DESIRE_HIGH,target end
+ return 0
 end
-
 function X.ConsiderGravekeepersCloak()
-    if GravekeepersCloak:IsPassive()
-    or not GravekeepersCloak:IsFullyCastable()
-    then
-        return BOT_ACTION_DESIRE_NONE
-    end
-
-    if J.GetHP(bot) < 0.49
-    then
-        return BOT_ACTION_DESIRE_HIGH
-    end
-
-    return BOT_ACTION_DESIRE_NONE
+ if not J.CanCastAbility(GravekeepersCloak) then return 0 end
+ local threatened=bot:WasRecentlyDamagedByAnyHero(2) or #J.GetNearbyHeroes(bot,800,true,BOT_MODE_NONE)>0 or J.GetAttackProjectileDamageByRange(bot,1000)>bot:GetHealth()*0.25
+ if J.GetHP(bot)<0.5 and threatened then return BOT_ACTION_DESIRE_HIGH end
+ if J.GetHP(bot)<0.4 and not bot:HasModifier('modifier_ice_blast') and J.IsAllowedToSpam(bot,GravekeepersCloak:GetManaCost()) then return BOT_ACTION_DESIRE_HIGH end
+ return 0
 end
-
-local lastSummonCheckTime = 0
-local deltaSummonCheckTime = 20
+local function Familiars()
+ local units={}
+ for _,unit in ipairs(GetUnitList(UNIT_LIST_ALLIES)) do
+  if unit~=nil and not unit:IsNull() and unit:IsAlive() and unit:GetTeam()==bot:GetTeam() and unit:GetPlayerID()==bot:GetPlayerID()
+   and string.find(unit:GetUnitName(),'npc_dota_visage_familiar') then units[#units+1]=unit end
+ end
+ return units
+end
 function X.ConsiderSummonFamiliars()
-    if not SummonFamiliars:IsFullyCastable() or (DotaTime() - lastSummonCheckTime <= deltaSummonCheckTime)
-    then
-        return BOT_ACTION_DESIRE_NONE
-    end
-
-    lastSummonCheckTime = DotaTime()
-    local nFamiliarCount = SummonFamiliars:GetSpecialValueInt('familiar_count')
-    local nCurrFamiliar = 0
-
-	for _, unit in pairs(GetUnitList(UNIT_LIST_ALLIES))
-	do
-        if string.find(unit:GetUnitName(), 'npc_dota_visage_familiar')
-        then
-			nCurrFamiliar = nCurrFamiliar + 1
-		end
-	end
-
-	if nFamiliarCount > nCurrFamiliar
-    then
-		return BOT_ACTION_DESIRE_HIGH
-	end
-
-    return BOT_ACTION_DESIRE_NONE
+ if not J.CanCastAbility(SummonFamiliars) or FlightApproach() or (bot.visageSummonAttemptTime~=nil and DotaTime()-bot.visageSummonAttemptTime<0.75) then return 0 end
+ local units=Familiars();local desired=SummonFamiliars:GetSpecialValueInt('familiar_count')
+ if #units<desired then return BOT_ACTION_DESIRE_HIGH end
+ if J.IsInTeamFight(bot,1200) then
+  local endangered=0
+  for _,unit in ipairs(units) do
+   if J.GetHP(unit)<0.25 and unit:WasRecentlyDamagedByAnyHero(2) and not unit:HasModifier('modifier_visage_summon_familiars_stone_form_buff') then endangered=endangered+1 end
+  end
+  if endangered==#units then return BOT_ACTION_DESIRE_HIGH end
+ end
+ return 0
 end
-
 function X.ConsiderSilentAsTheGrave()
-    if not SilentAsTheGrave:IsTrained()
-    or not SilentAsTheGrave:IsFullyCastable()
-    then
-        return BOT_ACTION_DESIRE_NONE
-    end
-
-    local roshanLoc = J.GetCurrentRoshanLocation()
-    local tormentorLoc = J.GetTormentorLocation(GetTeam())
-
-    if J.IsGoingOnSomeone(bot)
-	then
-		if J.IsValidTarget(botTarget)
-        and J.IsInRange(bot, botTarget, 1200)
-        and not J.IsSuspiciousIllusion(botTarget)
-        and not J.IsDisabled(botTarget)
-        and not botTarget:HasModifier('modifier_abaddon_borrowed_time')
-        and not botTarget:HasModifier('modifier_dazzle_shallow_grave')
-        and not botTarget:HasModifier('modifier_necrolyte_reapers_scythe')
-		then
-            local nInRangeAlly = J.GetNearbyHeroes(botTarget, 1200, true, BOT_MODE_NONE)
-            local nTargetInRangeAlly = J.GetNearbyHeroes(botTarget, 1200, false, BOT_MODE_NONE)
-
-            if nInRangeAlly ~= nil and nTargetInRangeAlly ~= nil
-            and #nInRangeAlly >= #nTargetInRangeAlly
-            then
-                return BOT_ACTION_DESIRE_HIGH
-            end
-		end
-	end
-
-	if J.IsRetreating(bot)
-	then
-        local nInRangeEnemy = J.GetNearbyHeroes(bot,1600, true, BOT_MODE_NONE)
-        for _, enemyHero in pairs(nInRangeEnemy)
-        do
-            if J.IsValidHero(enemyHero)
-            and J.CanCastOnNonMagicImmune(enemyHero)
-            and J.CanCastOnTargetAdvanced(enemyHero)
-            and J.IsChasingTarget(enemyHero, bot)
-            and not J.IsSuspiciousIllusion(enemyHero)
-            and not J.IsDisabled(enemyHero)
-            then
-                local nInRangeAlly = J.GetNearbyHeroes(enemyHero, 1200, true, BOT_MODE_NONE)
-                local nTargetInRangeAlly = J.GetNearbyHeroes(enemyHero, 1200, false, BOT_MODE_NONE)
-
-                if nInRangeAlly ~= nil and nTargetInRangeAlly ~= nil
-                and ((#nTargetInRangeAlly > #nInRangeAlly)
-                    or bot:WasRecentlyDamagedByAnyHero(2.5))
-                then
-                    return BOT_ACTION_DESIRE_HIGH, enemyHero
-                end
-            end
-        end
-	end
-
-    if J.IsDoingRoshan(bot)
-    then
-        if GetUnitToLocationDistance(bot, roshanLoc) > 3200
-        then
-            return BOT_ACTION_DESIRE_HIGH
-        end
-    end
-
-    if J.IsDoingTormentor(bot)
-    then
-        if GetUnitToLocationDistance(bot, tormentorLoc) > 3200
-        then
-            return BOT_ACTION_DESIRE_HIGH
-        end
-    end
-
-    return BOT_ACTION_DESIRE_NONE
+ if not J.CanCastAbility(SilentAsTheGrave) or bot:HasModifier('modifier_visage_silent_as_the_grave') or J.IsRealInvisible(bot) then return 0 end
+ local target=J.GetProperTarget(bot)
+ if J.IsStuck(bot) then return BOT_ACTION_DESIRE_HIGH end
+ if J.IsRetreating(bot) and bot:WasRecentlyDamagedByAnyHero(2) then return BOT_ACTION_DESIRE_HIGH end
+ if J.IsGoingOnSomeone(bot) and J.IsValidHero(target) and not J.CannotBeKilled(bot,target) and GetUnitToUnitDistance(bot,target)>bot:GetAttackRange()+100
+  and GetUnitToUnitDistance(bot,target)<=1800 then return BOT_ACTION_DESIRE_HIGH end
+ return 0
 end
-
+function X.SkillsComplement()
+ Refresh();if J.CanNotUseAbility(bot) then return end
+ if X.ConsiderGravekeepersCloak()>0 then bot:Action_UseAbility(GravekeepersCloak);return end
+ local desire,target=X.ConsiderSoulAssumption()
+ if desire>0 then bot:Action_UseAbilityOnEntity(SoulAssumption,target);return end
+ if X.ConsiderSilentAsTheGrave()>0 then bot:Action_UseAbility(SilentAsTheGrave);return end
+ desire,target=X.ConsiderGraveChill()
+ if desire>0 then bot:Action_UseAbilityOnEntity(GraveChill,target);return end
+ if X.ConsiderSummonFamiliars()>0 then bot:Action_UseAbility(SummonFamiliars);bot.visageSummonAttemptTime=DotaTime() end
+end
 return X

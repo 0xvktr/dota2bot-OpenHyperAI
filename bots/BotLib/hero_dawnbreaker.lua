@@ -146,7 +146,7 @@ local function LineDistance(location, origin, destination)
 end
 
 function X.ConsiderStarBreaker()
-    if not J.CanCastAbility(Starbreaker) or bot:IsDisarmed() and not (J.IsRetreating(bot) and bot:HasShard())
+    if not J.CanCastAbility(Starbreaker) or bot:IsDisarmed() and not (J.IsRetreating(bot) and bot:HasModifier('modifier_item_aghanims_shard'))
         or J.IsRetreating(bot) and bot:HasModifier('modifier_bloodseeker_rupture') then return BOT_ACTION_DESIRE_NONE, nil end
     local radius = Starbreaker:GetSpecialValueInt('swipe_radius')
     local duration = Starbreaker:GetSpecialValueFloat('duration')
@@ -188,7 +188,7 @@ function X.ConsiderStarBreaker()
     end
     if J.IsRetreating(bot) then
         -- Shard supplies immunity during the combo; no invented free-movement orders.
-        if bot:HasShard() and bot:WasRecentlyDamagedByAnyHero(2) and #enemies > 0 and not bot:IsRooted()
+        if bot:HasModifier('modifier_item_aghanims_shard') and bot:WasRecentlyDamagedByAnyHero(2) and #enemies > 0 and not bot:IsRooted()
             and not bot:HasModifier('modifier_bloodseeker_rupture') then
             local escape = Towards(bot:GetLocation(), J.GetEscapeLoc(), reach)
             if SafeLanding(Towards(bot:GetLocation(), escape, reach - radius)) then

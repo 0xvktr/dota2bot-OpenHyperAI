@@ -23,7 +23,8 @@ section('function X.SetUseItem(','function X.IsWithoutSpellShield(')+'return X\n
 fs.writeFileSync('.test-tools/early-lane-defense-hooks.lua',hooks);
 const prophet=fs.readFileSync('bots/BotLib/hero_furion.lua','utf8');
 fs.writeFileSync('.test-tools/early-lane-prophet-hooks.lua',
-    'return function(bot,J,FightResponse)\nlocal X={}\n'+
+    // Hero-specific landing safety is covered by furion_ability_spec; isolate lane policy here.
+    'return function(bot,J,FightResponse)\nlocal X={}\nlocal FurionAbilities={SourceTeleportSafe=function()return true end,TeleportSafe=function()return true end}\n'+
     section('local Sprout, Teleportation,','function X.ConsiderSprout()',prophet)+
     section('function X.ConsiderTeleportation()','function X.ConsiderNaturesCall()',prophet)+
     `

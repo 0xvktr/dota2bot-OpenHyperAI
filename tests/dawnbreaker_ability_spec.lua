@@ -32,7 +32,7 @@ function Unit:IsDisarmed() return self.disarmed==true end
 function Unit:IsChanneling() return self.channeling==true end
 function Unit:IsCastingAbility() return self.casting==true end
 function Unit:IsUsingAbility() return self.using==true end
-function Unit:HasModifier(n) return self.mods[n]==true end
+function Unit:HasModifier(n) return n=='modifier_item_aghanims_shard' and self.shard==true or self.mods[n]==true end
 function Unit:WasRecentlyDamagedByAnyHero() return self.recent==true end
 function Unit:IsAncientCreep() return self.ancient==true end
 function Unit:GetNearbyHeroes(r,enemy)
@@ -46,7 +46,6 @@ function bot:GetAbilityByName(n) return spells[n] end
 function bot:GetMana() return self.mana end
 function bot:GetMaxMana() return 1000 end
 function bot:GetAttackDamage() return 100 end
-function bot:HasShard() return self.shard==true end
 function bot:GetNearbyLaneCreeps() return creeps end
 function bot:GetNearbyNeutralCreeps() return neutrals end
 function bot:Action_UseAbilityOnLocation(a,p) actions[#actions+1]={ability=a,location=p} end

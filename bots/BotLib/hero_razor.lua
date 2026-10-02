@@ -85,10 +85,11 @@ end
 
 
 
-local abilityQ = bot:GetAbilityByName( sAbilityList[1] )
-local abilityW = bot:GetAbilityByName( sAbilityList[2] )
+local R=require(GetScriptDirectory()..'/FunLib/razor_abilities')
+local abilityQ=bot:GetAbilityByName('razor_plasma_field')
+local abilityW=bot:GetAbilityByName('razor_static_link')
 local abilityE = bot:GetAbilityByName( sAbilityList[3] )
-local abilityR = bot:GetAbilityByName( sAbilityList[6] )
+local abilityR=bot:GetAbilityByName('razor_eye_of_the_storm')
 
 
 local castQDesire
@@ -100,121 +101,23 @@ local nKeepMana, nMP, nHP, nLV, hEnemyList, hAllyList, botTarget, sMotive
 local aetherRange = 0
 
 function X.SkillsComplement()
-
-
-	J.ConsiderForMkbDisassembleMask( bot )
-
-
-	if J.CanNotUseAbility( bot ) or bot:IsInvisible() then return end
-
-
-	nKeepMana = 280
-	aetherRange = 0
-	nLV = bot:GetLevel()
-	nMP = bot:GetMana()/bot:GetMaxMana()
-	nHP = bot:GetHealth()/bot:GetMaxHealth()
-	botTarget = J.GetProperTarget( bot )
-	hEnemyList = J.GetNearbyHeroes(bot, 1600, true, BOT_MODE_NONE )
-	hAllyList = J.GetAlliesNearLoc( bot:GetLocation(), 1600 )
-	local aether = J.IsItemAvailable( "item_aether_lens" )
-	if aether ~= nil then aetherRange = 250 end
-	if #hEnemyList <= 1 then aetherRange = aetherRange + 200 end
-
-
-	castRDesire, sMotive = X.ConsiderR()
-	if ( castRDesire > 0 )
-	then
-		J.SetReportMotive( bDebugMode, sMotive )
-
-		J.SetQueuePtToINT( bot, true )
-
-		bot:ActionQueue_UseAbility( abilityR )
-		return
-
-	end
-
-
-	castWDesire, castWTarget, sMotive = X.ConsiderW()
-	if ( castWDesire > 0 )
-	then
-		J.SetReportMotive( bDebugMode, sMotive )
-
-		J.SetQueuePtToINT( bot, false )
-
-		bot:ActionQueue_UseAbilityOnEntity( abilityW, castWTarget )
-		return
-	end
-
-
-	castQDesire, sMotive = X.ConsiderQ()
-	if ( castQDesire > 0 )
-	then
-		J.SetReportMotive( bDebugMode, sMotive )
-
-		J.SetQueuePtToINT( bot, true )
-
-		bot:ActionQueue_UseAbility( abilityQ )
-		return
-	end
-
+    if J.CanNotUseAbility(bot) or bot:IsInvisible() then return end
+    J.ConsiderForMkbDisassembleMask(bot)
+    nKeepMana=280;nLV=bot:GetLevel();nMP=J.GetMP(bot);nHP=J.GetHP(bot)
+    botTarget=J.GetProperTarget(bot);hEnemyList=J.GetNearbyHeroes(bot,1600,true,BOT_MODE_NONE);hAllyList=J.GetAlliesNearLoc(bot:GetLocation(),1600)
+    local desire,target=R.Link(bot,abilityW)
+    if desire>0 then J.SetQueuePtToINT(bot,false,abilityW);bot:ActionQueue_UseAbilityOnEntity(abilityW,target);return end
+    if R.Storm(bot,abilityR,true)>0 then J.SetQueuePtToINT(bot,true,abilityR);bot:ActionQueue_UseAbility(abilityR);return end
+    if R.Plasma(bot,abilityQ)>0 or X.ConsiderQ()>0 then J.SetQueuePtToINT(bot,true,abilityQ);bot:ActionQueue_UseAbility(abilityQ) end
 end
 
-
 function X.ConsiderQ()
-
-
-	if not abilityQ:IsFullyCastable() then return 0 end
-
-	local nSkillLV = abilityQ:GetLevel()
-	local nCastRange = abilityQ:GetSpecialValueInt( 'radius' )
-	local nCastPoint = abilityQ:GetCastPoint()
-	local nManaCost = abilityQ:GetManaCost()
-	local nDamage = abilityQ:GetAbilityDamage()
-	local nDamageMin = abilityQ:GetSpecialValueInt( 'damage_min' )
-	local nDamageMax = abilityQ:GetSpecialValueInt( 'damage_max' )
-	local nDamageType = DAMAGE_TYPE_MAGICAL
-	local nInRangeEnemyList = J.GetNearbyHeroes(bot, nCastRange, true, BOT_MODE_NONE )
-
-	--团战和击杀
-	for _, npcEnemy in pairs( nInRangeEnemyList )
-	do
-		if J.IsValidHero( npcEnemy )
-			and J.CanCastOnMagicImmune( npcEnemy )
-		then
-
-			--击杀
-			local nDist = GetUnitToUnitDistance( bot, npcEnemy )
-			local nDamage = RemapValClamped( nDist, 0, nCastRange, nDamageMin, nDamageMax ) * 2
-			if J.WillMagicKillTarget( bot, npcEnemy, nDamage, nCastPoint + nDist /636 )
-			then
-				return BOT_ACTION_DESIRE_HIGH, 'Q击杀'..J.Chat.GetNormName( npcEnemy )
-			end
-
-			--打断大药
-			if npcEnemy:HasModifier( "modifier_flask_healing" )
-				and J.GetModifierTime( npcEnemy, 'modifier_flask_healing' ) > 3.0
-			then
-				return BOT_ACTION_DESIRE_HIGH, 'Q断药'..J.Chat.GetNormName( npcEnemy )
-			end
-
-			--撤退
-			if J.IsRetreating( bot )
-				and ( bot:WasRecentlyDamagedByHero( npcEnemy, 2.0 ) or bot:GetActiveModeDesire() > BOT_MODE_DESIRE_VERYHIGH )
-			then
-				return BOT_ACTION_DESIRE_HIGH, 'Q撤退'..J.Chat.GetNormName( npcEnemy )
-			end
-
-			--打架
-			if J.IsGoingOnSomeone( bot )
-				and J.IsValidHero( botTarget )
-				and J.IsInRange( bot, botTarget, nCastRange )
-			then
-				return BOT_ACTION_DESIRE_HIGH, 'Q打架'..J.Chat.GetNormName( botTarget )
-			end
-
-		end
-	end
-
+    if not J.CanCastAbility(abilityQ) then return 0 end
+    if #J.GetNearbyHeroes(bot,abilityQ:GetSpecialValueInt('radius'),true,BOT_MODE_NONE)>0 then return 0 end
+    local nCastRange=abilityQ:GetSpecialValueInt('radius');local nCastPoint=abilityQ:GetCastPoint()
+    local nManaCost=abilityQ:GetManaCost();local nDamageMin=abilityQ:GetSpecialValueInt('damage_min');local nDamageMax=abilityQ:GetSpecialValueInt('damage_max')
+    local nSpeed=nCastRange*2/math.max(abilityQ:GetSpecialValueFloat('total_ability_time'),.1)
+    local nDamageType=DAMAGE_TYPE_MAGICAL
 	--推线
 	if ( J.IsPushing( bot ) or J.IsDefending( bot ) or J.IsFarming( bot ) )
 		and #hAllyList < 3 and nLV > 7
@@ -222,16 +125,18 @@ function X.ConsiderQ()
 	then
 		local nCanKillCount = 0
 		local nCanHurtCount = 0
-		local hLaneCreepList = bot:GetNearbyLaneCreeps( nCastRange + 100, true )
+		local hLaneCreepList = bot:GetNearbyLaneCreeps( nCastRange, true )
 		for _, creep in pairs( hLaneCreepList )
 		do
 			if J.IsValid( creep )
+                and J.CanCastOnNonMagicImmune(creep)
+                and J.IsInRange(bot,creep,nCastRange)
 				and not creep:HasModifier( "modifier_fountain_glyph" )
 			then
 				nCanHurtCount = nCanHurtCount + 1
 				local nDist = GetUnitToUnitDistance( bot, creep )
-				local nDamage = RemapValClamped( nDist, 0, nCastRange, nDamageMin, nDamageMax ) * 2
-				if J.WillKillTarget( creep, nDamage, nDamageType, nDist/636 )
+				local nDamage = RemapValClamped( nDist, 0, nCastRange, nDamageMin, nDamageMax )
+				if J.WillKillTarget( creep, nDamage, nDamageType, nDist/nSpeed )
 				then
 					nCanKillCount = nCanKillCount + 1
 				end
@@ -247,7 +152,7 @@ function X.ConsiderQ()
 	--打钱
 	if J.IsFarming( bot ) and nLV > 7 and bot:GetMana() > nKeepMana
 	then
-		local nCreepList = bot:GetNearbyNeutralCreeps( nCastRange + 200 )
+		local nCreepList = bot:GetNearbyNeutralCreeps( nCastRange )
 		local nNearCreepList = bot:GetNearbyNeutralCreeps( 400 )
 		if ( #nCreepList >= 3 and #nNearCreepList <= 2 )
 			or #nCreepList >= 5
@@ -262,15 +167,17 @@ function X.ConsiderQ()
 	then
 		local nCanKillMeleeCount = 0
 		local nCanKillRangedCount = 0
-		local hLaneCreepList = bot:GetNearbyLaneCreeps( nCastRange + 100, true )
+		local hLaneCreepList = bot:GetNearbyLaneCreeps( nCastRange, true )
 		for _, creep in pairs( hLaneCreepList )
 		do
 			if J.IsValid( creep )
+                and J.CanCastOnNonMagicImmune(creep)
+                and J.IsInRange(bot,creep,nCastRange)
 				and not creep:HasModifier( "modifier_fountain_glyph" )
 			then
 				local nDist = GetUnitToUnitDistance( bot, creep )
-				local nDamage = RemapValClamped( nDist, 0, nCastRange, nDamageMin, nDamageMax ) * 2
-				if J.WillKillTarget( creep, nDamage, nDamageType, nDist * 0.9/636 )
+				local nDamage = RemapValClamped( nDist, 0, nCastRange, nDamageMin, nDamageMax )
+				if J.WillKillTarget( creep, nDamage, nDamageType, nCastPoint + nDist/nSpeed )
 				then
 					if J.IsKeyWordUnit( 'ranged', creep )
 					then
@@ -303,199 +210,9 @@ function X.ConsiderQ()
 
 	end
 
-	--通用
-	if ( #hEnemyList > 0 or bot:WasRecentlyDamagedByAnyHero( 3.0 ) )
-		and ( bot:GetActiveMode() ~= BOT_MODE_RETREAT or #hAllyList >= 2 )
-		and #nInRangeEnemyList >= 1
-		and nLV >= 15
-	then
-		for _, npcEnemy in pairs( nInRangeEnemyList )
-		do
-			if J.IsValid( npcEnemy )
-				and J.CanCastOnNonMagicImmune( npcEnemy ) 
-			then
-				return BOT_ACTION_DESIRE_HIGH, 'Q通用'..J.Chat.GetNormName( npcEnemy )
-			end
-		end
-	end
-
-	return BOT_ACTION_DESIRE_NONE
-
-
+    return BOT_ACTION_DESIRE_NONE
 end
 
-
-function X.ConsiderW()
-
-
-	if not abilityW:IsFullyCastable() then return 0 end
-
-	local nSkillLV = abilityW:GetLevel()
-	local nCastRange = abilityW:GetCastRange()	 + aetherRange
-	local nCastPoint = abilityW:GetCastPoint()
-	local nManaCost = abilityW:GetManaCost()
-	local nDamage = abilityW:GetAbilityDamage()
-	local nDamageType = DAMAGE_TYPE_MAGICAL
-	local nInRangeEnemyList = J.GetNearbyHeroes(bot, nCastRange, true, BOT_MODE_NONE )
-
-
-	local nInRangeEnemyCount = 0
-	local nCastTarget = nil
-	local nAttackDamageMax = 0
-	for _, npcEnemy in pairs( nInRangeEnemyList )
-	do
-		if J.IsValidHero( npcEnemy )
-			and J.CanCastOnNonMagicImmune( npcEnemy )
-			and J.CanCastOnTargetAdvanced( npcEnemy )
-			and not npcEnemy:HasModifier('modifier_razor_static_link_debuff')
-		then
-			nInRangeEnemyCount = nInRangeEnemyCount + 1
-			if npcEnemy:GetAttackDamage() > nAttackDamageMax
-			then
-				nCastTarget = npcEnemy
-				nAttackDamageMax = npcEnemy:GetAttackDamage()
-			end
-		end
-	end
-	if nInRangeEnemyCount >= 2
-		and nCastTarget ~= nil
-	then
-		return BOT_ACTION_DESIRE_HIGH, nCastTarget, 'W择优'..J.Chat.GetNormName( nCastTarget )
-	end
-
-
-	if J.IsLaning( bot )
-	then
-		nCastTarget = nInRangeEnemyList[1]
-		if J.IsValidHero( nCastTarget )
-			and J.CanCastOnNonMagicImmune( nCastTarget )
-			and J.CanCastOnTargetAdvanced( nCastTarget )
-			and J.IsInRange( bot, nCastTarget, nCastRange - 180 )
-			and not nCastTarget:HasModifier('modifier_razor_static_link_debuff')
-		then
-			bot:SetTarget( nCastTarget )
-			return BOT_ACTION_DESIRE_HIGH, nCastTarget, 'W对线'..J.Chat.GetNormName( nCastTarget )
-		end
-	end
-
-
-	if J.IsGoingOnSomeone( bot )
-		and J.IsValidHero( botTarget )
-		and not botTarget:HasModifier('modifier_razor_static_link_debuff')
-		and J.CanCastOnNonMagicImmune( botTarget )
-		and J.CanCastOnTargetAdvanced( botTarget )
-		and J.IsInRange( bot, botTarget, nCastRange - 100 )
-		and J.GetAllyCount( bot, 1200 ) - J.GetEnemyCount( bot, 1600 ) < 3
-	then
-		return BOT_ACTION_DESIRE_HIGH, botTarget, 'W进攻'..J.Chat.GetNormName( botTarget )
-	end
-
-
-	if J.IsRetreating( bot )
-	then
-		for _, npcEnemy in pairs( nInRangeEnemyList )
-		do
-			if J.IsValidHero( npcEnemy )
-				and not npcEnemy:HasModifier('modifier_razor_static_link_debuff')
-				and J.CanCastOnNonMagicImmune( npcEnemy )
-				and J.CanCastOnTargetAdvanced( npcEnemy )
-				and ( bot:WasRecentlyDamagedByHero( npcEnemy, 3.0 ) or bot:GetActiveModeDesire() > BOT_MODE_DESIRE_VERYHIGH )
-			then
-				return BOT_ACTION_DESIRE_HIGH, npcEnemy, "W撤退"..J.Chat.GetNormName( npcEnemy )
-			end
-		end
-	end
-
-	--通用
-	if ( #hEnemyList > 0 or bot:WasRecentlyDamagedByAnyHero( 3.0 ) )
-		and ( bot:GetActiveMode() ~= BOT_MODE_RETREAT or #hAllyList >= 2 )
-		and #nInRangeEnemyList >= 1
-		and nLV >= 15
-	then
-		for _, npcEnemy in pairs( nInRangeEnemyList )
-		do
-			if J.IsValid( npcEnemy )
-				and not npcEnemy:HasModifier('modifier_razor_static_link_debuff')
-				and J.IsInRange( bot, npcEnemy, nCastRange - 100 )
-				and J.CanCastOnNonMagicImmune( npcEnemy )
-				and J.CanCastOnTargetAdvanced( npcEnemy )
-			then
-				return BOT_ACTION_DESIRE_HIGH, npcEnemy, 'W通用'..J.Chat.GetNormName( npcEnemy )
-			end
-		end
-	end
-
-
-	return BOT_ACTION_DESIRE_NONE
-
-
-end
-
-
-function X.ConsiderR()
-
-
-	if not abilityR:IsFullyCastable()
-		or bot:HasModifier( 'modifier_razor_eye_of_the_storm' )
-	then return 0 end
-
-	local nSkillLV = abilityR:GetLevel()
-	local nCastRange = 500
-	local nCastPoint = abilityR:GetCastPoint()
-	local nManaCost = abilityR:GetManaCost()
-	local nDamage = abilityR:GetAbilityDamage()
-	local nDamageType = DAMAGE_TYPE_PHYSICAL
-	local nInRangeEnemyList = J.GetNearbyHeroes(bot, nCastRange, true, BOT_MODE_NONE )
-	local nDamageCount = 0
-
-	for _, npcEnemy in pairs( nInRangeEnemyList )
-	do
-		if J.IsValidHero( npcEnemy )
-			and J.CanCastOnMagicImmune( npcEnemy )
-		then
-			nDamageCount = nDamageCount + 1
-		end
-	end
-
-
-	if nDamageCount >= 2
-	then
-		return BOT_ACTION_DESIRE_HIGH, "R两人"
-	end
-
-
-	if J.IsGoingOnSomeone( bot )
-	then
-		if J.IsValidHero( botTarget )
-			and J.IsInRange( bot, botTarget, nCastRange + 200 )
-			and J.CanCastOnMagicImmune( botTarget )
-			and ( J.GetProperTarget( botTarget ) ~= nil or J.IsInRange( bot, botTarget, nCastRange ) )
-			and J.GetAllyCount( bot, 1200 ) - J.GetEnemyCount( bot, 1600 ) <= 2
-		then
-			return BOT_ACTION_DESIRE_HIGH, "R进攻"..J.Chat.GetNormName( botTarget )
-		end
-	end
-
-	if J.IsRetreating( bot )
-	then
-		for _, npcEnemy in pairs( nInRangeEnemyList )
-		do
-			if J.IsValidHero( npcEnemy )
-				and J.CanCastOnMagicImmune( npcEnemy )
-				and ( bot:WasRecentlyDamagedByHero( npcEnemy, 2.0 ) or bot:GetActiveModeDesire() > BOT_MODE_DESIRE_VERYHIGH )
-			then
-				return BOT_ACTION_DESIRE_HIGH, "R撤退"..J.Chat.GetNormName( npcEnemy )
-			end
-		end
-	end
-
-
-	return BOT_ACTION_DESIRE_NONE
-
-
-end
-
-
+function X.ConsiderW() return R.Link(bot,abilityW) end
+function X.ConsiderR() return R.Storm(bot,abilityR,true) end
 return X
--- dota2jmz@163.com QQ:2462331592..
-

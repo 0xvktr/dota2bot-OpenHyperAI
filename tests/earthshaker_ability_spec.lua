@@ -38,10 +38,9 @@ local function unit(x,y,kind)
     function u:IsHero() return self.kind=='hero' end
     function u:IsRooted() return self.rooted==true end
     function u:IsDisarmed() return self.disarmed==true end
-    function u:HasShard() return self.shard==true end
     function u:GetUnitName() return self.name or 'npc_dota_'..self.kind end
     function u:GetAttackTarget() return self.attackTarget end
-    function u:HasModifier(m) return self.mods[m]==true end
+    function u:HasModifier(m) return m=='modifier_item_aghanims_shard' and self.shard==true or self.mods[m]==true end
     function u:IsMagicImmune() return self.immune==true end
     function u:IsInvulnerable() return self.invulnerable==true end
     function u:IsSilenced() return self.silenced==true end

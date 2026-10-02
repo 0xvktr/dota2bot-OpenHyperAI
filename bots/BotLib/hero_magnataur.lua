@@ -2,6 +2,7 @@ local X = {}
 local bot = GetBot()
 
 local J = require( GetScriptDirectory()..'/FunLib/jmz_func' )
+local SpellDecisions = require(GetScriptDirectory()..'/FunLib/rubick_hero/magnataur')
 local Minion = dofile( GetScriptDirectory()..'/FunLib/aba_minion' )
 local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
@@ -76,6 +77,11 @@ if bot.shouldBlink == nil then bot.shouldBlink = false end
 
 function X.SkillsComplement()
     if J.CanNotUseAbility(bot) then return end
+    if SpellDecisions.RPUseful(ReversePolarity, true) then
+        J.SetQueuePtToINT(bot, true, ReversePolarity)
+        bot:ActionQueue_UseAbility(ReversePolarity)
+        return
+    end
 
     BlinkRPSkewerDesire = X.ConsiderBlinkRPSkewer()
     if BlinkRPSkewerDesire > 0
@@ -92,7 +98,8 @@ function X.SkillsComplement()
         bot:ActionQueue_UseAbility(ReversePolarity)
         bot:ActionQueue_Delay(0.3)
 
-        SkewerDesire, SkewerLocation = X.ConsiderSkewer2()
+        SkewerLocation = SpellDecisions.SkewerFrom(Skewer, BlinkLocation)
+        SkewerDesire = SkewerLocation ~= nil and BOT_ACTION_DESIRE_HIGH or BOT_ACTION_DESIRE_NONE
         if SkewerDesire > 0
         then
             bot:ActionQueue_UseAbilityOnLocation(Skewer, SkewerLocation)
@@ -114,7 +121,8 @@ function X.SkillsComplement()
         bot:ActionQueue_UseAbilityOnLocation(Blink, BlinkLocation)
         bot:ActionQueue_Delay(0.1)
 
-        SkewerDesire, SkewerLocation = X.ConsiderSkewer2()
+        SkewerLocation = SpellDecisions.SkewerFrom(Skewer, BlinkLocation)
+        SkewerDesire = SkewerLocation ~= nil and BOT_ACTION_DESIRE_HIGH or BOT_ACTION_DESIRE_NONE
         if SkewerDesire > 0
         then
             bot:ActionQueue_UseAbilityOnLocation(Skewer, SkewerLocation)
@@ -136,36 +144,6 @@ function X.SkillsComplement()
         bot:ActionQueue_UseAbilityOnLocation(Blink, BlinkLocation)
         bot:ActionQueue_Delay(0.1)
         bot:ActionQueue_UseAbility(ReversePolarity)
-        return
-    end
-
-    BlinkHornTossSkewerDesire = X.ConsiderBlinkForHornTossSkewer()
-    if BlinkHornTossSkewerDesire > 0
-    then
-        bot:Action_ClearActions(false)
-
-        if CanBKB()
-        then
-            bot:ActionQueue_UseAbility(BlackKingBar)
-        end
-
-        bot:ActionQueue_UseAbilityOnLocation(Blink, BlinkLocation)
-
-        HornTossDesire = X.ConsiderHornToss()
-        if HornTossDesire > 0
-        then
-            bot:ActionQueue_UseAbility(HornToss)
-            return
-        end
-
-        bot:ActionQueue_Delay(0.6)
-
-        SkewerDesire, SkewerLocation = X.ConsiderSkewer2()
-        if SkewerDesire > 0
-        then
-            bot:ActionQueue_UseAbilityOnLocation(Skewer, SkewerLocation)
-        end
-
         return
     end
 
@@ -193,7 +171,9 @@ function X.SkillsComplement()
     ShockwaveDesire, ShockwaveLocation = X.ConsiderShockwave()
     if ShockwaveDesire > 0
     then
-        bot:Action_UseAbilityOnLocation(Shockwave, ShockwaveLocation)
+        if GetUnitToLocationDistance(bot, ShockwaveLocation) > SpellDecisions.Range(Shockwave) then return end
+        J.SetQueuePtToINT(bot, true, Shockwave)
+        bot:ActionQueue_UseAbilityOnLocation(Shockwave, ShockwaveLocation)
         return
     end
 
@@ -211,7 +191,7 @@ function X.ConsiderShockwave()
         return BOT_ACTION_DESIRE_NONE, 0
     end
 
-	local nCastRange = J.GetProperCastRange(false, bot, Shockwave:GetCastRange())
+	local nCastRange = SpellDecisions.Range(Shockwave)
 	local nCastPoint = Shockwave:GetCastPoint()
     local nRadius = Shockwave:GetSpecialValueInt('shock_width')
 	local nDamage = Shockwave:GetSpecialValueInt('shock_damage')
@@ -356,7 +336,7 @@ function X.ConsiderShockwave()
             and not nAllyInRangeEnemy[1]:HasModifier('modifier_faceless_void_chronosphere_freeze')
             then
                 local nDelay = (GetUnitToUnitDistance(bot, nAllyInRangeEnemy[1]) / nSpeed) + nCastPoint
-                return BOT_ACTION_DESIRE_HIGH, nAllyInRangeEnemy[1]:GetExtrapolatedLocation(nDelay + nCastPoint)
+                return BOT_ACTION_DESIRE_HIGH, nAllyInRangeEnemy[1]:GetExtrapolatedLocation(nDelay)
             end
         end
     end
@@ -365,106 +345,12 @@ function X.ConsiderShockwave()
 end
 
 function X.ConsiderEmpower()
-    if not Empower:IsFullyCastable()
-    then
-        return BOT_ACTION_DESIRE_NONE, nil
-    end
-
-    local nCastRange = J.GetProperCastRange(false, bot, Empower:GetCastRange())
-	local nAttackRange = bot:GetAttackRange()
-    local botTarget = J.GetProperTarget(bot)
-
-    -- 7.41: Empower can no longer target self (Magnus always has 30% bonus passively)
-    local buffAllyUnit = nil
-	local nMaxDamage = 0
-    local nAllyHeroes = J.GetNearbyHeroes(bot,nCastRange, false, BOT_MODE_NONE)
-	for _, allyHero in pairs(nAllyHeroes)
-	do
-		if J.IsValidHero(allyHero)
-        and allyHero ~= bot
-        and J.IsCore(allyHero)
-        and not allyHero:IsIllusion()
-        and not J.IsDisabled(allyHero)
-        and not J.IsWithoutTarget(allyHero)
-        and not allyHero:HasModifier('modifier_magnataur_empower')
-        and (allyHero:GetAttackDamage() * allyHero:GetAttackSpeed()) > nMaxDamage
-		then
-			buffAllyUnit = allyHero
-			nMaxDamage = allyHero:GetAttackDamage() * allyHero:GetAttackSpeed()
-		end
-	end
-
-    if J.IsGoingOnSomeone(bot)
-	then
-        local nInRangeAlly = J.GetNearbyHeroes(bot,nCastRange + 200, false, BOT_MODE_NONE)
-        local nInRangeEnemy = J.GetNearbyHeroes(bot,nCastRange, true, BOT_MODE_NONE)
-
-		if J.IsValidTarget(botTarget)
-        and J.CanBeAttacked(botTarget)
-        and not J.IsSuspiciousIllusion(botTarget)
-        and not botTarget:HasModifier('modifier_abaddon_borrowed_time')
-        and not botTarget:HasModifier('modifier_dazzle_shallow_grave')
-        and not botTarget:HasModifier('modifier_templar_assassin_refraction_absorb')
-        and nInRangeAlly ~= nil and nInRangeEnemy
-        and #nInRangeAlly >= #nInRangeEnemy
-		then
-            if buffAllyUnit ~= nil
-            and J.IsInRange(buffAllyUnit, botTarget, buffAllyUnit:GetAttackRange() + 100)
-            and J.IsInRange(bot, buffAllyUnit, nCastRange)
-            then
-                return BOT_ACTION_DESIRE_HIGH, buffAllyUnit
-            end
-		end
-	end
-
-	if (J.IsPushing(bot) or J.IsDefending(bot))
-	then
-		local nEnemyLaneCreeps = bot:GetNearbyLaneCreeps(600, true)
-		if nEnemyLaneCreeps ~= nil and #nEnemyLaneCreeps >= 4
-        and buffAllyUnit ~= nil
-        then
-			return BOT_ACTION_DESIRE_HIGH, buffAllyUnit
-		end
-
-		local nEnemyTowers = bot:GetNearbyTowers(700, true)
-		if nEnemyTowers ~= nil and #nEnemyTowers > 0
-        and buffAllyUnit ~= nil
-        and J.IsInRange(buffAllyUnit, nEnemyTowers[1], buffAllyUnit:GetAttackRange() + 100)
-        and J.IsInRange(bot, buffAllyUnit, nCastRange)
-        then
-            return BOT_ACTION_DESIRE_HIGH, buffAllyUnit
-		end
-	end
-
-    -- 7.41: Removed farming/laning self-cast (Magnus has passive 30% bonus)
-
-	if J.IsDoingRoshan(bot)
-    and buffAllyUnit ~= nil
-	then
-		if J.IsRoshan(botTarget)
-		and J.IsInRange(bot, botTarget, 500)
-        and J.IsAttacking(buffAllyUnit)
-		then
-			return BOT_ACTION_DESIRE_HIGH, buffAllyUnit
-		end
-	end
-
-    if J.IsDoingTormentor(bot)
-    and buffAllyUnit ~= nil
-    then
-        if J.IsTormentor(botTarget)
-        and J.IsInRange(bot, botTarget, 400)
-        and J.IsAttacking(buffAllyUnit)
-        then
-            return BOT_ACTION_DESIRE_HIGH, buffAllyUnit
-        end
-    end
-
-    return BOT_ACTION_DESIRE_NONE, nil
+    local target = SpellDecisions.EmpowerTarget(Empower)
+    return target ~= nil and BOT_ACTION_DESIRE_HIGH or BOT_ACTION_DESIRE_NONE, target
 end
 
 function X.ConsiderSkewer()
-    if not Skewer:IsFullyCastable()
+    if bot:IsRooted() or not Skewer:IsFullyCastable()
     then
         return BOT_ACTION_DESIRE_NONE, 0
     end
@@ -541,63 +427,7 @@ function X.ConsiderSkewer()
 end
 
 function X.ConsiderReversePolarity()
-    if not ReversePolarity:IsFullyCastable()
-    or bot:HasModifier('modifier_magnataur_skewer_movement')
-    then
-        return BOT_ACTION_DESIRE_NONE
-    end
-
-    local nRadius = ReversePolarity:GetSpecialValueInt('pull_radius')
-	local nDamage = ReversePolarity:GetSpecialValueInt('polarity_damage')
-
-    if J.IsInTeamFight(bot, 1200)
-    and (not CanDoBlinkRP() or not CanDoBlinkRPSkewer())
-	then
-		local nInRangeEnemy = J.GetNearbyHeroes(bot,nRadius, true, BOT_MODE_NONE)
-
-		if nInRangeEnemy ~= nil and #nInRangeEnemy >= 2
-        then
-            local realEnemyCount = J.GetEnemiesNearLoc(bot:GetLocation(), nRadius)
-
-            if realEnemyCount ~= nil and #realEnemyCount >= 2
-            and not J.IsLocationInChrono(nInRangeEnemy[1]:GetLocation())
-            and not J.IsLocationInBlackHole(nInRangeEnemy[1]:GetLocation())
-            then
-                return BOT_ACTION_DESIRE_HIGH
-            end
-		end
-	end
-
-	if J.IsRetreating(bot)
-	then
-        local nInRangeAlly = J.GetNearbyHeroes(bot,nRadius + 200, false, BOT_MODE_NONE)
-        local nInRangeEnemy = J.GetNearbyHeroes(bot,nRadius, true, BOT_MODE_NONE)
-
-        if nInRangeAlly ~= nil and nInRangeEnemy
-        and ((#nInRangeEnemy > #nInRangeAlly)
-            or (J.GetHP(bot) < 0.5 and bot:WasRecentlyDamagedByAnyHero(1.6)))
-        then
-            for _, enemyHero in pairs(nInRangeEnemy)
-            do
-                if J.IsValidHero(enemyHero)
-                and J.CanCastOnMagicImmune(enemyHero)
-                and J.IsInRange(bot, enemyHero, nRadius)
-                and J.CanKillTarget(enemyHero, nDamage, DAMAGE_TYPE_MAGICAL)
-                and not J.IsSuspiciousIllusion(enemyHero)
-                and not J.IsDisabled(enemyHero)
-                and not J.IsTaunted(enemyHero)
-                and not enemyHero:HasModifier('modifier_abaddon_borrowed_time')
-                and not enemyHero:HasModifier('modifier_dazzle_shallow_grave')
-                and not enemyHero:HasModifier('modifier_oracle_false_promise_timer')
-                and not enemyHero:HasModifier('modifier_templar_assassin_refraction_absorb')
-                then
-                    return BOT_ACTION_DESIRE_HIGH
-                end
-            end
-        end
-	end
-
-    return BOT_ACTION_DESIRE_NONE
+    return SpellDecisions.RPUseful(ReversePolarity, false) and BOT_ACTION_DESIRE_HIGH or BOT_ACTION_DESIRE_NONE
 end
 
 function X.ConsiderHornToss()
@@ -814,6 +644,8 @@ end
 function CanDoBlinkRPSkewer()
     if Skewer:IsFullyCastable()
     and ReversePolarity:IsFullyCastable()
+    and ReversePolarity:GetSpecialValueInt('pull_radius') > 0
+    and not bot:IsRooted()
     and HasBlink()
     then
         local nManaCost = Skewer:GetManaCost() + ReversePolarity:GetManaCost()

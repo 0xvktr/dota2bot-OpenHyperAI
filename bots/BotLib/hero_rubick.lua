@@ -71,6 +71,12 @@ X['bDeafaultItem'] = false
 
 function X.MinionThink(hMinionUnit)
     if R.HandleAstralSpiritMinion(hMinionUnit) then return end
+    if R.HandleLycanMinion(hMinionUnit) then return end
+    if R.HandleTombstoneMinion(hMinionUnit) then return end
+    if R.HandleDeathWard(hMinionUnit) then return end
+    if R.HandlePlagueWardMinion(hMinionUnit) then return end
+    if R.HandleFamiliarMinion(hMinionUnit) then return end
+    if R.HandleTrapMinion(hMinionUnit) then return end
     Minion.MinionThink(hMinionUnit)
 end
 
@@ -104,10 +110,72 @@ local function considerLinkedSpells(releaseOnly)
     return false
 end
 
+X.UseChainsDuringSleight = R.UseChainsDuringSleight
+X.UseConsume = R.UseConsume
+X.UseHealingWardDuringSlash = R.UseHealingWardDuringSlash
+X.ConsiderEggSunRay = R.ConsiderEggSunRay
+X.ConsiderPhaseJaunt = R.ConsiderPhaseJaunt
+
+X.ConsiderSnowballContinuation = R.ConsiderSnowballContinuation
+
+X.UseSmokeDuringTricks = R.UseSmokeDuringTricks
+
+X.UseBallFlightSpells = R.UseBallFlightSpells
+
+X.ConsiderDissimilatePortal = R.ConsiderDissimilatePortal
+
 function X.SkillsComplement()
     R.ObserveGlimpseHistory()
-    if R.UseShadowRealmDuringChannel() or R.UsePendingConverge() or R.UseFreezingFieldSpell() or R.UseBarrageInvisibility() or R.UsePendingStomp() or R.UseGlacierDuringMultishot() or R.UseMagnetizeStone() or R.UseAstralSpirit() then return end
-    if bot:IsChanneling() or bot:IsUsingAbility() or bot:IsCastingAbility() then return end
+    R.ObserveTimeLapseHistory()
+    R.ObserveTetherState()
+    if R.IsRelocating() then return end
+    if R.UseShadowRealmDuringChannel()
+        or R.UsePendingConverge()
+        or R.UseFreezingFieldSpell()
+        or R.UseBarrageInvisibility()
+        or R.UsePendingStomp()
+        or R.UseGlacierDuringMultishot()
+        or R.UseMagnetizeStone()
+        or R.UseAstralSpirit()
+        or R.UseChainsDuringSleight()
+        or R.UseDuringGaze()
+        or R.UsePulseNovaOff()
+        or R.UseConsume()
+        or R.StopDrain()
+        or R.UseSplitShot()
+        or R.UseSilencedHammer()
+        or R.UseSharpshooterRelease()
+        or R.UseFortuneRelease()
+        or R.UseHealingWardDuringSlash()
+        or R.UseStrengthShift()
+        or R.UseIlluminateRelease()
+        or R.UseGunslinger()
+        or R.UseRhapsodyOff()
+        or R.ConsiderPrimalContinuation()
+        or R.ConsiderEggSunRay()
+        or R.ConsiderPhaseJaunt()
+        or R.ConsiderDismemberSupport()
+        or R.ConsiderSnowballContinuation()
+        or R.ConsiderDisabledEnrage()
+        or R.UseSmokeDuringTricks()
+        or R.UseRestorationDuringChannel()
+        or R.UseChargeSupport()
+        or R.UseBallFlightSpells()
+        or R.UseTameTheBeastsCrack()
+        or R.UseCarnivalSouvenir()
+        or R.UseLightningHands()
+        or R.ConsiderDissimilatePortal()
+        or R.UseDisabledRefraction()
+        or R.ConsiderUpheavalSafety()
+        or R.UseSpellsDuringTimberChain()
+        or R.UseShadowDanceSpells()
+        or R.ConsiderGeminateAutoCast()
+        or R.ConsiderPoisonAutoCast()
+        or R.ConsiderPowershotSafety()
+        or R.ConsiderArcticBurnToggle()
+        or R.UseBattleStance()
+        or R.ConsiderLifeDrainContinuation() then return end
+    if R.IsCharging() or bot:IsChanneling() or bot:IsUsingAbility() or bot:IsCastingAbility() then return end
     if R.UsePendingGate() then return end
     if J.CanNotUseAbility(bot) then
         -- Ice Blast Release ignores silence; other stolen spells retain the normal cast gate.
@@ -188,7 +256,7 @@ function X.ConsiderTelekinesis()
         for _, allyHero in pairs(nInRangeAlly)
         do
             if J.IsValidHero(allyHero)
-            and bot:HasShard()
+            and bot:HasModifier('modifier_item_aghanims_shard')
             and J.IsInRange(bot, allyHero, nCastRange)
             and J.IsCore(allyHero)
             and not J.IsSuspiciousIllusion(allyHero)

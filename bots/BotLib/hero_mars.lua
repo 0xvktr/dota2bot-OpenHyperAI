@@ -4,6 +4,7 @@ local X = {}
 local bot = GetBot()
 
 local J = require( GetScriptDirectory()..'/FunLib/jmz_func' )
+local SpellDecisions = require(GetScriptDirectory()..'/FunLib/rubick_hero/mars')
 local Minion = dofile( GetScriptDirectory()..'/FunLib/aba_minion' )
 local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
@@ -80,6 +81,17 @@ function X.SkillsComplement()
 	nAllyHeroes = bot:GetNearbyHeroes(1600, false, BOT_MODE_NONE)
 	nEnemyHeroes = bot:GetNearbyHeroes(1600, true, BOT_MODE_NONE)
 
+    local interrupt = SpellDecisions.SpearPoint(SpearOfMars, true)
+    if interrupt ~= nil then
+        J.SetQueuePtToINT(bot, true, SpearOfMars)
+        bot:ActionQueue_UseAbilityOnLocation(SpearOfMars, interrupt)
+        return
+    end
+    local shieldPoint = SpellDecisions.BulwarkPoint(Bulwark)
+    if shieldPoint ~= nil then
+        bot:Action_UseAbilityOnLocation(Bulwark, shieldPoint)
+        return
+    end
 	SpearToAllyDesire, SpearToAllyLocation, BlinkLocation = X.ConsiderSpearToAlly()
 	if SpearToAllyDesire > 0
 	then
@@ -93,7 +105,9 @@ function X.SkillsComplement()
 	ArenaOfBloodDesire, ArenaOfBloodLocation = X.ConsiderArenaOfBlood()
 	if ArenaOfBloodDesire > 0
 	then
-		bot:Action_UseAbilityOnLocation(ArenaOfBlood, ArenaOfBloodLocation)
+		if GetUnitToLocationDistance(bot, ArenaOfBloodLocation) > SpellDecisions.Range(ArenaOfBlood) then return end
+        J.SetQueuePtToINT(bot, true, ArenaOfBlood)
+        bot:ActionQueue_UseAbilityOnLocation(ArenaOfBlood, ArenaOfBloodLocation)
 		ArenaOfBloodCastTime = DotaTime()
 		return
 	end
@@ -108,16 +122,13 @@ function X.SkillsComplement()
 	SpearOfMarsDesire, SpearOfMarsLocation = X.ConsiderSpearOfMars()
 	if SpearOfMarsDesire > 0
 	then
-		bot:Action_UseAbilityOnLocation(SpearOfMars, SpearOfMarsLocation)
+		if GetUnitToLocationDistance(bot, SpearOfMarsLocation) > SpearOfMars:GetSpecialValueInt('spear_range') then return end
+        J.SetQueuePtToINT(bot, true, SpearOfMars)
+        bot:ActionQueue_UseAbilityOnLocation(SpearOfMars, SpearOfMarsLocation)
 		return
 	end
 
-	BulwarkDesire = X.ConsiderBulwark()
-	if BulwarkDesire > 0
-	then
-		bot:Action_UseAbility(Bulwark)
-		return
-	end
+
 end
 
 function X.ConsiderSpearOfMars()
@@ -126,7 +137,7 @@ function X.ConsiderSpearOfMars()
 		return BOT_ACTION_DESIRE_NONE, nil
 	end
 
-	local nCastRange = J.GetProperCastRange(false, bot, SpearOfMars:GetSpecialValueInt('spear_range'))
+	local nCastRange = SpearOfMars:GetSpecialValueInt('spear_range')
 	local nCastPoint = SpearOfMars:GetCastPoint()
 	local nRadius = SpearOfMars:GetSpecialValueInt('spear_width')
 	local nSpeed = SpearOfMars:GetSpecialValueInt('spear_speed')
@@ -302,7 +313,7 @@ function X.ConsiderSpearOfMars()
 end
 
 function X.ConsiderGodsRebuke()
-    if not J.CanCastAbility(GodsRebuke)
+    if bot:IsDisarmed() or not J.CanCastAbility(GodsRebuke)
 	then
 		return BOT_ACTION_DESIRE_NONE, nil
 	end
@@ -316,7 +327,7 @@ function X.ConsiderGodsRebuke()
 		if  J.IsValidHero(enemyHero)
 		and J.CanBeAttacked(enemyHero)
 		and J.IsInRange(bot, enemyHero, nRadius)
-		and J.CanKillTarget(enemyHero, nDamage, DAMAGE_TYPE_PHYSICAL)
+		and J.CanKillTarget(enemyHero, nDamage + GodsRebuke:GetSpecialValueInt('bonus_damage_vs_heroes'), DAMAGE_TYPE_PHYSICAL)
 		and not J.IsSuspiciousIllusion(enemyHero)
 		and not enemyHero:HasModifier('modifier_abaddon_borrowed_time')
 		and not enemyHero:HasModifier('modifier_dazzle_shallow_grave')
@@ -355,6 +366,7 @@ function X.ConsiderGodsRebuke()
 			and J.CanBeAttacked(enemyHero)
 			and J.IsInRange(bot, enemyHero, nRadius)
 			and J.IsChasingTarget(enemyHero, bot)
+            and J.CanCastOnNonMagicImmune(enemyHero)
 			and not J.IsSuspiciousIllusion(enemyHero)
 			and not J.IsDisabled(enemyHero)
 			and not J.CanCastAbility(SpearOfMars)
@@ -365,7 +377,7 @@ function X.ConsiderGodsRebuke()
         end
 	end
 
-	local nEnemyCreeps = bot:GetNearbyCreeps(nRadius + 150, true)
+	local nEnemyCreeps = bot:GetNearbyCreeps(nRadius, true)
 
 	if (J.IsPushing(bot) or J.IsDefending(bot))
 	and nAbilityLevel >= 3
@@ -449,66 +461,7 @@ function X.ConsiderGodsRebuke()
 end
 
 function X.ConsiderBulwark()
-    if not J.CanCastAbility(Bulwark)
-	then
-		return BOT_ACTION_DESIRE_NONE
-	end
-
-	local nRange = Bulwark:GetSpecialValueInt('soldier_offset')
-
-	if J.IsRetreating(bot)
-	and not J.IsRealInvisible(bot)
-	then
-		local nInRangeAlly = bot:GetNearbyHeroes(800, false, BOT_MODE_NONE)
-
-		if #nInRangeAlly >= 1
-		then
-			local numFacing = 0
-			local nInRangeEnemy = bot:GetNearbyHeroes(1600, true, BOT_MODE_NONE)
-
-			for _, enemyHero in pairs(nInRangeEnemy)
-			do
-				if  J.IsValidHero(enemyHero)
-				and J.CanCastOnMagicImmune(enemyHero)
-				and bot:IsFacingLocation(enemyHero:GetLocation(), 15)
-				and not J.IsSuspiciousIllusion(enemyHero)
-				and not J.IsDisabled(enemyHero)
-				then
-					numFacing = numFacing + 1
-				end
-			end
-
-			if  numFacing >= 1
-			and nInRangeEnemy ~= nil
-			and #nInRangeEnemy > #nInRangeAlly
-			then
-				if Bulwark:GetToggleState() == false then
-					return BOT_ACTION_DESIRE_HIGH
-				end
-
-				return BOT_ACTION_DESIRE_NONE
-			end
-		end
-	end
-
-	if J.IsGoingOnSomeone(bot)
-	and J.IsInRange(bot, botTarget, nRange)
-	then
-		if bot:HasScepter()
-		then
-			if Bulwark:GetToggleState() == false then
-				return BOT_ACTION_DESIRE_HIGH
-			end
-
-			return BOT_ACTION_DESIRE_NONE
-		end
-	end
-
-	if Bulwark:GetToggleState() == true then
-		return BOT_ACTION_DESIRE_HIGH
-	end
-
-	return BOT_ACTION_DESIRE_NONE
+    return BOT_ACTION_DESIRE_NONE
 end
 
 function X.ConsiderArenaOfBlood()
@@ -517,10 +470,14 @@ function X.ConsiderArenaOfBlood()
 		return BOT_ACTION_DESIRE_NONE, nil
 	end
 
-	local nCastRange = J.GetProperCastRange(false, bot, ArenaOfBlood:GetCastRange())
+	local nCastRange = SpellDecisions.Range(ArenaOfBlood)
 	local nCastPoint = ArenaOfBlood:GetCastPoint()
 	local nRadius = ArenaOfBlood:GetSpecialValueInt('radius')
 	local nDuration = ArenaOfBlood:GetSpecialValueInt('duration')
+    local opportunity = SpellDecisions.ArenaPoint(ArenaOfBlood)
+    if opportunity ~= nil and not J.IsLocationInArena(opportunity, nRadius) then
+        return BOT_ACTION_DESIRE_HIGH, opportunity
+    end
 
 	if J.IsInTeamFight(bot, 1300)
 	then
@@ -571,6 +528,7 @@ function X.ConsiderArenaOfBlood()
 			if  nInRangeAlly ~= nil and nInRangeEnemy ~= nil
 			and J.IsValidHero(enemyHero)
 			and J.IsChasingTarget(enemyHero, bot)
+            and J.CanCastOnNonMagicImmune(enemyHero)
 			and not J.IsSuspiciousIllusion(enemyHero)
 			and not J.IsDisabled(enemyHero)
 			and not nInRangeEnemy[1]:HasModifier('modifier_legion_commander_duel')
@@ -623,8 +581,12 @@ function X.ConsiderSpearToAlly()
 				and #nInRangeAlly >= 2
 				and hAllyTarget ~= nil
 				then
-					local eta = (GetUnitToUnitDistance(bot, botTarget) / nSpeed) / nCastPoint
-					return BOT_ACTION_DESIRE_HIGH, hAllyTarget:GetLocation(), J.GetCorrectLoc(botTarget, eta)
+					local eta = nCastPoint + 0.1
+					local origin = J.GetCorrectLoc(botTarget, eta)
+                    if GetUnitToLocationDistance(bot, origin) <= 1199 then
+                        local aim = origin + (hAllyTarget:GetLocation() - origin):Normalized() * SpearOfMars:GetSpecialValueInt('spear_range')
+                        return BOT_ACTION_DESIRE_HIGH, aim, origin
+                    end
 				end
 			end
 		end
@@ -670,7 +632,7 @@ function X.GetSpearToLocation(nCastRange, nRadius, nCastPoint, nSpeed, hTarget)
 	-- local hTargetLocation = hTarget:GetLocation()
 	local hTrees = bot:GetNearbyTrees(nCastRange * 0.6)
 
-	if DotaTime() < ArenaOfBloodCastTime + 7 then
+	if ArenaOfBloodCastTime > 0 and DotaTime() < ArenaOfBloodCastTime + ArenaOfBlood:GetSpecialValueFloat('duration') then
 		return hTargetLocation
 	end
 

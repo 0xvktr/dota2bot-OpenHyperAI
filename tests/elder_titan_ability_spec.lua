@@ -36,7 +36,7 @@ local function unit(x,y,kind)
     function u:GetMana() return self.mana end
     function u:GetMaxMana() return 1000 end
     function u:GetAttackRange() return self.attackRange end
-    function u:HasModifier(m) return self.mods[m]==true end
+    function u:HasModifier(m) return m=='modifier_item_aghanims_shard' and self.shard==true or self.mods[m]==true end
     function u:IsMagicImmune() return self.immune==true end
     function u:IsInvulnerable() return self.invulnerable==true end
     function u:IsRooted() return self.rooted==true end
@@ -64,7 +64,6 @@ function bot:Action_UseAbility(a) actions[#actions+1]={name=a.name} end
 function bot:IsChanneling() return self.channel==true end
 function bot:IsUsingAbility() return self.using==true end
 function bot:IsCastingAbility() return self.casting==true end
-function bot:HasShard() return self.shard==true end
 function bot:ActionQueue_Delay(t) actions[#actions+1]={name='delay',duration=t} end
 function GetTeam() return bot.team end
 function IsLocationPassable() return not bot.impassable end

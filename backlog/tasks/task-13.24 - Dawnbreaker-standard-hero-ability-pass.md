@@ -5,7 +5,7 @@ status: Needs In-Game Test
 assignee:
   - '@codex'
 created_date: '2026-10-01 17:04'
-updated_date: '2026-10-01 17:28'
+updated_date: '2026-10-02 15:48'
 labels:
   - hero
 dependencies: []
@@ -15,6 +15,10 @@ references:
   - tests/dawnbreaker_ability_spec.lua
 documentation:
   - backlog/docs/doc-2 - Hero-improvement-playbook.md
+modified_files:
+  - bots/FunLib/rubick_hero/dawnbreaker.lua
+  - bots/BotLib/hero_dawnbreaker.lua
+  - tests/dawnbreaker_ability_spec.lua
 parent_task_id: TASK-13
 priority: medium
 ordinal: 64000
@@ -51,6 +55,8 @@ Focused verification: tests/dawnbreaker_ability_spec.lua prints exact marker Daw
 Lobby pending: validate live Hammer GetSpecialValue range/speed talent and item range, projectile prediction and no-history linked Converge grant for Rubick; stationary Hammer auto-return expiry and midpoint geometry on slopes/cliffs; actual Starbreaker attack/Luminosity proc sequencing, sufficient stun duration, Shard immunity and free movement without injecting unverified movement commands; global allied anchor eligibility while banished/invulnerable, predicted offset cast legality, pulse healing versus Ice Blast/Doom, ally Duel/Arena/global initiation saves and landing outside Chronosphere/Black Hole; queued BKB then Solar and interrupts that still pierce BKB; current Scepter following aura/healing amplifier and stolen Solar behavior. No artificial airborne steer, channel cancellation or hidden Land casts were added: retained KV controls are not sufficient evidence of current live mechanics. TASK-21 follow-ups: Soul Ring mana conversion with Luminosity recovery, Echo Sabre/Harpoon/Blink combo item timing, Holy Locket healing, Refresher combined mana, BKB protection around Solar. TASK-24 follow-ups: spacing/kiting Starbreaker, anti-heal and armor, Break against Luminosity, tracking global Solar availability, reliable channel interruptions (including Carapace/Global Silence), and landing response/displacement such as Glimpse. Synergy pick data belongs in matchups; no shared item/minion/draft code or WeakHeroes classification changed.
 
 Final verification after all review repairs (2026-10-01): node tests/run-builds.cjs exited0; all five hero spec exact markers verified, 358 Lua files parsed, pinned Valve audit128 native heroes/27 Rubick copies/0 findings, 127 role tables, 112 specialized dispatches,64 Rubick behavior cases and272 purchase lists. git diff --check passed. All five original build/skill/talent prefixes remain byte-identical to HEAD. New handlers and early hooks are integrated; existing prior-batch scenarios still pass. TASK21/24 observations recorded. No lobby launched; standard pass handed off as Needs In-Game Test with capability limits above.
+
+2026-10-02 integration API follow-up: replaced undocumented HasShard() calls with the existing modifier_item_aghanims_shard convention used by this repository. Fixtures use the actual modifier query, retaining shard state scenarios. Focused hero scenarios passed; builds and skill/talent preferences retained. Lobby verification remains required.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
