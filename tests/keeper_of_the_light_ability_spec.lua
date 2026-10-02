@@ -161,7 +161,7 @@ function bot:GetAbilityInSlot(slot) return self.slots and self.slots[slot] end
 J.HasBreakModifier=function() return false end
 J.GetEnemiesNearLoc=function(p,r) local t={};for _,u in pairs(enemies) do if distance(u,p)<=r then t[#t+1]=u end end;return t end
 J.GetManaAfter=function() return 0 end
-J.IsCore=function() return false end
+J.IsCore=function(u) return u.core==true end
 J.IsThereCoreNearby=function() return true end
 function bot:GetNearbyHeroes(r,e) return J.GetNearbyHeroes(self,r,e) end
 local q=spell('keeper_of_the_light_illuminate',1800,{range=1550,radius=400,total_damage=500,max_channel_time=3,speed=900})
@@ -175,6 +175,27 @@ local recall=spell('keeper_of_the_light_recall',0)
 local hero=H.load('npc_dota_hero_keeper_of_the_light','pos_4');local copy=H.realDofile('bots/FunLib/rubick_hero/keeper_of_the_light.lua')
 local function tick(stolen,a) actions={};if stolen then local handled=copy.ConsiderStolenSpell(a);assert(handled==(actions[1]~=nil),'copied action status') else hero.SkillsComplement() end;return actions[1] end
 for _,stolen in ipairs({false,true}) do
+ reset();e.ready=true;bot.mana=600;local urgent=friend(500);urgent.mana=100
+ assert(tick(stolen,e).target==urgent,'urgent ally beats larger self restore bonus')
+ reset();e.ready=true;bot.mana=940
+ assert(tick(stolen,e).target==bot,'free Chakra tops up useful small mana deficit')
+ reset();e.ready=true;bot.mana=995
+ assert(tick(stolen,e)==nil,'do not waste Chakra on a trivial deficit')
+ reset();e.ready=true;bot.mana=0
+ assert(tick(stolen,e).target==bot,'zero mana does not prevent free Chakra')
+ reset();e.ready=true;local unsafe=friend(200);unsafe.mana=100;unsafe.invulnerable=true
+ assert(tick(stolen,e)==nil,'invulnerable ally is not a legal Chakra target')
+ reset();e.ready=true;bot.slots={[0]=e};e.cooldown=10;function e:IsUltimate() return false end
+ assert(tick(stolen,e)==nil,'Chakra cannot score reducing its own cooldown');bot.slots=nil;e.cooldown=0
+ reset();e.ready=true;local laneCore=friend(500);laneCore.core=true;laneCore.mana=500;local laneSupport=friend(200);laneSupport.mana=500;bot.mode='Laning'
+ assert(tick(stolen,e).target==laneCore,'lane core wins comparable allied mana need')
+ reset();e.ready=true;local copiedChakra=spell('keeper_of_the_light_chakra_magic',900);copiedChakra.cooldown=10
+ function copiedChakra:IsUltimate() return false end;local otherKotl=friend(300);otherKotl.slots={[0]=copiedChakra}
+ assert(tick(stolen,e)==nil,'Chakra on another hero is not a cooldown reduction benefit');spells[e.name]=e
+ reset();e.ready=true;e.values.strong_dispel=1;local sleeping=friend(300);sleeping.nightmared=true
+ assert(tick(stolen,e).target==sleeping,'strong-dispel Chakra can save a sleeping core');e.values.strong_dispel=0
+ reset();e.ready=true;q.ready=true;bot.mana=600;bot.mode='GoingOnSomeone';target=foe(1000)
+ if not stolen then assert(tick(stolen,e).name==e.name,'Chakra runs before a new offensive Illuminate') end
  reset();e.ready=true;local ally=friend(900);local basic=spell('ally_basic',0);basic.cooldown=5;function basic:IsUltimate() return false end;ally.slots={[0]=basic}
  assert(tick(stolen,e).target==ally,'Chakra values spent basic cooldown even at full mana')
  function basic:IsUltimate() return true end;assert(tick(stolen,e)==nil,'Chakra never scores ultimate reset');ally.slots={};ally.silenced=true;e.values.strong_dispel=1

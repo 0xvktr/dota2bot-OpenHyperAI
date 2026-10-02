@@ -16,6 +16,18 @@ local function __TS__ObjectValues(obj)
     return result
 end
 
+local function __TS__ArrayFilter(self, callbackfn, thisArg)
+    local result = {}
+    local len = 0
+    for i = 1, #self do
+        if callbackfn(thisArg, self[i], i - 1, self) then
+            len = len + 1
+            result[len] = self[i]
+        end
+    end
+    return result
+end
+
 local function __TS__CountVarargs(...)
     return select("#", ...)
 end
@@ -440,11 +452,53 @@ end
 ____exports.HasArmorReduction = function(nUnit)
     return nUnit:HasModifier("modifier_templar_assassin_meld_armor") or nUnit:HasModifier("modifier_item_medallion_of_courage_armor_reduction") or nUnit:HasModifier("modifier_item_solar_crest_armor_reduction") or nUnit:HasModifier("modifier_slardar_amplify_damage")
 end
+____exports.IsCampOccupied = function(bot, loc)
+    for ____, ally in ipairs(GetUnitList(UnitType.AlliedHeroes)) do
+        do
+            local __continue70
+            repeat
+                if ally == bot or ally:IsNull() or not ally:IsAlive() or ally:IsIllusion() or not ally:CanBeSeen() then
+                    __continue70 = true
+                    break
+                end
+                if GetUnitToLocationDistance(ally, loc) > 700 then
+                    __continue70 = true
+                    break
+                end
+                if not ally:IsBot() then
+                    return true
+                end
+                local target = ally:GetAttackTarget() or ally:GetTarget()
+                local attackingCamp = target and not target:IsNull() and target:IsAlive() and target:GetTeam() == Team.Neutral and GetUnitToLocationDistance(target, loc) <= 600
+                local ownTarget = bot:GetAttackTarget()
+                local alreadyFarming = ownTarget and not ownTarget:IsNull() and ownTarget:IsAlive() and ownTarget:GetTeam() == Team.Neutral and GetUnitToLocationDistance(ownTarget, loc) <= 600
+                if attackingCamp then
+                    if not alreadyFarming or ally:GetPlayerID() < bot:GetPlayerID() then
+                        return true
+                    end
+                elseif not alreadyFarming and ally:GetActiveMode() == BotMode.Farm then
+                    return true
+                end
+                __continue70 = true
+            until true
+            if not __continue70 then
+                break
+            end
+        end
+    end
+    return false
+end
+____exports.IsNeutralBeingFarmed = function(bot, creep)
+    return creep:GetTeam() == Team.Neutral and ____exports.IsCampOccupied(
+        bot,
+        creep:GetLocation()
+    )
+end
 ____exports.GetClosestNeutralSpwan = function(bot, availableCampList)
     local minDist = 15000
     local closestCamp = nil
     for ____, camp in ipairs(availableCampList) do
-        if ____exports.CanFarmCamp(bot, camp.cattr) then
+        if ____exports.CanFarmCamp(bot, camp.cattr) and not ____exports.IsCampOccupied(bot, camp.cattr.location) then
             local dist = GetUnitToLocationDistance(bot, camp.cattr.location)
             if ____exports.IsEnemyCamp(camp.cattr) then
                 dist = dist * 1.5
@@ -508,6 +562,10 @@ ____exports.GetMinHPCreep = function(creepList)
 end
 ____exports.FindFarmNeutralTarget = function(creepList)
     local bot = GetBot()
+    creepList = __TS__ArrayFilter(
+        creepList,
+        function(____, creep) return IsValidCreep(creep) and creep:GetTeam() == Team.Neutral and not ____exports.IsNeutralBeingFarmed(bot, creep) end
+    )
     local botName = bot:GetUnitName()
     local targetCreep = nil
     if ____exports.ConsiderFarmNeutralType[botName] ~= nil then

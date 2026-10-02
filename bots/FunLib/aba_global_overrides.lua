@@ -375,18 +375,25 @@ local function reserveLaneCreep(bot, target)
     return SupportLastHits.ReservedForCore(bot, target) ~= nil
 end
 local originalSupportAttack = CDOTA_Bot_Script.Action_AttackUnit
+local function reserveNeutralCamp(bot, target)
+    if not target or target:IsNull()
+        or not string.find(target:GetUnitName(), 'npc_dota_neutral_', 1, true)
+        or not bot:IsHero() or bot:IsIllusion() then return false end
+    local Site = require(GetScriptDirectory()..'/FunLib/aba_site')
+    return Site.IsNeutralBeingFarmed(bot, target)
+end
 function CDOTA_Bot_Script:Action_AttackUnit(target, once)
-    if reserveLaneCreep(self, target) then return end
+    if reserveLaneCreep(self, target) or reserveNeutralCamp(self, target) then return end
     return originalSupportAttack(self, target, once)
 end
 local originalSupportQueuedAttack = CDOTA_Bot_Script.ActionQueue_AttackUnit
 function CDOTA_Bot_Script:ActionQueue_AttackUnit(target, once)
-    if reserveLaneCreep(self, target) then return end
+    if reserveLaneCreep(self, target) or reserveNeutralCamp(self, target) then return end
     return originalSupportQueuedAttack(self, target, once)
 end
 local originalSupportPushedAttack = CDOTA_Bot_Script.ActionPush_AttackUnit
 function CDOTA_Bot_Script:ActionPush_AttackUnit(target, once)
-    if reserveLaneCreep(self, target) then return end
+    if reserveLaneCreep(self, target) or reserveNeutralCamp(self, target) then return end
     return originalSupportPushedAttack(self, target, once)
 end
 

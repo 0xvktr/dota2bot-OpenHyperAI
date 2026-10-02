@@ -14,19 +14,25 @@ function K.Chakra(bot,ability)
     local candidates={bot};for _,ally in pairs(J.GetNearbyHeroes(bot,K.Range(bot,ability),false,BOT_MODE_NONE)) do candidates[#candidates+1]=ally end
     local best,score=nil,0
     for _,ally in pairs(candidates) do
-        if J.IsValidHero(ally) and not J.IsSuspiciousIllusion(ally) then
+        if J.IsValidHero(ally) and not J.IsSuspiciousIllusion(ally) and not ally:IsInvulnerable()
+            and GetUnitToUnitDistance(bot,ally)<=K.Range(bot,ability) then
             local bonus=ally==bot and 1+ability:GetSpecialValueInt('self_bonus')/100 or 1
             local mana=math.min(ally:GetMaxMana()-ally:GetMana(),ability:GetSpecialValueInt('mana_restore')*bonus)
             local cooldown=0
             for slot=0,23 do
                 local spell=ally:GetAbilityInSlot(slot)
-                if spell and spell:IsTrained() and not spell:IsPassive() and not spell:IsHidden() and not spell:IsUltimate() then
+                if spell and spell:GetName()~='keeper_of_the_light_chakra_magic' and spell:IsTrained() and not spell:IsPassive() and not spell:IsHidden() and not spell:IsUltimate() then
                     cooldown=cooldown+math.min(spell:GetCooldownTimeRemaining(),ability:GetSpecialValueFloat('cooldown_reduction')*bonus)
                 end
             end
             local value=mana+cooldown*50
-            if ability:GetSpecialValueInt('strong_dispel')>0 and (ally:IsRooted() or ally:IsSilenced() or ally:IsStunned()) then value=value+1000 end
-            if value>score and value>=75 then best,score=ally,value end
+            -- Mana actually restored is the baseline; don't hold a free spell
+            -- waiting for an empty pool. Urgent allies win over routine upkeep.
+            if mana>0 and J.GetMP(ally)<0.35 then value=value+150 end
+            if ally~=bot and J.IsCore(ally) and J.IsLaning(bot) then value=value*1.25 end
+            if J.IsGoingOnSomeone(ally) or J.IsInTeamFight(ally,1200) or J.IsRetreating(ally) then value=value*1.25 end
+            if ability:GetSpecialValueInt('strong_dispel')>0 and (ally:IsRooted() or ally:IsSilenced() or ally:IsStunned() or ally:IsHexed() or ally:IsNightmared()) then value=value+1000 end
+            if value>score and (mana>=math.min(50,ability:GetSpecialValueInt('mana_restore')*0.5) or cooldown>=1 or value>=1000) then best,score=ally,value end
         end
     end
     if best then return BOT_ACTION_DESIRE_HIGH,best end

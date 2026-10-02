@@ -33,7 +33,7 @@ const earlyDefense = cp.spawnSync(process.execPath, ['tests/early_lane_defense_s
 if (earlyDefense.error || earlyDefense.status !== 0) process.exit(1);
 const highFive = cp.spawnSync(process.execPath, ['tests/high_five_spec.cjs'], {stdio: 'inherit'});
 if (highFive.error || highFive.status !== 0) process.exit(1);
-for (const file of ['camp_filter_spec.cjs', 'early_item_cleanup_spec.cjs']) {
+for (const file of ['camp_filter_spec.cjs', 'emergency_reactions_spec.cjs', 'early_item_cleanup_spec.cjs']) {
     const check = cp.spawnSync(process.execPath, ['tests/' + file], {stdio: 'inherit'});
     if (check.error || check.status !== 0) process.exit(1);
 }
@@ -141,9 +141,11 @@ if(attackStart<0||attackEnd<0)throw new Error('Support attack wrappers missing')
 const attackSpec=`local calls=0;local reserve=true
 function GetScriptDirectory()return 'bots'end
 package.loaded['bots/FunLib/support_last_hits']={ReservedForCore=function()if reserve then return {} end end}
+local neutralReserved=true
+package.loaded['bots/FunLib/aba_site']={IsNeutralBeingFarmed=function()return neutralReserved end}
 CDOTA_Bot_Script={Action_AttackUnit=function()calls=calls+1 end,ActionQueue_AttackUnit=function()calls=calls+1 end,ActionPush_AttackUnit=function()calls=calls+1 end}
 ${overrides.slice(attackStart,attackEnd)}
-local bot=setmetatable({},{__index=CDOTA_Bot_Script})
+local bot=setmetatable({IsHero=function()return true end,IsIllusion=function()return false end},{__index=CDOTA_Bot_Script})
 local creep={IsNull=function()return false end,GetUnitName=function()return 'npc_dota_creep_badguys_melee'end}
 for _,method in ipairs({'Action_AttackUnit','ActionQueue_AttackUnit','ActionPush_AttackUnit'})do bot[method](bot,creep,true)end
 assert(calls==0)
@@ -152,6 +154,10 @@ for _,method in ipairs({'Action_AttackUnit','ActionQueue_AttackUnit','ActionPush
 assert(calls==3)
 reserve=true;bot:Action_AttackUnit({IsNull=function()return false end,GetUnitName=function()return 'npc_dota_hero_axe'end},true)
 assert(calls==4)
+local neutral={IsNull=function()return false end,GetUnitName=function()return 'npc_dota_neutral_centaur_khan'end}
+for _,method in ipairs({'Action_AttackUnit','ActionQueue_AttackUnit','ActionPush_AttackUnit'})do bot[method](bot,neutral,true)end
+assert(calls==4,'all scripted attack paths respect occupied neutral camps')
+neutralReserved=false;bot:Action_AttackUnit(neutral,true);assert(calls==5,'free neutral remains attackable')
 print('Support attack wrapper checks passed')`;
 const attackWrappers=cp.spawnSync(process.execPath,[lua,'-e',attackSpec],{encoding:'utf8'});
 process.stdout.write(attackWrappers.stdout||'');process.stderr.write(attackWrappers.stderr||'');

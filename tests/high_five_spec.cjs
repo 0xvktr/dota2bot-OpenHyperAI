@@ -19,6 +19,7 @@ const generic=fs.readFileSync('bots/ability_item_usage_generic.lua','utf8');
 fs.writeFileSync('.test-tools/high-five-think.lua',
     'return function(bot,J,HighFive,BotBuild,BossCombat,GateProbe,Customize)\n'+
     'local botName=bot:GetUnitName()\nlocal function RefreshBotHandle()return false end\nlocal AbilityUsageThink\n'+
+    'local EmergencyReactions={InterruptTeleport=function()return false end,WakeCore=function()return false end}\n'+
     section(generic,'function AbilityUsageThink()','function BuybackUsageThink()')+
     'return AbilityUsageThink\nend\n');
 const result=cp.spawnSync(process.execPath,[path.resolve('.test-tools/node_modules/fengari-node-cli/src/lua-cli.js'),

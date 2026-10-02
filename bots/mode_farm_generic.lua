@@ -424,13 +424,9 @@ function GetDesireHelper()
 			if preferedCamp == nil then preferedCamp = J.Site.GetClosestNeutralSpwan(bot, availableCamp);end
 
 			if preferedCamp ~= nil then
-				-- Don't farm a camp where an ally is already farming
-				local nCampAllies = J.GetAlliesNearLoc(preferedCamp.cattr.location, 800)
-				for _, ally in pairs(nCampAllies) do
-					if ally ~= bot and J.IsValidHero(ally) and not ally:IsIllusion()
-					and J.IsFarming(ally) then
-						return BOT_MODE_DESIRE_NONE
-					end
+				if J.Site.IsCampOccupied(bot, preferedCamp.cattr.location) then
+					preferedCamp = J.Site.GetClosestNeutralSpwan(bot, availableCamp)
+					if preferedCamp == nil then return BOT_MODE_DESIRE_NONE end
 				end
 
 				if not J.Site.IsModeSuitableToFarm(bot)
@@ -606,28 +602,29 @@ function Think()
 	if preferedCamp ~= nil then
 		local targetFarmLoc = preferedCamp.cattr.location;
 		local cDist = GetUnitToLocationDistance(bot, targetFarmLoc);
-		local nNeutrals = bot:GetNearbyCreeps(900, true);
+		local nNeutrals = bot:GetNearbyNeutralCreeps(900);
 
 		-- Don't steal farm from an ally already at this camp
-		local nAllyNearCamp = J.GetAlliesNearLoc(targetFarmLoc, 800)
-		local bAllyFarming = false
-		for _, ally in pairs(nAllyNearCamp) do
-			if ally ~= bot and J.IsValidHero(ally) and not ally:IsIllusion()
-			and J.IsFarming(ally) and J.IsAttacking(ally) then
-				bAllyFarming = true
-				break
-			end
-		end
-		if bAllyFarming and cDist > 400 then
-			-- Pick a different camp instead
-			J.Role['availableCampTable'], preferedCamp = J.Site.UpdateAvailableCamp(bot, preferedCamp, J.Role['availableCampTable']);
+		if J.Site.IsCampOccupied(bot, targetFarmLoc) then
+			-- Occupied is not cleared: keep the shared spawn registry intact.
 			availableCamp = J.Role['availableCampTable']
 			preferedCamp = J.Site.GetClosestNeutralSpwan(bot, availableCamp)
-			if preferedCamp == nil then return end
+			farmState = FARM_STATE_NONE
+			bot:SetTarget(nil)
+			if preferedCamp == nil then bot:Action_ClearActions(false); return end
 			targetFarmLoc = preferedCamp.cattr.location
 			cDist = GetUnitToLocationDistance(bot, targetFarmLoc)
-			nNeutrals = bot:GetNearbyCreeps(900, true)
+			bot.farmLocation = targetFarmLoc
+			bot:Action_MoveToLocation(targetFarmLoc)
+			return
 		end
+		-- Nearby lists may contain a different, occupied camp. Filter before
+		-- either the usual selector or its first-creep fallback can attack.
+		local unoccupied = {}
+		for _, creep in ipairs(nNeutrals) do
+			if J.IsValid(creep) and not J.Site.IsNeutralBeingFarmed(bot, creep) then unoccupied[#unoccupied+1] = creep end
+		end
+		nNeutrals = unoccupied
 
 		if #nNeutrals >= 3 and cDist <= 600 and cDist > 240
 		   and ( bot:GetLevel() >= 10 or not nNeutrals[1]:IsAncientCreep())
@@ -677,7 +674,7 @@ function Think()
 				bot:Action_MoveToLocation(targetFarmLoc);
 				return;
 		else
-			local neutralCreeps = bot:GetNearbyCreeps(1000, true); 
+			local neutralCreeps = nNeutrals;
 			
 			if #neutralCreeps >= 2 then
 

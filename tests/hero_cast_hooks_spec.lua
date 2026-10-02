@@ -12,7 +12,9 @@ local function fixture()
     f.think=makeThink(bot,build,{Active=function() return f.gate end},
         function() return f.refresh end, {IsNoAbilityIllution=function() return false end},
         {AbilityThink=function() return false end},
-        {Think=function() f.highFives=f.highFives+1 end})
+        {Think=function() f.highFives=f.highFives+1 end},
+        {InterruptTeleport=function() f.interruptCalls=(f.interruptCalls or 0)+1;return f.interrupt end,
+         WakeCore=function() f.wakeCalls=(f.wakeCalls or 0)+1;return f.wake end})
     return f
 end
 for _,name in ipairs({'UseChainsDuringSleight','UseConsume','UseHealingWardDuringSlash','ConsiderEggSunRay','ConsiderPhaseJaunt','ConsiderSnowballContinuation'}) do
@@ -35,4 +37,8 @@ for _,name in ipairs({'UseChainsDuringSleight','UseConsume','UseHealingWardDurin
 end
 local f=fixture();f.think();assert(f.skills==0)
 f.invulnerable=false;f.think();assert(f.skills==1)
+f=fixture();f.invulnerable=false;f.interrupt=true;f.think()
+assert(f.interruptCalls==1 and not f.wakeCalls and f.skills==0 and f.highFives==0,'TP interrupt owns frame before rescue and ordinary skills')
+f=fixture();f.invulnerable=false;f.wake=true;f.think()
+assert(f.interruptCalls==1 and f.wakeCalls==1 and f.skills==0 and f.highFives==0,'Nightmare rescue owns frame before ordinary skills')
 print('Hero cast hook scenarios passed')

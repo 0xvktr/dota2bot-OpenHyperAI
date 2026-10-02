@@ -26,6 +26,14 @@ assert.strictEqual(fs.readFileSync('bots/FunLib/aba_site.lua', 'utf8').replace(/
     generated.replace(/\r\n/g, '\n'), 'aba_site.lua differs from its TypeScript source; run this spec with --write');
 const parser = require('../.test-tools/node_modules/luaparse');
 parser.parse(generated, {luaVersion: '5.1'});
+const farm = fs.readFileSync('bots/mode_farm_generic.lua', 'utf8');
+const start = farm.indexOf('function Think()'), end = farm.indexOf('function X.IsNearLaneFront(', start);
+assert(start >= 0 && end > start, 'farm Think not found');
+fs.writeFileSync('.test-tools/camp-farm-think.lua',
+    'return function(bot,J,preferedCamp,availableCamp,X)\n' +
+    'local Customize={ThinkLess=0}; local runMode=false; local farmState=0; local FARM_STATE_NONE=0; local FARM_STATE_FARM=1\n' +
+    'local hLaneCreepList={}; local sec=0; local botName=bot:GetUnitName(); local RB={};local DB={}\n' +
+    farm.slice(start,end) + 'Think();return preferedCamp\nend\n');
 const run = cp.spawnSync(process.execPath, [path.resolve('.test-tools/node_modules/fengari-node-cli/src/lua-cli.js'),
     'tests/camp_filter_spec.lua'], {encoding: 'utf8'});
 process.stdout.write(run.stdout || ''); process.stderr.write(run.stderr || '');

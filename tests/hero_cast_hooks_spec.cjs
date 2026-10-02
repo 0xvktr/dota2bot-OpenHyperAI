@@ -10,7 +10,8 @@ const start = source.indexOf('function AbilityUsageThink()');
 const end = source.indexOf('function BuybackUsageThink()', start);
 assert(start >= 0 && end > start);
 fs.writeFileSync('.test-tools/hero-cast-hooks.lua',
-    'return function(bot, BotBuild, GateProbe, RefreshBotHandle, J, BossCombat, HighFive)\n' +
+    'return function(bot, BotBuild, GateProbe, RefreshBotHandle, J, BossCombat, HighFive, EmergencyReactions)\n' +
+    'EmergencyReactions = EmergencyReactions or {InterruptTeleport=function() return false end, WakeCore=function() return false end}\n' +
     'local botName = "npc_dota_hero_test"\nlocal Customize = {ThinkLess=0}\n' +
     source.slice(start, end) + 'return AbilityUsageThink\nend\n');
 const result = cp.spawnSync(process.execPath,

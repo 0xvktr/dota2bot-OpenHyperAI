@@ -359,12 +359,38 @@ export const HasArmorReduction = function (nUnit: Unit): boolean {
         nUnit.HasModifier("modifier_slardar_amplify_damage")
     );
 };
+// Check the resource location, not distance to the requesting bot. Humans have
+// no meaningful bot mode; conservatively leave their nearby camp alone, as in
+// upstream PR #166. Bots must be farming here, not merely walking past.
+export const IsCampOccupied = function (bot: Unit, loc: Vector): boolean {
+    for (const ally of GetUnitList(UnitType.AlliedHeroes)) {
+        if (ally === bot || ally.IsNull() || !ally.IsAlive() || ally.IsIllusion() || !ally.CanBeSeen()) continue;
+        if (GetUnitToLocationDistance(ally, loc) > 700) continue;
+        if (!ally.IsBot()) return true;
+        const target = ally.GetAttackTarget() || ally.GetTarget();
+        const attackingCamp = target && !target.IsNull() && target.IsAlive() && target.GetTeam() === Team.Neutral
+            && GetUnitToLocationDistance(target, loc) <= 600;
+        const ownTarget = bot.GetAttackTarget();
+        const alreadyFarming = ownTarget && !ownTarget.IsNull() && ownTarget.IsAlive() && ownTarget.GetTeam() === Team.Neutral
+            && GetUnitToLocationDistance(ownTarget, loc) <= 600;
+        if (attackingCamp) {
+            // If two bots arrive together, consistently keep one farmer.
+            if (!alreadyFarming || ally.GetPlayerID() < bot.GetPlayerID()) return true;
+        } else if (!alreadyFarming && ally.GetActiveMode() === BotMode.Farm) {
+            return true;
+        }
+    }
+    return false;
+};
+export const IsNeutralBeingFarmed = function (bot: Unit, creep: Unit): boolean {
+    return creep.GetTeam() === Team.Neutral && IsCampOccupied(bot, creep.GetLocation());
+};
 export const GetClosestNeutralSpwan = function (bot: Unit, availableCampList: any[]): any | null {
     let minDist = 15000;
     let closestCamp: any | null = null;
 
     for (const camp of availableCampList) {
-        if (CanFarmCamp(bot, camp.cattr)) {
+        if (CanFarmCamp(bot, camp.cattr) && !IsCampOccupied(bot, camp.cattr.location)) {
             let dist = GetUnitToLocationDistance(bot, camp.cattr.location);
             if (IsEnemyCamp(camp.cattr)) dist *= 1.5;
 
@@ -441,6 +467,8 @@ export const GetMinHPCreep = function (creepList: Unit[]): Unit | null {
 
 export const FindFarmNeutralTarget = function (creepList: Unit[]): Unit | null {
     const bot = GetBot();
+    creepList = creepList.filter(creep => IsValidCreep(creep) && creep.GetTeam() === Team.Neutral
+        && !IsNeutralBeingFarmed(bot, creep));
     const botName = bot.GetUnitName();
     let targetCreep: Unit | null = null;
 

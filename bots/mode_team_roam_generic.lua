@@ -420,7 +420,7 @@ function X.SupportFindTarget()
         local nAllies = J.GetNearbyHeroes(bot, 1300, false, BOT_MODE_NONE)
         if J.IsWithoutTarget(bot) and botMode ~= BOT_MODE_FARM and #nNeutrals > 0 and #nAllies <= 1 then
             for i = 1, #nNeutrals do
-                if X.CanBeAttacked(nNeutrals[i]) and not X.IsAllysTarget(nNeutrals[i])
+                if X.CanBeAttacked(nNeutrals[i]) and not J.Site.IsNeutralBeingFarmed(bot, nNeutrals[i]) and not X.IsAllysTarget(nNeutrals[i])
                 and not J.IsTormentor(nNeutrals[i]) and not J.IsRoshan(nNeutrals[i])
                 and X.IsLastHitCreep(nNeutrals[i], attackDamage) then
                     return nNeutrals[i], BOT_MODE_DESIRE_ABSOLUTE
@@ -785,6 +785,7 @@ function X.CarryFindTarget()
 				for i = 1,#nNeutrals
 				do
 					if X.CanBeAttacked(nNeutrals[i])
+						and not J.Site.IsNeutralBeingFarmed(bot, nNeutrals[i])
 						and not X.IsAllysTarget(nNeutrals[i])
 						and not J.IsTormentor(nNeutrals[i])
 						and not J.IsRoshan(nNeutrals[i])

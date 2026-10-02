@@ -115,6 +115,12 @@ function X.SkillsComplement()
     botTarget = J.GetProperTarget(bot)
     botHP = J.GetHP(bot)
 
+    ChakraMagicDesire, ChakraMagicTarget = X.ConsiderChakraMagic()
+    if ChakraMagicDesire > 0 then
+        bot:Action_UseAbilityOnEntity(ChakraMagic, ChakraMagicTarget)
+        return
+    end
+
     SpiritFormDesire = X.ConsiderSpiritForm()
     if SpiritFormDesire > 0
     then
@@ -159,13 +165,6 @@ function X.SkillsComplement()
         IlluminateCastedTime = DotaTime()
         K.Record(bot,Illuminate,IlluminateLocation,illuminateState)
         illuminateState.target=bot.illuminate_status and bot.illuminate_status[2]
-        return
-    end
-
-    ChakraMagicDesire, ChakraMagicTarget = X.ConsiderChakraMagic()
-    if ChakraMagicDesire > 0
-    then
-        bot:Action_UseAbilityOnEntity(ChakraMagic, ChakraMagicTarget)
         return
     end
 
