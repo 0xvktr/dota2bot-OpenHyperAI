@@ -85,8 +85,63 @@ s, step = observed()
 step({time = 102, health = 0.2, enemies = 2, damaged = true})
 eq(step({time = 121, enemies = 0, damaged = false}), nil, 'expired danger is quiet')
 
+-- Enemy scoreboard deltas name a victim or killer only when exactly one enemy moved with us.
+local function foes(lina, zeus, axe)
+    local function foe(name, score, human)
+        return {name = name, kills = score[1] or 0, deaths = score[2] or 0, alive = score[3] ~= false, human = human}
+    end
+    return {[5] = foe('Lina', lina or {}, true), [6] = foe('Zeus', zeus or {}, false), [7] = foe('Axe', axe or {}, false)}
+end
+s, step = observed({teamKills = 10, enemyKills = 10, foes = foes()})
+local event, context = step({time = 102, kills = 1, teamKills = 11, foes = foes({0, 1})})
+eq(event, 'kill')
+eq(context.victim, 'Lina', 'single enemy death names the victim')
+eq(context.human, true, 'victim is a human player')
+event, context = step({time = 110, deaths = 1, alive = false, enemyKills = 11, foes = foes({1, 1})})
+eq(event, 'death')
+eq(context.killer, 'Lina', 'single enemy kill names the killer')
+eq(context.victim, nil)
+eq(step({time = 150, alive = true}), nil)
+event, context = step({time = 152, kills = 2, teamKills = 12, foes = foes({1, 2})})
+eq(event, 'revenge', 'killing the last killer')
+eq(context.victim, 'Lina')
+event, context = step({time = 200, kills = 3, teamKills = 14, foes = foes({1, 3}, {0, 1})})
+eq(event, 'kill')
+eq(context, nil, 'two enemy deaths leave the victim unnamed')
+eq(step({time = 210, enemyKills = 14, foes = foes({1, 3}, {3, 1})}), nil, 'enemy streak builds quietly')
+event, context = step({time = 250, kills = 4, teamKills = 15, foes = foes({1, 3}, {3, 2})})
+eq(event, 'shutdown', 'ending an enemy streak outranks our own milestone')
+eq(context.victim, 'Zeus')
+eq(context.human, false)
+event, context = step({time = 300, kills = 5, teamKills = 16, foes = foes({1, 4}, {3, 2})})
+eq(event, 'kill', 'second attributed repeat is not yet dominating')
+event, context = step({time = 340, kills = 6, teamKills = 17, foes = foes({1, 5}, {3, 2})})
+eq(event, 'dominating', 'third kill on a hero since it last killed us')
+eq(context.victim, 'Lina')
+eq(step({time = 380, kills = 7, teamKills = 18, foes = foes({1, 6}, {3, 2})}), 'kill', 'fourth repeat is ordinary')
+s, step = observed({teamKills = 10, foes = foes()})
+event, context = step({time = 102, deaths = 1, alive = false, enemyKills = 2, foes = foes({1}, {1})})
+eq(event, 'death')
+eq(context, nil, 'two enemy kills leave the killer unnamed')
+eq(s.nemesis, nil)
+
+s, step = observed({teamKills = 10, foes = foes()})
+eq(step({time = 102, assists = 1, teamKills = 11, foes = foes({0, 1, false})}), nil)
+eq(step({time = 104, kills = 1, teamKills = 13, foes = foes({0, 1, false}, {0, 1, false}, {0, 1, false})}), 'team_wipe')
+eq(step({time = 106}), nil, 'wipe announced once')
+eq(step({time = 108, assists = 2}), nil, 'wipe consumes the fight')
+s, step = observed({teamKills = 10, foes = foes()})
+eq(step({time = 102, teamKills = 13, foes = foes({0, 1, false}, {0, 1, false}, {0, 1, false})}), nil, 'bystander stays quiet on a wipe')
+s, step = observed({teamKills = 10, captain = true, foes = foes()})
+eq(step({time = 102, teamKills = 13, foes = foes({0, 1, false}, {0, 1, false}, {0, 1, false})}), 'team_wipe', 'captain may announce a wipe')
+s, step = observed({teamKills = 10, captain = true, foes = foes()})
+eq(step({time = 102, foes = foes({0, 0, false}, {0, 0, false}, {0, 0, false})}), nil, 'no wipe without a fresh kill')
+s, step = observed({teamKills = 10, captain = true, foes = {[5] = foes()[5]}})
+eq(step({time = 102, kills = 1, teamKills = 11, foes = {[5] = foes({0, 1, false})[5]}}), 'kill', 'too few enemies for a wipe')
+
 for _, locale in ipairs({'en', 'zh', 'ru', 'ja'}) do
-    for _, event in ipairs({'first_blood', 'kill', 'multi_kill', 'kill_streak', 'death', 'streak_ended', 'escape', 'team_fight', 'comeback', 'lead'}) do
+    for _, event in ipairs({'first_blood', 'kill', 'multi_kill', 'kill_streak', 'death', 'streak_ended', 'escape', 'team_fight', 'comeback', 'lead',
+        'revenge', 'shutdown', 'dominating', 'team_wipe'}) do
         local line = B.GetLine(event, locale, nil, first)
         eq(type(line), 'string', locale..' '..event)
         assert(#line > 0)
@@ -99,6 +154,26 @@ Lines.ru.kill = nil
 eq(B.GetLine('kill', 'ru', nil, first), Lines.en.kill[1], 'event fallback')
 Lines.ru.kill = saved
 eq(B.GetLine('unknown_event', 'en', nil, first), nil)
+eq(B.GetLine('revenge', 'ru', nil, first), Lines.ru.kill[1], 'missing pool reuses the locale kill pool')
+eq(B.GetLine('team_wipe', 'zh', nil, first), Lines.zh.team_fight[1], 'missing pool reuses the locale fight pool')
+-- Named lines need a known hero; every English pool keeps unnamed lines.
+local function last(_, high) return high end
+for event, pool in pairs(Lines.en) do
+    local unnamed = 0
+    for _, line in ipairs(pool) do
+        for key in line:gmatch('{(%w+)}') do eq(key == 'victim' or key == 'killer', true, event..' placeholder') end
+        if not line:find('{', 1, true) then unnamed = unnamed + 1 end
+    end
+    eq(unnamed >= 6, true, event..' has unnamed lines')
+    eq(B.GetLine(event, 'en', nil, last):find('{', 1, true), nil, event..' never leaks a placeholder')
+end
+eq(B.GetLine('kill', 'en', nil, last, {victim = 'Lina'}), 'See you in a bit, Lina. Take your time.')
+eq(B.GetLine('death', 'en', nil, last, {killer = 'Lina'}), "Lina, I'll remember that.")
+eq(B.GetLine('death', 'en', nil, last, {victim = 'Lina'}):find('Lina', 1, true), nil, 'victim does not fill killer lines')
+local text, template = B.GetLine('kill', 'en', nil, last, {victim = 'Lina'})
+eq(template, Lines.en.kill[#Lines.en.kill], 'template returned for repeat tracking')
+eq(B.GetLine('kill', 'en', nil, first, nil, {Lines.en.kill[1]}), Lines.en.kill[2], 'skip lines the team just used')
+eq(B.GetLine('kill', 'ja', Lines.ja.kill[1], first, nil, Lines.ja.kill) ~= nil, true, 'exhausted pool still speaks')
 
 local function select(state, event, now, teamLast, random)
     return B.Select(state, event, now or 100, teamLast or -1000, settings, 'en', random or first)
@@ -119,9 +194,27 @@ eq(select(s, 'death', 144), nil, 'personal cooldown')
 eq(type(select(s, 'death', 145)), 'string')
 eq(select(s, 'kill', 219), nil, 'event cooldown')
 eq(type(select(s, 'kill', 220)), 'string')
+-- Rare events and kills involving a human are likelier to be voiced.
+local function roll(value) return function(low, high) return high == 100 and value or low end end
+for _, case in ipairs({{'kill', nil, 46, nil}, {'kill', {human = true}, 65, 'string'}, {'kill', {human = true}, 66, nil},
+    {'revenge', {human = false}, 80, 'string'}, {'team_wipe', nil, 80, 'string'}, {'shutdown', nil, 81, nil}}) do
+    local line = B.Select({}, case[1], 1000, -1000, settings, 'en', roll(case[3]), case[2])
+    eq(line and type(line), case[4], case[1]..' chance '..case[3])
+end
+settings.Trash_Talk_Level = 1
+for _, event in ipairs({'revenge', 'shutdown', 'dominating'}) do eq(select({}, event), nil, 'level one suppresses '..event) end
+eq(type(select({}, 'team_wipe')), 'string', 'level one keeps team wipes')
+settings.Trash_Talk_Level = 2
+-- Allied bots do not reuse a line one of them said recently.
+local shared = {}
+for index = 1, 6 do
+    local line = B.Select({}, 'escape', 2000 + index, -1000, settings, 'en', first)
+    eq(shared[line], nil, 'team line repeated')
+    shared[line] = true
+end
 
 -- Exercise the engine adapter with the actual selector and phrase pools.
-GAME_STATE_GAME_IN_PROGRESS, BOT_MODE_NONE = 5, 0
+GAME_STATE_PRE_GAME, GAME_STATE_GAME_IN_PROGRESS, BOT_MODE_NONE = 4, 5, 0
 local now, gameState, scoreReads = 100, 5, 0
 local scores, messages, nearby = {}, {}, {}
 local bot = {alive = true, illusion = false, double = false, hp = 1000}
@@ -146,6 +239,9 @@ function GetOpposingTeam() return 3 end
 function GetHeroKills(id) scoreReads = scoreReads + 1; return (scores[id] or {}).kills or 0 end
 function GetHeroDeaths(id) return (scores[id] or {}).deaths or 0 end
 function GetHeroAssists(id) return (scores[id] or {}).assists or 0 end
+function IsHeroAlive(id) return (scores[id] or {}).dead ~= true end
+function GetSelectedHeroName(id) return id == 5 and 'npc_dota_hero_lina' or 'npc_dota_hero_axe' end
+function IsPlayerBot(id) return id ~= 5 end
 RandomInt = first
 B.Think(bot, true)
 eq(#messages, 0)
@@ -170,10 +266,10 @@ eq(#messages, 1, 'teammate speech suppresses')
 now, ally.banterSpokeAt = 380, nil
 B.Think(bot, true)
 eq(#messages, 1, 'suppressed event never queued')
-for _, excluded in ipairs({'illusion', 'double', 'pregame'}) do
+for _, excluded in ipairs({'illusion', 'double', 'draft'}) do
     reads = scoreReads
     bot.illusion, bot.double = excluded == 'illusion', excluded == 'double'
-    gameState = excluded == 'pregame' and 4 or 5
+    gameState = excluded == 'draft' and 3 or 5
     now = now + 5
     B.Think(bot, true)
     eq(scoreReads, reads, excluded..' not sampled')
@@ -198,6 +294,14 @@ local beforeResetKill = #messages
 now, scores[0] = 12, {kills = 1}
 B.Think(bot, true)
 eq(#messages, beforeResetKill + 1, 'clock reset ignores future team speech')
+-- Fights before the horn count, and the adapter names the enemy hero.
+now, gameState, scores = -30, 4, {}
+B.Think(bot, true)
+now, scores[0], scores[5] = -20, {kills = 1}, {deaths = 1, dead = true}
+RandomInt = function(low, high) return high == 100 and low or high end
+B.Think(bot, true)
+eq(messages[#messages].text, 'First blood on Lina. Bold of you to volunteer.', 'pre-horn first blood names the victim')
+RandomInt, gameState = first, 5
 
 -- Language parsing handles exact commands and preserves the locale on bad input.
 eq(Localization.HandleChatCommand('  !SPEAK CN  '), true)

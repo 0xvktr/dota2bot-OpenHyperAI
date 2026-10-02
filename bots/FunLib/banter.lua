@@ -3,20 +3,41 @@ local X = {}
 local Lines = require(GetScriptDirectory()..'/FunLib/banter_lines')
 local Localization = require(GetScriptDirectory()..'/FunLib/localization')
 local Customize = require(GetScriptDirectory()..'/FunLib/custom_loader')
+local HeroNames = require(GetScriptDirectory()..'/FretBots/HeroNames')
+
+local function wiped(v)
+    local count = 0
+    for _, foe in pairs(v.foes or {}) do
+        if foe.alive then return false end
+        count = count + 1
+    end
+    return count >= 3
+end
 
 local function baseline(s, v)
     s.kills, s.deaths, s.assists = v.kills, v.deaths, v.assists
     s.teamKills, s.enemyKills = v.teamKills, v.enemyKills
     s.time, s.hero = v.time, v.hero
+    s.wiped = wiped(v)
+    local foes = s.foes or {}
+    for id, foe in pairs(v.foes or {}) do
+        local old = foes[id]
+        local streak = old and old.streak or 0
+        if old and foe.deaths > old.deaths then streak = 0
+        elseif old and foe.kills > old.kills then streak = streak + foe.kills - old.kills end
+        foes[id] = {kills = foe.kills, deaths = foe.deaths, streak = streak}
+    end
+    s.foes = foes
 end
 
 -- v is a snapshot of scoreboard facts and locally observed danger.
+-- Returns the event and, when one enemy can be named, {victim, killer, human}.
 function X.Observe(s, v)
     if s.time == nil or v.time < s.time or s.hero ~= v.hero
         or v.kills < s.kills or v.deaths < s.deaths then
         for key in pairs(s) do s[key] = nil end
         baseline(s, v)
-        s.streak, s.recentKills, s.fights = 0, {}, {}
+        s.streak, s.recentKills, s.fights, s.repeats = 0, {}, {}, {}
         s.wasBehind = v.enemyKills - v.teamKills >= 5
         return nil
     end
@@ -47,6 +68,23 @@ function X.Observe(s, v)
         else won, lost = won + fight.allies, lost + fight.enemies end
     end
 
+    -- Name an enemy only when its score was the only one that moved with ours.
+    local victim, killer, victims, killers = nil, nil, 0, 0
+    for id, foe in pairs(v.foes or {}) do
+        local old = s.foes[id]
+        if old ~= nil and foe.deaths > old.deaths then victims, victim = victims + 1, id end
+        if old ~= nil and foe.kills > old.kills then killers, killer = killers + 1, id end
+    end
+    if kills ~= 1 or victims ~= 1 or v.teamKills - s.teamKills ~= 1 then victim = nil end
+    if deaths ~= 1 or killers ~= 1 or v.enemyKills - s.enemyKills ~= 1 then killer = nil end
+    local revenge = victim ~= nil and victim == s.nemesis
+    local endedStreak = victim ~= nil and s.foes[victim].streak or 0
+    if revenge then s.nemesis = nil end
+    if killer ~= nil then s.nemesis, s.repeats[killer] = killer, 0 end
+    if victim ~= nil then s.repeats[victim] = (s.repeats[victim] or 0) + 1 end
+    local repeats = victim ~= nil and s.repeats[victim] or 0
+    local teamWipe = wiped(v) and not s.wiped and won >= 1
+
     local escaped = false
     if not v.alive then s.dangerTime = nil
     elseif v.enemies >= 2 and v.health <= 0.35 and v.damaged then
@@ -59,17 +97,23 @@ function X.Observe(s, v)
         end
     end
 
-    local event
+    local event, named
     if deaths > 0 then
-        event = previousStreak >= 3 and 'streak_ended' or 'death'
+        event, named = previousStreak >= 3 and 'streak_ended' or 'death', killer
     elseif v.alive then
+        named = victim
         if kills > 0 and v.teamKills == 1 and v.enemyKills == 0
             and s.teamKills == 0 then event = 'first_blood'
         elseif v.captain and s.wasBehind and lead >= 0 and oldLead < 0 then event = 'comeback'
+        elseif teamWipe and (participated or v.captain) then
+            event, s.fights = 'team_wipe', {}
         elseif participated and won >= 3 and won - lost >= 2 then
             event, s.fights = 'team_fight', {}
+        elseif revenge then event = 'revenge'
+        elseif endedStreak >= 3 then event = 'shutdown'
         elseif v.captain and lead >= 5 and math.floor(lead / 5) > math.floor(oldLead / 5) then
             event = 'lead'
+        elseif repeats == 3 or repeats == 5 then event = 'dominating'
         elseif kills > 0 and #s.recentKills >= 2 then event = 'multi_kill'
         elseif kills > 0 and (previousStreak < 3 and s.streak >= 3
             or previousStreak < 5 and s.streak >= 5
@@ -79,35 +123,66 @@ function X.Observe(s, v)
         elseif escaped then event = 'escape'
         end
     end
+    local context
+    if event ~= nil and named ~= nil then
+        local foe = v.foes[named]
+        context = {human = foe.human}
+        if named == killer then context.killer = foe.name else context.victim = foe.name end
+    end
     if lead <= -5 then s.wasBehind = true
     elseif lead >= 0 then s.wasBehind = false end
     baseline(s, v)
-    return event
+    return event, context
 end
 
-function X.GetLine(event, locale, previous, random)
+-- Events a locale may lack reuse that locale's closest pool before falling back to English.
+local fallback = {revenge = 'kill', shutdown = 'kill', dominating = 'kill', team_wipe = 'team_fight'}
+
+-- Returns the chat text and its template. Lines naming an unknown hero are skipped;
+-- templates in avoid (recently used by the team) are skipped while others remain.
+function X.GetLine(event, locale, previous, random, context, avoid)
     local bank = Lines[locale] or Lines.en
-    local pool = bank[event] or Lines.en[event]
-    if pool == nil or #pool == 0 then return nil end
-    local index = random(1, #pool)
-    if #pool > 1 and pool[index] == previous then index = index % #pool + 1 end
-    return pool[index]
+    local pool = bank[event] or bank[fallback[event]] or Lines.en[event]
+    if pool == nil then return nil end
+    context = context or {}
+    local usable, fresh = {}, {}
+    for _, line in ipairs(pool) do
+        local known = true
+        for key in line:gmatch('{(%w+)}') do
+            if type(context[key]) ~= 'string' then known = false end
+        end
+        if known then
+            table.insert(usable, line)
+            local stale = line == previous
+            for _, used in ipairs(avoid or {}) do stale = stale or used == line end
+            if not stale then table.insert(fresh, line) end
+        end
+    end
+    if #fresh > 0 then usable = fresh end
+    if #usable == 0 then return nil end
+    local line = usable[random(1, #usable)]
+    return (line:gsub('{(%w+)}', context)), line
 end
 
-local killTaunts = {kill = true, multi_kill = true, kill_streak = true}
-function X.Select(s, event, now, teamLast, settings, locale, random)
+local killTaunts = {kill = true, multi_kill = true, kill_streak = true,
+    revenge = true, shutdown = true, dominating = true}
+local rare = {first_blood = true, comeback = true, team_wipe = true, revenge = true, shutdown = true}
+local recent = {}
+function X.Select(s, event, now, teamLast, settings, locale, random, context)
     local level = settings.Trash_Talk_Level or 1
     if event == nil or not settings.Allow_Trash_Talk or level < 1
         or (level < 2 and killTaunts[event]) then return nil end
     if now - (s.spokeAt or -1000) < 45 or now - teamLast < 12 then return nil end
     s.eventTimes = s.eventTimes or {}
     if now - (s.eventTimes[event] or -1000) < 120 then return nil end
-    local chance = (event == 'first_blood' or event == 'comeback') and 80 or 45
+    local chance = rare[event] and 80 or (context ~= nil and context.human) and 65 or 45
     if random(1, 100) > chance then return nil end
     s.lastLines = s.lastLines or {}
-    local line = X.GetLine(event, locale, s.lastLines[event], random)
+    local line, template = X.GetLine(event, locale, s.lastLines[event], random, context, recent)
     if line ~= nil then
-        s.spokeAt, s.eventTimes[event], s.lastLines[event] = now, now, line
+        s.spokeAt, s.eventTimes[event], s.lastLines[event] = now, now, template
+        table.insert(recent, template)
+        if #recent > 8 then table.remove(recent, 1) end
     end
     return line
 end
@@ -129,7 +204,9 @@ function X.IsSecondaryUnit(bot)
 end
 
 function X.Think(bot, captain)
-    if GetGameState() ~= GAME_STATE_GAME_IN_PROGRESS or X.IsSecondaryUnit(bot) then return end
+    local state = GetGameState()
+    if (state ~= GAME_STATE_GAME_IN_PROGRESS and state ~= GAME_STATE_PRE_GAME)
+        or X.IsSecondaryUnit(bot) then return end
     local now = DotaTime()
     local s = bot.banterState
     if s == nil then s = {}; bot.banterState = s end
@@ -142,8 +219,12 @@ function X.Think(bot, captain)
             teamLast = math.max(teamLast, member.banterSpokeAt)
         end
     end
+    local foes = {}
     for _, id in ipairs(GetTeamPlayers(GetOpposingTeam())) do
-        enemyKills = enemyKills + GetHeroKills(id)
+        local kills = GetHeroKills(id)
+        enemyKills = enemyKills + kills
+        foes[id] = {kills = kills, deaths = GetHeroDeaths(id), alive = IsHeroAlive(id),
+            name = HeroNames.en[GetSelectedHeroName(id)], human = not IsPlayerBot(id)}
     end
     local enemies = 0
     if bot:IsAlive() then
@@ -152,12 +233,12 @@ function X.Think(bot, captain)
         end
     end
     local id = bot:GetPlayerID()
-    local event = X.Observe(s, {time = now, hero = bot:GetUnitName(),
+    local event, context = X.Observe(s, {time = now, hero = bot:GetUnitName(),
         kills = GetHeroKills(id), deaths = GetHeroDeaths(id), assists = GetHeroAssists(id),
         teamKills = teamKills, enemyKills = enemyKills, captain = captain,
         alive = bot:IsAlive(), health = bot:GetHealth() / math.max(1, bot:GetMaxHealth()),
-        enemies = enemies, damaged = bot:WasRecentlyDamagedByAnyHero(5)})
-    local line = X.Select(s, event, now, teamLast, Customize, Localization.GetLocale(), RandomInt)
+        enemies = enemies, damaged = bot:WasRecentlyDamagedByAnyHero(5), foes = foes})
+    local line = X.Select(s, event, now, teamLast, Customize, Localization.GetLocale(), RandomInt, context)
     if line ~= nil then
         bot:ActionImmediate_Chat(line, true)
         X.RecordSpeech(bot)

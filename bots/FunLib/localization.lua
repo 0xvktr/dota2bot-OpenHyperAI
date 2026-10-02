@@ -24,21 +24,6 @@ local Localization = {
         say_will_win_2 = "We estimate the probability of winning to above 90%.",
         can_try_tormentor = "Let's try tormentor?",
         say_come_def = "Please come defending",
-        got_first_blood = {
-            'first blood! I am first on every thing',
-            'ez fb. you’re already losing, it’s only just started',
-            'ty for feeding',
-            'good job',
-            'wp',
-            'feels like we are going to have a good game',
-        },
-        got_a_kill = {"?", "you’ll have to do better than that!", "ez", "next time, keep your eyes closer on your dumb ass", "enjoy respawn timers now and then.", "i was not even getting warmed up yet",
-            "did someone died? oh wait, no, noob pussi.", "maybe next time, you’ll stand a chance… or not.", "thanks for your feed", "don’t feel bad, we all start somewhere… down there."},
-        got_big_kill = {"did you forget to bring your brain today? ez", "I’m on fire! who’s next?", "oh very cute", "farm to feed hum?", "where's your team?", "you should ask for a refund on those skills"},
-        got_big_kill_2 = {"that’s what a real rampage looks like!", "well, not too bad buddy, learn and try better", "don't give up, you are almost better than me", "?????"},
-        got_big_kill_3 = {"I almost thought you were good. do better next time plz", "good. i can tell that you are not a retarded noob", "????????", "thought you were better than that"},
-        kill_streak_ended = {"...", "not too bad", "well played", "noob team", "what is my fking team doing"},
-        say_end = {"gg. end", "good game, well played", "noob team. ez", "afk, push mid and end"},
         no_more_talking = {"I'm busy, talk to you later", "STFU, no more talking", "Play, not talk", "Focus on gameplay, I will stop responding" },
         fretbots_wel_msgs = {
             -- RGB color and text. sample color pick web: https://htmlcolorcodes.com/

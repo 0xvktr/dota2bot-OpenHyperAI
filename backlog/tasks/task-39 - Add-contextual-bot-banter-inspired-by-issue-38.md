@@ -5,7 +5,7 @@ status: Needs In-Game Test
 assignee:
   - '@codex'
 created_date: '2026-10-02 16:30'
-updated_date: '2026-10-02 16:44'
+updated_date: '2026-10-02 16:58'
 labels: []
 dependencies: []
 references:
@@ -41,6 +41,8 @@ Implemented 200 original lines across en/zh/ru/ja and ten event categories, fact
 User requested level 2 as the shipped default and commit/push. Updated Customize/general.lua and the settings documentation; reran the banter suite (215 assertions), reply-member scenarios and git diff --check successfully.
 
 Integrated newer origin/main High Five, farm eligibility and item cleanup changes before publication. The merged full regression runner passed, including 593 Lua syntax files, 215 banter assertions, reply-member scenarios and all registered suites. In-game validation remains pending.
+
+Review pass (English only): banter.lua now names the victim or killer when exactly one enemy score moved with the bot's, and adds revenge, shutdown, repeat-kill (dominating) and team-wipe events; observation starts in pre-game so a pre-horn first blood counts; allied bots skip the last eight lines used; human-involved kills are voiced at 65%. English pools rewritten (10-16 lines each, {victim}/{killer} lines, the classic '?' restored). zh/ru/ja unchanged and reuse their kill/team_fight pools for the new events. Removed the unused legacy English taunt pools from localization.lua; the zh/ru/ja copies are still there and unused. node tests/run-builds.cjs passes (banter spec 363 assertions). Needs lobby check: named lines, IsHeroAlive during reincarnation, pacing.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

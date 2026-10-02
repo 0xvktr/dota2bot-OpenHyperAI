@@ -75,7 +75,7 @@ Customize.Weak_Penalty = { type = "exp", base = 0.6 }
 -- Exact match on unit names by default; set Customize.Strict_Ban_Match = false to allow guarded substring matches (length ≥ 6).
 Customize.Strict_Ban_Match = true
 
--- Offline match banter (kills, escapes, score swings and self-deprecating deaths).
+-- Offline match banter (kills, revenge, escapes, team wipes, score swings and self-deprecating deaths).
 -- Disable this to mute banter and chat replies, including GPT chat.
 Customize.Allow_Trash_Talk = true
 
@@ -83,8 +83,8 @@ Customize.Allow_Trash_Talk = true
 Customize.Allow_AI_GPT_Response = true
 
 -- Set the level of bots' trash talks. Disable Allow_Trash_Talk can disable this.
--- 1 => occasional match banter; no ordinary kill/streak taunts or ally chat replies.
--- 2 => also enable kill/multikill/streak taunts and ally chat replies. 0 => mute offline banter/replies.
+-- 1 => occasional match banter; no kill taunts (kill/multikill/streak/revenge/shutdown/repeat kill) or ally chat replies.
+-- 2 => also enable kill taunts, which can name the enemy hero, and ally chat replies. 0 => mute offline banter/replies.
 -- Match banter has a 45s per-bot, 12s per-team and 120s per-event cooldown.
 Customize.Trash_Talk_Level = 2
 
