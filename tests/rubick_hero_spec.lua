@@ -94,19 +94,19 @@ local function fixture()
     function bot:GetAbilityInSlot(slot) return f.slots[slot] end
     function bot:GetLocation() return Vector(0,0,0) end
     function bot:HasScepter() return f.scepter==true end
-    function bot:HasShard() return f.shard==true end
     function bot:IsAlive() return true end
     function bot:IsChanneling() return f.channeling==true end
     function bot:IsUsingAbility() return f.using==true end
     function bot:IsCastingAbility() return f.casting==true end
     function bot:IsSilenced() return f.silenced==true end
-    function bot:IsStunned() return false end
+    function bot:IsStunned() return f.stunned==true end
     function bot:IsHexed() return false end
     function bot:IsNightmared() return false end
-    function bot:HasModifier() return false end
+    function bot:HasModifier(name) return name=='modifier_item_aghanims_shard' and f.shard==true end
     function bot:GetNearbyHeroes(_,enemy) return enemy and f.enemies or f.allies end
     function bot:WasRecentlyDamagedByAnyHero() return false end
     function bot:IsAttacking() return false end
+    function bot:Action_ClearActions(stop) f.actions[#f.actions+1]={kind='clear',stop=stop} end
     function bot:Action_UseAbility(a) f.actions[#f.actions+1]={name=a:GetName()} end
     function bot:Action_UseAbilityOnEntity(a,target)
         f.actions[#f.actions+1]={name=a:GetName(),target=target}
@@ -122,7 +122,7 @@ local function fixture()
         bot[flag]=nil
     end
     J.CanNotUseAbility=function()
-        return f.channeling or f.queued or f.casting or f.using or f.silenced or false
+        return f.channeling or f.queued or f.casting or f.using or f.silenced or f.stunned or false
     end
     J.HasQueuedAction=function() return f.queued==true end
     J.CanCastAbility=function(a)
@@ -161,7 +161,100 @@ local function fixture()
     J.Site={GetXUnitsTowardsLocation=function(u,target,range)
         return J.GetXUnitsTowardsLocation2(u:GetLocation(),target,range)
     end}
-    local R={UseGlacierDuringMultishot=function()
+    local R={ObserveTetherState=function() f.tetherObservationCount=(f.tetherObservationCount or 0)+1 end,IsRelocating=function() return f.relocateLock==true end,UseBattleStance=function() return false end,ConsiderArcticBurnToggle=function() return false end,ConsiderPowershotSafety=function() return false end,ConsiderGeminateAutoCast=function() return false end,ConsiderPoisonAutoCast=function() return false end,UseShadowDanceSpells=function()
+        if f.dancePact then bot:Action_UseAbility(ability('slark_dark_pact'));return true end
+        return false
+    end,UseSpellsDuringTimberChain=function()
+        if f.chainWhirl then bot:Action_UseAbility(ability('shredder_whirling_death'));return true end
+        return false
+    end,ConsiderUpheavalSafety=function()
+        if f.unsafeUpheaval then bot:Action_ClearActions(true);return true end
+        return false
+    end,UseDisabledRefraction=function()
+        if f.disabledRefraction then bot:Action_UseAbility(ability('templar_assassin_refraction'));return true end
+        return false
+    end,ConsiderDissimilatePortal=function()
+        if f.dissimilatePortal then bot:Action_MoveToLocation(Vector(400,0,0));return true end
+        return false
+    end,UseLightningHands=function()
+        if f.lightningHands then bot:Action_UseAbility(ability('zuus_lightning_hands'));return true end
+        return false
+    end,UseBallFlightSpells=function()
+        if f.ballFlight then bot:Action_UseAbility(ability('storm_spirit_electric_vortex'));return true end
+        return false
+    end,UseTameTheBeastsCrack=function()
+        if f.tameCrack then bot:Action_UseAbility(ability('ringmaster_tame_the_beasts_crack'));return true end
+        return false
+    end,UseCarnivalSouvenir=function()
+        if f.carnivalMirror then bot:Action_UseAbility(ability('ringmaster_funhouse_mirror'));return true end
+        return false
+    end,IsCharging=function() return f.chargeLock==true end,UseChargeSupport=function()
+        if f.chargeBulldoze then bot:Action_UseAbility(ability('spirit_breaker_bulldoze'));return true end
+        return false
+    end,UseSmokeDuringTricks=function()
+        if f.tricksSmoke then bot:Action_UseAbility(ability('riki_smoke_screen'));return true end
+        return false
+    end,UseRestorationDuringChannel=function()
+        if f.wardRestoration then bot:Action_UseAbility(ability('witch_doctor_voodoo_restoration'));return true end
+        return false
+    end,ConsiderDisabledEnrage=function()
+        if f.disabledEnrage then bot:Action_UseAbility(ability('ursa_enrage'));return true end
+        return false
+    end,ConsiderSnowballContinuation=function()
+        if f.snowballContinuation then bot:Action_UseAbility(ability('tusk_launch_snowball'));return true end
+        return false
+    end,ConsiderLifeDrainContinuation=function()
+        if f.unsafeAllyDrain then bot:Action_ClearActions(true);return true end
+        return false
+    end,ConsiderDismemberSupport=function()
+        if f.dismemberShield then bot:Action_UseAbility(ability('pudge_flesh_heap'));return true end
+        return false
+    end,ConsiderPhaseJaunt=function()
+        if f.phaseJaunt then bot:Action_UseAbility(ability('puck_ethereal_jaunt'));return true end
+        return false
+    end,UseRhapsodyOff=function()
+        if f.rhapsodyOff then bot:Action_UseAbility(ability('largo_amphibian_rhapsody'));return true end
+        return false
+    end,ConsiderPrimalContinuation=function()
+        if f.primalUproar then bot:Action_UseAbility(ability('primal_beast_uproar'));return true end
+        return false
+    end,ConsiderEggSunRay=function()
+        if f.eggRay then bot:Action_UseAbilityOnLocation(ability('phoenix_sun_ray'),Vector(100,0,0));return true end
+        return false
+    end,UseGunslinger=function()
+        if f.gunslinger then bot:Action_UseAbility(ability('muerta_gunslinger'));return true end
+        return false
+    end,UseStrengthShift=function()
+        if f.strengthShift then bot:Action_UseAbility(ability('morphling_morph_str'));return true end
+        return false
+    end,UseIlluminateRelease=function()
+        if f.illuminateRelease then bot:Action_UseAbility(ability('keeper_of_the_light_illuminate_end'));return true end
+        return false
+    end,UseHealingWardDuringSlash=function()
+        if f.slashWard then bot:Action_UseAbilityOnLocation(ability('juggernaut_healing_ward'),Vector(100,0,0));return true end
+        return false
+    end,UseSharpshooterRelease=function() return false end,UseFortuneRelease=function() return false end,UseSplitShot=function()
+        if f.splitShot then bot:Action_UseAbility(ability('medusa_split_shot'));return true end
+        return false
+    end,UseSilencedHammer=function()
+        if f.silencedHammer then bot:Action_UseAbilityOnEntity(ability('omniknight_hammer_of_purity'),f.target);return true end
+        return false
+    end,StopDrain=function()
+        if f.stopDrain then bot:Action_ClearActions(true);return true end
+        return false
+    end,UseConsume=function()
+        if f.infestConsume then bot:Action_UseAbility(ability('life_stealer_consume'));return true end
+        return false
+    end,UseChainsDuringSleight=function()
+        if f.sleightChains then bot:Action_UseAbility(ability('ember_spirit_searing_chains'));return true end
+        return false
+    end,UseDuringGaze=function()
+        if f.gazeShield then bot:Action_UseAbilityOnEntity(ability('lich_frost_shield'),bot);return true end
+        return false
+    end,UsePulseNovaOff=function()
+        if f.pulseOff then bot:Action_UseAbility(ability('leshrac_pulse_nova'));return true end
+        return false
+    end,UseGlacierDuringMultishot=function()
         if f.channelGlacier then bot:Action_UseAbility(ability('drow_ranger_glacier'));return true end
         return false
     end,UseMagnetizeStone=function()
@@ -170,7 +263,7 @@ local function fixture()
     end,UseAstralSpirit=function()
         if f.astralReturn then bot:Action_UseAbility(ability('elder_titan_return_spirit'));return true end
         return false
-    end,HandleAstralSpiritMinion=function(u) return u==f.astralMinion end,ObserveGlimpseHistory=function() f.historyCount=(f.historyCount or 0)+1 end,UseShadowRealmDuringChannel=function()
+    end,HandleTrapMinion=function(u) return u==f.trap end,HandleFamiliarMinion=function(u) return u==f.familiar end,HandlePlagueWardMinion=function(u) return u==f.plagueWard end,HandleDeathWard=function(u) return u==f.deathWard end,HandleTombstoneMinion=function(u) return u==f.tombstoneMinion end,HandleLycanMinion=function(u) return u==f.lycanMinion end,HandleAstralSpiritMinion=function(u) return u==f.astralMinion end,ObserveTimeLapseHistory=function() f.rewindHistoryCount=(f.rewindHistoryCount or 0)+1 end,ObserveGlimpseHistory=function() f.historyCount=(f.historyCount or 0)+1 end,UseShadowRealmDuringChannel=function()
         if f.channelRealm then bot:Action_UseAbility(ability('dark_willow_shadow_realm')); return true end
         return false
     end,UsePendingConverge=function()
@@ -603,12 +696,88 @@ for _,gate in ipairs({'hidden','castable'}) do
     end)
 end
 
+check('Time Lapse observations precede channel and readiness gates',function()
+    local f=fixture();f.channeling=true;f:tick()
+    assert(f.rewindHistoryCount==1 and #f.actions==0)
+    f.channeling=false;f:tick();assert(f.rewindHistoryCount==2)
+end)
+
+check('Owned Psionic Trap forwarding prevents generic orders',function()
+    local f=fixture();f.trap={};f.X.MinionThink(f.trap)
+    assert(f.genericMinionCalls==nil)
+    f.X.MinionThink({});assert(f.genericMinionCalls==1)
+end)
+
+check('Owned Familiar forwarding prevents generic orders',function()
+    local f=fixture();f.familiar={};f.X.MinionThink(f.familiar)
+    assert(f.genericMinionCalls==nil)
+    f.X.MinionThink({});assert(f.genericMinionCalls==1)
+end)
+
 check('Null stolen handle is treated as an empty slot',function()
     local f=fixture()
     f.slots[3]=ability('bane_fiends_grip',{null=true,ultimate=true})
     f:prepareSteal()
     f:tick()
     assert(f:stealCount()==1,'Null handle prevented filling spell slot')
+end)
+
+for _,case in ipairs({{'sleightChains','ember_spirit_searing_chains'}, {'gazeShield','lich_frost_shield'}, {'pulseOff','leshrac_pulse_nova'}, {'infestConsume','life_stealer_consume'}, {'splitShot','medusa_split_shot'}, {'silencedHammer','omniknight_hammer_of_purity'}, {'slashWard','juggernaut_healing_ward'}, {'strengthShift','morphling_morph_str'}, {'illuminateRelease','keeper_of_the_light_illuminate_end'}, {'gunslinger','muerta_gunslinger'}, {'eggRay','phoenix_sun_ray'}, {'rhapsodyOff','largo_amphibian_rhapsody'}, {'primalUproar','primal_beast_uproar'}, {'phaseJaunt','puck_ethereal_jaunt'}, {'dismemberShield','pudge_flesh_heap'}, {'unsafeAllyDrain',nil}, {'snowballContinuation','tusk_launch_snowball'}, {'disabledEnrage','ursa_enrage'}, {'tricksSmoke','riki_smoke_screen'}, {'wardRestoration','witch_doctor_voodoo_restoration'}, {'chargeBulldoze','spirit_breaker_bulldoze'}, {'ballFlight','storm_spirit_electric_vortex'}, {'tameCrack','ringmaster_tame_the_beasts_crack'}, {'carnivalMirror','ringmaster_funhouse_mirror'}, {'lightningHands','zuus_lightning_hands'}, {'dissimilatePortal','move'}, {'disabledRefraction','templar_assassin_refraction'}, {'chainWhirl','shredder_whirling_death'}, {'unsafeUpheaval',nil}, {'dancePact','slark_dark_pact'}}) do
+    check('Observed spell hook reaches Rubick: '..case[1],function()
+    local f=fixture();f[case[1]]=true;f.using=case[1]=='chainWhirl' or case[1]=='chargeBulldoze' or case[1]=='ballFlight';f.stunned=case[1]=='disabledRefraction' or case[1]=='disabledEnrage' or case[1]=='strengthShift';f.channeling=case[1]=='unsafeUpheaval' or case[1]=='tameCrack' or case[1]=='tricksSmoke' or case[1]=='wardRestoration' or case[1]=='snowballContinuation' or case[1]=='gazeShield' or case[1]=='illuminateRelease' or case[1]=='primalUproar' or case[1]=='phaseJaunt' or case[1]=='dismemberShield' or case[1]=='unsafeAllyDrain';f.silenced=case[1]=='lightningHands' or case[1]=='carnivalMirror' or case[1]=='silencedHammer' or case[1]=='splitShot' or case[1]=='gunslinger' or case[1]=='rhapsodyOff';f:tick()
+    assert(#f.actions==1 and f.actions[1].name==case[2], 'observed spell hook reaches Rubick before occupied-state gate')
+    assert(f.nativeCalls==0, 'hook prevents unrelated native spells in the same tick')
+    end)
+end
+
+check('Observed Relocate delay preserves ordinary native and copied actions',function()
+    local f=fixture();f.relocateLock=true;f:tick()
+    assert(#f.actions==0 and f.nativeCalls==0 and f.tetherObservationCount==1)
+    f.relocateLock=false;f:tick();assert(f.nativeCalls>0)
+end)
+
+check('Observed Charge locks ordinary Rubick spells without a support action',function()
+    local f=fixture();f.chargeLock=true;f:tick()
+    assert(#f.actions==0 and f.nativeCalls==0,'Ordinary native spells canceled observed Charge')
+    f.chargeLock=false;f:tick()
+    assert(f.nativeCalls>0,'Charge completion never restored ordinary spells')
+end)
+
+check('Inactive Strength Shift preserves stun gate',function()
+    local f=fixture();f.stunned=true;f:tick()
+    assert(#f.actions==0 and f.nativeCalls==0,'Inactive helper bypassed Rubick stun gate')
+end)
+
+check('Copied Tombstone save owns minion tick',function()
+    local f=fixture();f.tombstoneMinion={}
+    f.X.MinionThink(f.tombstoneMinion)
+    assert(f.genericMinionCalls==nil,'Tombstone save followed by conflicting minion orders')
+    f.X.MinionThink({})
+    assert(f.genericMinionCalls==1,'Non-Tombstone minion fallback lost')
+end)
+
+check('Copied Death Ward targeting owns minion tick',function()
+    local f=fixture();f.deathWard={}
+    f.X.MinionThink(f.deathWard)
+    assert(f.genericMinionCalls==nil,'Ward targeting followed by conflicting generic minion orders')
+    f.X.MinionThink({})
+    assert(f.genericMinionCalls==1,'Non-Ward minion fallback lost')
+end)
+
+check('Copied Plague Ward preserves specialized minion control',function()
+    local f=fixture();f.plagueWard={}
+    f.X.MinionThink(f.plagueWard)
+    assert(f.genericMinionCalls==nil,'Specialized Ward tick followed by generic owner-range orders')
+    f.X.MinionThink({})
+    assert(f.genericMinionCalls==1,'Non-Plague-Ward fallback lost')
+end)
+
+check('Copied wolf special action owns minion tick',function()
+    local f=fixture();f.lycanMinion={}
+    f.X.MinionThink(f.lycanMinion)
+    assert(f.genericMinionCalls==nil,'Hightail action followed by conflicting minion orders')
+    f.X.MinionThink({})
+    assert(f.genericMinionCalls==1,'Non-wolf minion fallback lost')
 end)
 
 print('Rubick hero behavior checks passed: '..count..' cases.')

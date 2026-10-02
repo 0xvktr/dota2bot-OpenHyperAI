@@ -11,6 +11,8 @@ local bDebugMode = ( 1 == 10 )
 local bot = GetBot()
 
 local J = require( GetScriptDirectory()..'/FunLib/jmz_func' )
+local SpellDecisions = require(GetScriptDirectory()..'/FunLib/rubick_hero/lich')
+local Sacrifice = bot:GetAbilityByName('lich_death_charge')
 local Minion = dofile( GetScriptDirectory()..'/FunLib/aba_minion' )
 local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
@@ -125,6 +127,7 @@ local aetherRange = 0
 function X.SkillsComplement()
 
 
+	if SpellDecisions.UseDuringGaze() then return end
 	if J.CanNotUseAbility( bot ) or bot:IsInvisible() then return end
 
 
@@ -139,16 +142,35 @@ function X.SkillsComplement()
 
 
 	local aether = J.IsItemAvailable( "item_aether_lens" )
-	if aether ~= nil then aetherRange = 250 end
+	if aether ~= nil then aetherRange = aether:GetSpecialValueInt('cast_range_bonus') end
 --	if talent1:IsTrained() then aetherRange = aetherRange + talent1:GetSpecialValueInt( "value" ) end
 
 
+	-- Shield the ally being attacked before using damage spells.
+    local save = SpellDecisions.ShieldTarget(abilityW)
+    if save ~= nil then
+        J.SetQueuePtToINT(bot, true, abilityW)
+        bot:ActionQueue_UseAbilityOnEntity(abilityW, save)
+        return
+    end
+    if J.CanCastAbility(abilityE) then
+        for _,enemy in pairs(hEnemyList) do
+            if J.IsValidHero(enemy) and enemy:IsChanneling() and J.CanCastOnNonMagicImmune(enemy)
+                and not J.IsSuspiciousIllusion(enemy) and J.IsInRange(bot,enemy,abilityE:GetCastRange()+aetherRange)
+                and (bot:HasScepter() or J.CanCastOnTargetAdvanced(enemy)) then
+                J.SetQueuePtToINT(bot,true,abilityE)
+                if bot:HasScepter() then bot:ActionQueue_UseAbilityOnLocation(abilityE,enemy:GetLocation())
+                else bot:ActionQueue_UseAbilityOnEntity(abilityE,enemy) end
+                return
+            end
+        end
+    end
 	castRDesire, castRTarget, sMotive = X.ConsiderR()
-	if ( castRDesire > 0 )
+	if ( castRDesire > 0 and J.IsInRange(bot, castRTarget, abilityR:GetCastRange()+aetherRange) )
 	then
 		J.SetReportMotive( bDebugMode, sMotive )
 
-		J.SetQueuePtToINT( bot, true )
+		J.SetQueuePtToINT( bot, true, abilityR )
 
 		bot:ActionQueue_UseAbilityOnEntity( abilityR, castRTarget )
 		return
@@ -156,33 +178,34 @@ function X.SkillsComplement()
 	end
 
 	castQDesire, castQTarget, sMotive = X.ConsiderQ()
-	if ( castQDesire > 0 )
+	if ( castQDesire > 0 and J.IsInRange(bot, castQTarget, abilityQ:GetCastRange()+aetherRange) )
 	then
 		J.SetReportMotive( bDebugMode, sMotive )
 
-		J.SetQueuePtToINT( bot, true )
+		J.SetQueuePtToINT( bot, true, abilityQ )
 
 		bot:ActionQueue_UseAbilityOnEntity( abilityQ, castQTarget )
 		return
 	end
 
 	castWDesire, castWTarget, sMotive = X.ConsiderW()
-	if ( castWDesire > 0 )
+	if ( castWDesire > 0 and J.IsInRange(bot, castWTarget, abilityW:GetCastRange()+aetherRange)
+        and not castWTarget:HasModifier('modifier_lich_frost_shield') )
 	then
 		J.SetReportMotive( bDebugMode, sMotive )
 
-		J.SetQueuePtToINT( bot, true )
+		J.SetQueuePtToINT( bot, true, abilityW )
 
 		bot:ActionQueue_UseAbilityOnEntity( abilityW, castWTarget )
 		return
 	end
 
 	castEDesire, castETarget, sMotive = X.ConsiderE()
-	if ( castEDesire > 0 )
+	if ( castEDesire > 0 and J.IsInRange(bot, castETarget, abilityE:GetCastRange()+aetherRange) )
 	then
 		J.SetReportMotive( bDebugMode, sMotive )
 
-		J.SetQueuePtToINT( bot, true )
+		J.SetQueuePtToINT( bot, true, abilityE )
 
 		if bot:HasScepter()
 		then
@@ -192,19 +215,31 @@ function X.SkillsComplement()
 		end
 		return
 	end
-	
-	
+
+
 	castASDesire, castASTarget, sMotive = X.ConsiderAS()
 	if ( castASDesire > 0 )
 	then
 		J.SetReportMotive( bDebugMode, sMotive )
 
-		J.SetQueuePtToINT( bot, true )
+		J.SetQueuePtToINT( bot, true, abilityAS )
 
 		bot:ActionQueue_UseAbilityOnLocation( abilityAS, castASTarget )
 		return
 
 	end
+
+    if J.CanCastAbility(Sacrifice) and Sacrifice:GetCurrentCharges()>0 and #hEnemyList==0 and bot:GetMana()/bot:GetMaxMana()<0.6 then
+        local best=nil
+        for _,creep in pairs(bot:GetNearbyLaneCreeps(Sacrifice:GetCastRange()+aetherRange,false)) do
+            if J.IsValid(creep) and not creep:IsAncientCreep() and not creep:IsHero()
+                and (best==nil or creep:GetHealth()>best:GetHealth()) then best=creep end
+        end
+        if best~=nil then
+            J.SetQueuePtToINT(bot,false,Sacrifice)
+            bot:ActionQueue_UseAbilityOnEntity(Sacrifice,best)
+        end
+    end
 
 
 end
@@ -213,19 +248,19 @@ end
 function X.ConsiderQ()
 
 
-	if not abilityQ:IsFullyCastable() then return 0 end
+	if not J.CanCastAbility(abilityQ) then return 0 end
 
 	local nSkillLV = abilityQ:GetLevel()
 	local nCastRange = abilityQ:GetCastRange() + aetherRange
 	local nRealRange = nCastRange
 
-	if #hEnemyList <= 2 and nCastRange < 700 then nCastRange = nCastRange + 100 end
+
 
 	local nCastPoint = abilityQ:GetCastPoint()
 	local nManaCost = abilityQ:GetManaCost()
-	local nMainDamage = nSkillLV * 50
+	local nMainDamage = abilityQ:GetSpecialValueInt("damage")
 	local nAoeDamage = abilityQ:GetSpecialValueInt( "aoe_damage" )
-	if talent2:IsTrained() then nAoeDamage = nAoeDamage + talent2:GetSpecialValueInt( 'value' ) end
+	-- The live special already includes the current AoE damage talent.
 	local nDamage = nMainDamage + nAoeDamage
 	local nDamageType = DAMAGE_TYPE_MAGICAL
 	local nRadius = abilityQ:GetSpecialValueInt( "radius" )
@@ -350,7 +385,7 @@ function X.ConsiderQ()
 					then
 						return BOT_ACTION_DESIRE_HIGH, creep, "Q-对线补刀远程"
 					end
-	
+
 					if bot:GetMana() > 400
 						and J.IsKeyWordUnit( 'melee', creep )
 						and J.WillKillTarget( creep, nDamage, nDamageType, nCastPoint )
@@ -428,7 +463,7 @@ function X.ConsiderQ()
 		and J.IsAllowedToSpam( bot, 30 )
 		and nSkillLV >= 3
 		and #hEnemyList == 0
-		and #hAllyList <= 1 or J.IsCore(bot)
+		and (#hAllyList <= 1 or J.IsCore(bot))
 	then
 		local nEnemyCreeps = bot:GetNearbyLaneCreeps( 999, true )
 		local nAllyCreeps = bot:GetNearbyLaneCreeps( 888, false )
@@ -531,7 +566,7 @@ end
 function X.ConsiderW()
 
 
-	if not abilityW:IsFullyCastable() then return 0 end
+	if not J.CanCastAbility(abilityW) then return 0 end
 
 	local nSkillLV = abilityW:GetLevel()
 	local nCastRange = abilityW:GetCastRange() + aetherRange
@@ -749,12 +784,12 @@ end
 function X.ConsiderE()
 
 
-	if not abilityE:IsFullyCastable() then return 0 end
+	if not J.CanCastAbility(abilityE) then return 0 end
 
 	local nSkillLV = abilityE:GetLevel()
 	local nCastRange = abilityE:GetCastRange() + aetherRange
 
-	if #hEnemyList <= 2 and nCastRange < 630 then nCastRange = nCastRange + 150 end
+
 
 	local nCastPoint = abilityE:GetCastPoint()
 	local nManaCost = abilityE:GetManaCost()
@@ -852,111 +887,20 @@ function X.ConsiderE()
 end
 
 function X.ConsiderR()
-
-
-	if not abilityR:IsFullyCastable() then return 0 end
-
-	local nSkillLV = abilityR:GetLevel()
-	local nCastRange = abilityR:GetCastRange() + aetherRange
-	local nCastPoint = abilityR:GetCastPoint()
-	local nManaCost = abilityR:GetManaCost()
-	local nDamage = abilityR:GetSpecialValueInt( 'damage' )
-	if talent5:IsTrained() then nDamage = nDamage + talent5:GetSpecialValueInt( 'value' ) end
-	local nDamageType = DAMAGE_TYPE_MAGICAL
-	local nInRangeEnemyList = J.GetNearbyHeroes(bot, nCastRange + 50, true, BOT_MODE_NONE )
-
-	local nRadius = abilityR:GetSpecialValueInt( 'jump_range' )/2
-
-	--击杀
-	for _, npcEnemy in pairs( nInRangeEnemyList )
-	do
-		if J.IsValidHero( npcEnemy )
-			and J.CanCastOnNonMagicImmune( npcEnemy )
-			and J.CanCastOnTargetAdvanced( npcEnemy )
-		then
-			local nDelayTime = nCastPoint + GetUnitToUnitDistance( bot, npcEnemy )/850
-			if J.WillMagicKillTarget( bot, npcEnemy, nDamage, nDelayTime )
-			then
-				return BOT_ACTION_DESIRE_HIGH, npcEnemy, 'R-直接击杀:'..J.Chat.GetNormName( npcEnemy )
-			end
-		end
-	end
-
-
-	--Aoe
-	if #nInRangeEnemyList >= 1
-	then
-		local nAoeLoc = J.GetAoeEnemyHeroLocation( bot, nCastRange, nRadius, 2 )
-		if nAoeLoc ~= nil
-		then
-			for _, npcEnemy in pairs( nInRangeEnemyList )
-			do
-				if J.IsValidHero( npcEnemy )
-					and J.CanCastOnNonMagicImmune( npcEnemy )
-					and J.CanCastOnTargetAdvanced( npcEnemy )
-					and J.IsInLocRange( npcEnemy, nAoeLoc, nRadius )
-				then
-					return BOT_ACTION_DESIRE_HIGH, npcEnemy, 'R-Aoe:'..J.Chat.GetNormName( npcEnemy )
-				end
-			end
-		end
-	end
-
-
-	--进攻
-	if J.IsGoingOnSomeone( bot )
-	then
-		if J.IsValidHero( botTarget )
-			and J.CanCastOnNonMagicImmune( botTarget )
-			and J.CanCastOnTargetAdvanced( botTarget )
-			and J.IsInRange( bot, botTarget, nCastRange )
-		then
-			local nEnemyCreepList = botTarget:GetNearbyCreeps( nRadius * 1.9, false )
-			local nEnemyHeroList = J.GetNearbyHeroes(botTarget,  nRadius * 1.9, false, BOT_MODE_NONE )
-			if #nEnemyCreepList >= 2 or #nEnemyHeroList >= 2 or nHP < 0.28
-			then
-				return BOT_ACTION_DESIRE_HIGH, botTarget, 'R-攻击:'..J.Chat.GetNormName( botTarget )
-			end
-		end
-	end
-
-
-	--撤退
-	if J.IsRetreating( bot )
-	then
-		for _, npcEnemy in pairs( nInRangeEnemyList )
-		do
-			if J.IsValidHero( npcEnemy )
-				and J.CanCastOnNonMagicImmune( npcEnemy )
-				and J.CanCastOnTargetAdvanced( npcEnemy )
-				and bot:WasRecentlyDamagedByHero( npcEnemy, 4.0 )
-			then
-				local nEnemyCreepList = npcEnemy:GetNearbyCreeps( nRadius * 1.9, false )
-				local nEnemyHeroList = J.GetNearbyHeroes(npcEnemy,  nRadius * 1.9, false, BOT_MODE_NONE )
-				if #nEnemyCreepList + #nEnemyHeroList >= 2 or nHP < 0.38
-				then
-					return BOT_ACTION_DESIRE_HIGH, npcEnemy, 'R-撤退时减速:'..J.Chat.GetNormName( npcEnemy )
-				end
-			end
-		end
-	end
-
-	return BOT_ACTION_DESIRE_NONE
-
-
+    local target=SpellDecisions.ChainTarget(abilityR)
+    if target~=nil then return BOT_ACTION_DESIRE_HIGH,target end
+    return BOT_ACTION_DESIRE_NONE
 end
-
 
 function X.ConsiderAS()
 
-	if not abilityAS:IsTrained()
-		or not abilityAS:IsFullyCastable() 
+	if not J.CanCastAbility(abilityAS)
 	then
 		return BOT_ACTION_DESIRE_NONE, 0
 	end
 
-	local nRadius = 500
-	local nCastRange = abilityAS:GetCastRange()
+	local nRadius = abilityAS:GetSpecialValueInt('aura_radius')
+	local nCastRange = abilityAS:GetCastRange() + aetherRange
 	local nCastPoint = abilityAS:GetCastPoint()
 	local nManaCost = abilityAS:GetManaCost()
 
@@ -968,9 +912,9 @@ function X.ConsiderAS()
 			and J.CanCastOnNonMagicImmune( targetHero )
 		then
 			return BOT_ACTION_DESIRE_HIGH, bot:GetLocation()
-		end		
+		end
 	end
-	
+
 
 	if J.IsInTeamFight( bot, 1400 )
 	then
@@ -978,9 +922,9 @@ function X.ConsiderAS()
 		if nAoeLoc ~= nil
 		then
 			return BOT_ACTION_DESIRE_HIGH, nAoeLoc
-		end		
+		end
 	end
-	
+
 
 	if J.IsGoingOnSomeone( bot )
 	then
@@ -992,7 +936,7 @@ function X.ConsiderAS()
 			return BOT_ACTION_DESIRE_HIGH, targetHero:GetLocation()
 		end
 	end
-	
+
 	return BOT_ACTION_DESIRE_NONE, 0
 
 end

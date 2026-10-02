@@ -114,7 +114,7 @@ local aetherRange = 0
 function X.SkillsComplement()
 
 
-	if J.CanNotUseAbility(bot) or bot:IsInvisible() then return end
+	if J.CanNotUseAbility(bot) or bot:IsInvisible() or bot:IsChanneling() then return end
 	
 	
 	nKeepMana = 400
@@ -128,9 +128,19 @@ function X.SkillsComplement()
 	
 	
 	local aether = J.IsItemAvailable("item_aether_lens");
-	if aether ~= nil then aetherRange = 250 end	
+	if aether ~= nil then aetherRange = aether:GetSpecialValueInt('cast_range_bonus') end
 	
 	
+    -- Finish or begin an escape/reset before spending time on ordinary damage.
+    castSRDesire = X.ConsiderSR()
+    if castSRDesire > 0 then bot:Action_UseAbility(abilitySR); return end
+    castRDesire = X.ConsiderR()
+    if castRDesire > 0 then
+        J.SetQueuePtToINT(bot, true)
+        bot:ActionQueue_UseAbility(abilityR)
+        return
+    end
+
 	castQDesire, castQTarget, sMotive = X.ConsiderQ();
 	if ( castQDesire > 0 ) 
 	then
@@ -161,27 +171,6 @@ function X.SkillsComplement()
 		return;
 	end
 	
-	castRDesire, castRTarget, sMotive = X.ConsiderR();
-	if ( castRDesire > 0 ) 
-	then
-		J.SetReportMotive(bDebugMode,sMotive);
-	
-		J.SetQueuePtToINT(bot, true)
-	
-		bot:ActionQueue_UseAbility( abilityR )
-		return;
-	
-	end
-	
-	castSRDesire, castSRTarget, sMotive = X.ConsiderSR();
-	if ( castSRDesire > 0 ) 
-	then
-		J.SetReportMotive(bDebugMode,sMotive)
-		
-		bot:Action_UseAbility( abilitySR )
-		return;
-	
-	end
 
 end
 
@@ -189,7 +178,12 @@ end
 function X.ConsiderQ()
 
 
-	if not abilityQ:IsFullyCastable() then return 0 end
+	if not J.CanCastAbility(abilityQ) then return 0 end
+    -- Mirror Image provides a basic dispel even when there is no attack target.
+    if bot:IsRooted() or bot:HasModifier('modifier_bounty_hunter_track')
+        or bot:HasModifier('modifier_slardar_amplify_damage') then
+        return BOT_ACTION_DESIRE_HIGH, bot, 'Mirror dispel'
+    end
 	
 	local nSkillLV    = abilityQ:GetLevel(); 
 	local nCastRange  = abilityQ:GetCastRange()
@@ -350,242 +344,114 @@ function X.ConsiderQ()
 end
 
 
-function X.ConsiderW()
-
-
-	if not abilityW:IsFullyCastable() then return 0 end
-	
-	local nSkillLV    = abilityW:GetLevel(); 
-	local nCastRange  = abilityW:GetCastRange() + aetherRange
-	local nCastPoint  = abilityW:GetCastPoint()
-	local nManaCost   = abilityW:GetManaCost()
-	local nDamage     = abilityW:GetAbilityDamage()
-	local nDamageType = DAMAGE_TYPE_MAGICAL
-	local nInRangeEnemyList = J.GetAroundEnemyHeroList( nCastRange )
-	local nInBonusEnemyList = J.GetAroundEnemyHeroList( nCastRange + 200 )
-	local hCastTarget = nil
-	local sCastMotive = nil
-	
-	
-	--打断TP
-	for _,npcEnemy in pairs( nInBonusEnemyList )
-	do
-		if J.IsValid(npcEnemy)
-		   and (J.CanCastOnNonMagicImmune(npcEnemy) or (J.CanCastOnMagicImmune(npcEnemy) and bot:HasScepter()))
-		   and npcEnemy:IsChanneling()
-		   and npcEnemy:HasModifier( 'modifier_teleporting' )
-	   then			
-			hCastTarget = npcEnemy
-			sCastMotive = 'W-打断TP:'..J.Chat.GetNormName( npcEnemy )
-			return BOT_ACTION_DESIRE_HIGH, hCastTarget,sCastMotive	
-		end
-	end
-	
-	
-	
-	--追击时
-	if J.IsGoingOnSomeone( bot )
-	then
-		if J.IsValidHero( botTarget )
-			and J.IsInRange( botTarget, bot, nCastRange )
-			and (J.CanCastOnNonMagicImmune( botTarget ) or (J.CanCastOnMagicImmune(botTarget) and bot:HasScepter()))
-			and J.CanCastOnTargetAdvanced( botTarget )
-			and not J.IsDisabled( botTarget )
-			and J.IsRunning( botTarget ) 
-			and bot:IsFacingLocation( botTarget:GetLocation(), 20 )
-			and not botTarget:IsFacingLocation( bot:GetLocation(), 140 )
-		then			
-			hCastTarget = botTarget
-			sCastMotive = 'W-攻击'..J.Chat.GetNormName( hCastTarget )
-			return BOT_ACTION_DESIRE_HIGH, hCastTarget, sCastMotive
-		end
-		
-		--攻击时显示隐身
-		for _, npcEnemy in pairs( nInRangeEnemyList )
-		do
-			if J.IsValid( npcEnemy )
-			then
-				if npcEnemy:HasModifier( 'modifier_item_glimmer_cape' )
-					or npcEnemy:HasModifier( 'modifier_invisible' )
-					or npcEnemy:HasModifier( 'modifier_item_shadow_amulet_fade' )
-				then
-					if ((J.CanCastOnNonMagicImmune( npcEnemy )) or (J.CanCastOnMagicImmune(npcEnemy) and bot:HasScepter()))
-						and J.CanCastOnTargetAdvanced( npcEnemy )
-						and not npcEnemy:HasModifier( 'modifier_item_dustofappearance' )
-						and not npcEnemy:HasModifier( 'modifier_slardar_amplify_damage' )
-						and not npcEnemy:HasModifier( 'modifier_bloodseeker_thirst_vision' )
-						and not npcEnemy:HasModifier( 'modifier_sniper_assassinate' )
-						and not npcEnemy:HasModifier( 'modifier_bounty_hunter_track' )
-					then
-						hCastTarget = npcEnemy
-						sCastMotive = 'W-显隐'..J.Chat.GetNormName( hCastTarget )
-						return BOT_ACTION_DESIRE_HIGH, hCastTarget, sCastMotive
-					end
-				end
-			end
-		end
-	end
-	
-	
-	
-	
-	--逃跑时减速
-	if J.IsRetreating( bot ) 
-		and bot:WasRecentlyDamagedByAnyHero( 5.0 )
-	then
-		for _, npcEnemy in pairs( nInRangeEnemyList )
-		do
-			if J.IsValid( npcEnemy )				
-				and (J.CanCastOnNonMagicImmune( npcEnemy ) or (J.CanCastOnMagicImmune(npcEnemy) and bot:HasScepter()))
-				and J.CanCastOnTargetAdvanced( npcEnemy )
-				and not J.IsDisabled( npcEnemy )
-				and not npcEnemy:IsDisarmed()
-				and npcEnemy:IsFacingLocation( bot:GetLocation(), 30 )
-			then
-				hCastTarget = npcEnemy
-				sCastMotive = 'W-撤退'..J.Chat.GetNormName( hCastTarget )
-				return BOT_ACTION_DESIRE_HIGH, hCastTarget, sCastMotive
-			end
-		end
-	end
-	
-	
-	return BOT_ACTION_DESIRE_NONE
-	
+local function CanEnsnare(enemy)
+    local sleeping = J.IsValidHero(enemy) and enemy:HasModifier('modifier_naga_siren_song_of_the_siren')
+    return J.IsValidHero(enemy) and not J.IsSuspiciousIllusion(enemy)
+        and (sleeping or J.CanCastOnTargetAdvanced(enemy))
+        and (not enemy:IsInvulnerable() or sleeping)
+        and (not enemy:IsMagicImmune() or bot:HasScepter())
+        and not enemy:HasModifier('modifier_naga_siren_ensnare')
+        and J.IsInRange(bot, enemy, abilityW:GetCastRange() + aetherRange)
 end
 
+function X.ConsiderW()
+    if not J.CanCastAbility(abilityW) then return 0 end
+    local enemies = J.GetNearbyHeroes(bot, math.min(abilityW:GetCastRange() + aetherRange, 1600), true, BOT_MODE_NONE)
+    for _, enemy in ipairs(enemies) do
+        if CanEnsnare(enemy) and enemy:IsChanneling() then
+            return BOT_ACTION_DESIRE_HIGH, enemy, 'Ensnare interrupt'
+        end
+    end
+    if J.IsGoingOnSomeone(bot) and CanEnsnare(botTarget)
+        and (not J.IsDisabled(botTarget) or botTarget:HasModifier('modifier_naga_siren_song_of_the_siren')) then
+        return BOT_ACTION_DESIRE_HIGH, botTarget, 'Ensnare follow-up'
+    end
+    if J.IsRetreating(bot) and bot:WasRecentlyDamagedByAnyHero(3) then
+        for _, enemy in ipairs(enemies) do
+            if CanEnsnare(enemy) and not J.IsDisabled(enemy) and J.IsChasingTarget(enemy, bot) then
+                return BOT_ACTION_DESIRE_HIGH, enemy, 'Ensnare escape'
+            end
+        end
+    end
+    return 0
+end
 
 function X.ConsiderR()
-
-
-	if not abilityR:IsFullyCastable() then return 0 end
-	
-	local nSkillLV    = abilityR:GetLevel(); 
-	local nCastRange  = abilityR:GetSpecialValueInt( 'radius' )
-	local nRadius     = nCastRange
-	local nCastPoint  = abilityR:GetCastPoint();
-	local nManaCost   = abilityR:GetManaCost();
-	local nDamage     = 0
-	local nDamageType = DAMAGE_TYPE_MAGICAL
-	local nInRangeEnemyList = J.GetAroundEnemyHeroList( nCastRange - 200 )
-	local nInBonusEnemyList = J.GetAroundEnemyHeroList( nCastRange )
-	local hCastTarget = nil
-	local sCastMotive = nil
-	
-	
-	--进攻时控制
-	if J.IsGoingOnSomeone( bot )
-	then
-		if J.IsValidHero( botTarget )
-			and J.IsInRange( bot, botTarget, 1400 )
-			and not J.IsInRange( bot, botTarget, 800 )
-			and J.CanCastOnNonMagicImmune( botTarget )
-			and not botTarget:WasRecentlyDamagedByAnyHero( 3.0 )
-			and bot:IsFacingLocation( botTarget:GetLocation(), 20 )
-		then
-			local allyList = J.GetNearbyHeroes(botTarget,  700, true, BOT_MODE_NONE )
-			if #allyList == 0
-			then
-				hCastTarget = botTarget
-				sCastMotive = 'R-伏击:'..J.Chat.GetNormName( hCastTarget )
-				return BOT_ACTION_DESIRE_HIGH, hCastTarget, sCastMotive
-			end
-		end
-	end
-	
-	
-	
-	--逃跑时防御
-	if J.IsRetreating( bot ) 
-		and bot:WasRecentlyDamagedByAnyHero( 3.0 )
-	then
-		for _, npcEnemy in pairs( nInRangeEnemyList )
-		do
-			if J.IsValid( npcEnemy )				
-				and J.CanCastOnNonMagicImmune( npcEnemy )
-				and not J.IsDisabled( npcEnemy )
-				and not npcEnemy:IsDisarmed()
-			then
-				hCastTarget = npcEnemy
-				sCastMotive = 'R-撤退'..J.Chat.GetNormName( hCastTarget )
-				return BOT_ACTION_DESIRE_HIGH, hCastTarget, sCastMotive
-			end
-		end
-	end
-	
-	
-	return BOT_ACTION_DESIRE_NONE
-	
+    if not J.CanCastAbility(abilityR) then return 0 end
+    local radius = abilityR:GetSpecialValueInt('radius')
+    local enemies = J.GetNearbyHeroes(bot, math.min(radius, 1600), true, BOT_MODE_NONE)
+    local affected = 0
+    for _, enemy in ipairs(enemies) do
+        if J.IsValidHero(enemy) and not J.IsSuspiciousIllusion(enemy)
+            and J.CanCastOnNonMagicImmune(enemy) and J.IsInRange(bot, enemy, radius) then
+            affected = affected + 1
+        end
+    end
+    if affected == 0 then return 0 end
+    if J.IsRetreating(bot) and bot:WasRecentlyDamagedByAnyHero(3)
+        and (J.GetHP(bot) < 0.5 or affected >= 2) then return BOT_ACTION_DESIRE_HIGH end
+    for _, ally in ipairs(J.GetNearbyHeroes(bot, math.min(radius, 1600), false, BOT_MODE_NONE)) do
+        if J.IsValidHero(ally) and not ally:IsIllusion() and J.GetHP(ally) < 0.3
+            and J.IsRetreating(ally) and ally:WasRecentlyDamagedByAnyHero(2)
+            and not ally:HasModifier('modifier_ice_blast') then return BOT_ACTION_DESIRE_HIGH end
+    end
+    -- Song makes enemies invulnerable: only set up isolated, distant targets with a nearby ally.
+    if J.IsGoingOnSomeone(bot) and J.IsValidHero(botTarget) and J.CanCastOnNonMagicImmune(botTarget)
+        and J.IsInRange(bot, botTarget, radius) and not J.IsInRange(bot, botTarget, 800)
+        and not botTarget:WasRecentlyDamagedByAnyHero(3) then
+        local allies = J.GetNearbyHeroes(bot, math.min(radius, 1600), false, BOT_MODE_NONE)
+        if #allies >= 1 and affected <= #allies + 1 then return BOT_ACTION_DESIRE_HIGH end
+    end
+    return 0
 end
 
 function X.ConsiderSR()
-
-
-	if abilitySR:IsHidden()
-		or not abilitySR:IsTrained()
-		or not abilitySR:IsFullyCastable() 
-	then return 0 end	
-
-	
-	
-	--进攻时撤销控制
-	if J.IsGoingOnSomeone( bot )
-	then
-		if J.IsValidHero( botTarget )
-			and J.IsInRange( bot, botTarget, 300 )
-		then
-			local allyList = J.GetNearbyHeroes(botTarget,  300, true, BOT_MODE_NONE )
-			if allyList ~= nil
-				and #allyList >= 3
-			then
-				return BOT_ACTION_DESIRE_HIGH, botTarget, 'SR-停止大招'
-			end
-		end
-	end
-		
-	
-	return BOT_ACTION_DESIRE_NONE
-	
+    if not J.CanCastAbility(abilitySR) then return 0 end
+    local radius = abilityR:GetSpecialValueInt('radius')
+    local sleeping = {}
+    for _, enemy in ipairs(J.GetNearbyHeroes(bot, math.min(radius, 1600), true, BOT_MODE_NONE)) do
+        if J.IsValidHero(enemy) and enemy:HasModifier('modifier_naga_siren_song_of_the_siren') then
+            sleeping[#sleeping + 1] = enemy
+        end
+    end
+    -- Keep an escape Song running until its victims leave the aura.
+    if #sleeping == 0 then
+        if J.GetHP(bot) < 0.8 and not bot:HasModifier('modifier_ice_blast') then return 0 end
+        for _, ally in ipairs(J.GetNearbyHeroes(bot, math.min(radius, 1600), false, BOT_MODE_NONE)) do
+            if J.IsValidHero(ally) and not ally:IsIllusion() and J.GetHP(ally) < 0.8
+                and not ally:HasModifier('modifier_ice_blast') then return 0 end
+        end
+        return BOT_ACTION_DESIRE_HIGH
+    end
+    if J.IsRetreating(bot) then return 0 end
+    if J.IsGoingOnSomeone(bot) and J.IsValidHero(botTarget)
+        and botTarget:HasModifier('modifier_naga_siren_song_of_the_siren')
+        and J.IsInRange(bot, botTarget, 350) then
+        local ready = 0
+        for _, ally in ipairs(J.GetNearbyHeroes(bot, 600, false, BOT_MODE_NONE)) do
+            if J.IsValidHero(ally) and not ally:IsIllusion() and J.IsInRange(ally, botTarget, 600) then ready = ready + 1 end
+        end
+        if ready >= #sleeping then return BOT_ACTION_DESIRE_HIGH end
+    end
+    return 0
 end
 
 function X.ConsiderReelIn()
-	if not bot:HasScepter()
-	or not ReelIn:IsFullyCastable()
-	or J.IsInTeamFight(bot, 1400)
-	then
-		return BOT_ACTION_DESIRE_NONE
-	end
-
-	local nRange = 1400
-	local nInRangeAllyList = J.GetNearbyHeroes(bot,nRange, false, BOT_MODE_NONE)
-	local nInRangeEnemyList = J.GetNearbyHeroes(bot,nRange, true, BOT_MODE_NONE)
-
-	for _, npcEnemy in pairs(nInRangeEnemyList)
-	do
-		if J.IsValidHero(npcEnemy)
-		and J.IsInRange(bot, npcEnemy, nRange)
-		and not J.IsInRange(bot, npcEnemy, bot:GetAttackRange() * 2)
-		and npcEnemy:HasModifier('modifier_naga_siren_ensnare')
-		and #nInRangeAllyList >= #nInRangeEnemyList
-		then
-			return BOT_ACTION_DESIRE_HIGH
-		end
-	end
-
-	if J.IsGoingOnSomeone(bot)
-	then
-		if J.IsValidHero(botTarget)
-		and J.IsInRange(bot, botTarget, nRange)
-		and not J.IsInRange( bot, botTarget, bot:GetAttackRange() * 2)
-		and bot:IsFacingLocation(botTarget:GetLocation(), 30)
-		and botTarget:HasModifier('modifier_naga_siren_ensnare')
-		and #nInRangeAllyList >= #nInRangeEnemyList
-		then
-			return BOT_ACTION_DESIRE_HIGH
-		end
-	end
-
-	return BOT_ACTION_DESIRE_NONE
+    if not J.CanCastAbility(ReelIn) or J.IsRetreating(bot) or bot:IsChanneling()
+        or J.IsInTeamFight(bot, 1400) then return 0 end
+    local radius = ReelIn:GetSpecialValueInt('radius')
+    local enemies = J.GetNearbyHeroes(bot, math.min(radius, 1600), true, BOT_MODE_NONE)
+    local allies = J.GetNearbyHeroes(bot, math.min(radius, 1600), false, BOT_MODE_NONE)
+    for _, enemy in ipairs(enemies) do
+        if J.IsValidHero(enemy) and not J.IsSuspiciousIllusion(enemy)
+            and (not enemy:IsMagicImmune() or bot:HasScepter())
+            and J.IsInRange(bot, enemy, radius) and not J.IsInRange(bot, enemy, bot:GetAttackRange() + 150)
+            and enemy:HasModifier('modifier_naga_siren_ensnare') and #allies + 1 >= #enemies then
+            local index = enemy:GetModifierByName('modifier_naga_siren_ensnare')
+            if abilityW ~= nil and index >= 0 and enemy:GetModifierSourceAbility(index) == abilityW then return BOT_ACTION_DESIRE_HIGH end
+        end
+    end
+    return 0
 end
 
 return X

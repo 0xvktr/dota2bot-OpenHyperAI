@@ -11,6 +11,7 @@ local bDebugMode = ( 1 == 10 )
 local bot = GetBot()
 
 local J = require( GetScriptDirectory()..'/FunLib/jmz_func' )
+local SpellDecisions = require(GetScriptDirectory()..'/FunLib/rubick_hero/lina')
 local Minion = dofile( GetScriptDirectory()..'/FunLib/aba_minion' )
 local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
@@ -136,9 +137,21 @@ function X.SkillsComplement()
 
 
 	local aether = J.IsItemAvailable( "item_aether_lens" )
-	if aether ~= nil then aetherRange = 250 end
+	if aether ~= nil then aetherRange = aether:GetSpecialValueInt('cast_range_bonus') end
 --	if talent2:IsTrained() then aetherRange = aetherRange + talent2:GetSpecialValueInt( "value" ) end
 
+    if J.CanCastAbility(abilityW) then
+        for _,enemy in pairs(hEnemyList) do
+            if J.IsValidHero(enemy) and enemy:IsChanneling() then
+                local point=SpellDecisions.StunLocation(abilityW,enemy)
+                if point~=nil then
+                    J.SetQueuePtToINT(bot,true,abilityW)
+                    bot:ActionQueue_UseAbilityOnLocation(abilityW,point)
+                    return
+                end
+            end
+        end
+    end
 	FlameCloakDesire = X.ConsiderFlameCloak()
 	if (FlameCloakDesire > 0)
 	then
@@ -151,7 +164,7 @@ function X.SkillsComplement()
 	then
 		J.SetReportMotive( bDebugMode, sMotive )
 
-		J.SetQueuePtToINT( bot, true )
+		J.SetQueuePtToINT( bot, true, abilityR )
 
 		bot:ActionQueue_UseAbilityOnEntity( abilityR, castRTarget )
 		return
@@ -159,27 +172,28 @@ function X.SkillsComplement()
 	end
 
 
+	castWDesire, castWLocation, sMotive = X.ConsiderW()
+	if ( castWDesire > 0 and GetUnitToLocationDistance(bot,castWLocation)<=abilityW:GetCastRange()+aetherRange )
+	then
+		J.SetReportMotive( bDebugMode, sMotive )
+
+		J.SetQueuePtToINT( bot, true, abilityW )
+
+		bot:ActionQueue_UseAbilityOnLocation( abilityW, castWLocation )
+		return
+	end
+
 	castQDesire, castQLocation, sMotive = X.ConsiderQ()
 	if ( castQDesire > 0 )
 	then
 		J.SetReportMotive( bDebugMode, sMotive )
 
-		J.SetQueuePtToINT( bot, true )
+		J.SetQueuePtToINT( bot, true, abilityQ )
 
 		bot:ActionQueue_UseAbilityOnLocation( abilityQ, castQLocation )
 		return
 	end
 
-	castWDesire, castWLocation, sMotive = X.ConsiderW()
-	if ( castWDesire > 0 )
-	then
-		J.SetReportMotive( bDebugMode, sMotive )
-
-		J.SetQueuePtToINT( bot, true )
-
-		bot:ActionQueue_UseAbilityOnLocation( abilityW, castWLocation )
-		return
-	end
 
 
 end
@@ -188,10 +202,10 @@ end
 function X.ConsiderQ()
 
 
-	if not abilityQ:IsFullyCastable() then return 0 end
+	if not J.CanCastAbility(abilityQ) then return 0 end
 
 	local nSkillLV = abilityQ:GetLevel()
-	local nCastRange = abilityQ:GetCastRange() + aetherRange
+	local nCastRange = math.min(abilityQ:GetCastRange() + aetherRange, abilityQ:GetSpecialValueInt('dragon_slave_distance'))
 	local nCastPoint = abilityQ:GetCastPoint()
 	local nManaCost = abilityQ:GetManaCost()
 	local nDamage = abilityQ:GetSpecialValueInt( "dragon_slave_damage" )
@@ -267,7 +281,7 @@ function X.ConsiderQ()
 		then
 			if nSkillLV >= 2 or nMP > 0.68 or J.GetHP( botTarget ) < 0.38
 			then
-				nTargetLocation = botTarget:GetExtrapolatedLocation( nCastPoint )
+				nTargetLocation = J.GetCorrectLoc(botTarget,nCastPoint+GetUnitToUnitDistance(bot,botTarget)/abilityQ:GetSpecialValueInt('dragon_slave_speed'))
 				if J.IsInLocRange( bot, nTargetLocation, nCastRange )
 				then
 					return BOT_ACTION_DESIRE_HIGH, nTargetLocation, 'Q打架'..J.Chat.GetNormName( botTarget )
@@ -398,11 +412,11 @@ end
 function X.ConsiderW()
 
 
-	if not abilityW:IsFullyCastable() then return 0 end
+	if not J.CanCastAbility(abilityW) then return 0 end
 
 	local nSkillLV = abilityW:GetLevel()
 	local nCastRange = abilityW:GetCastRange() + aetherRange
-	local nCastPoint = abilityW:GetCastPoint() + 0.5
+	local nCastPoint = abilityW:GetCastPoint() + abilityW:GetSpecialValueFloat('light_strike_array_delay_time')
 	local nManaCost = abilityW:GetManaCost()
 	-- The engine special includes the current Light Strike Array damage talent.
 	local nDamage = abilityW:GetSpecialValueInt('light_strike_array_damage')
@@ -475,7 +489,7 @@ function X.ConsiderW()
 			and J.CanCastOnNonMagicImmune( botTarget )
 			and J.IsInRange( botTarget, bot, nCastRange -30 )
 		then
-			nTargetLocation = J.GetDelayCastLocation( bot, botTarget, nCastRange, nRadius, nCastPoint + 0.3 )
+			nTargetLocation = SpellDecisions.StunLocation(abilityW, botTarget)
 			if nTargetLocation ~= nil
 			then
 				return BOT_ACTION_DESIRE_HIGH, nTargetLocation, "W打架"..J.Chat.GetNormName( botTarget )
@@ -608,110 +622,26 @@ end
 
 
 function X.ConsiderR()
-
-
-	if not abilityR:IsFullyCastable() then return 0 end
-
-	local nSkillLV = abilityR:GetLevel()
-	local nCastRange = abilityR:GetCastRange() + aetherRange
-	local nCastPoint = abilityR:GetCastPoint()
-	local nManaCost = abilityR:GetManaCost()
-	local nDamage = abilityR:GetSpecialValueInt( "damage" )
-	local nDamageType = bot:HasScepter() and DAMAGE_TYPE_PURE or DAMAGE_TYPE_MAGICAL
-
-
-	local nInRangeEnemyList = J.GetNearbyHeroes(bot, nCastRange + 80, true, BOT_MODE_NONE )
-	local nInBonusEnemyList = J.GetNearbyHeroes(bot, nCastRange + 240, true, BOT_MODE_NONE )
-
-
-	--击杀
-	for _, npcEnemy in pairs( nInBonusEnemyList )
-	do
-		if J.IsValidHero( npcEnemy )
-			and not J.IsHaveAegis( npcEnemy )
-			and X.CanCastAbilityROnTarget( npcEnemy )
-		then
-			if J.WillMagicKillTarget( bot, npcEnemy, nDamage, nCastPoint + 0.25 )
-			then
-				return BOT_ACTION_DESIRE_HIGH, npcEnemy, 'R击杀'..J.Chat.GetNormName( npcEnemy )
-			end
-		end
-	end
-
-	--团战对最弱的敌人
-	if J.IsInTeamFight( bot, 600 )
-		or ( nHP < 0.3 and nSkillLV >= 2 )
-	then
-		local npcWeakestEnemy = nil
-		local npcWeakestEnemyHealth = 10000
-
-		for _, npcEnemy in pairs( nInRangeEnemyList )
-		do
-			if J.IsValid( npcEnemy )
-				and X.CanCastAbilityROnTarget( npcEnemy )
-			then
-				local npcEnemyHealth = npcEnemy:GetHealth()
-				if ( npcEnemyHealth < npcWeakestEnemyHealth )
-				then
-					npcWeakestEnemyHealth = npcEnemyHealth
-					npcWeakestEnemy = npcEnemy
-				end
-			end
-		end
-
-		if ( npcWeakestEnemy ~= nil )
-		then
-			return BOT_ACTION_DESIRE_HIGH, npcWeakestEnemy, 'R团战'..J.Chat.GetNormName( npcWeakestEnemy )
-		end
-
-	end
-
-
-	--打架
-	if J.IsGoingOnSomeone( bot )
-	then
-		if J.IsValidHero( botTarget )
-			and X.CanCastAbilityROnTarget( botTarget )
-			and J.IsInRange( botTarget, bot, nCastRange + 100 )
-		then
-			if J.WillMagicKillTarget( bot, botTarget, nDamage * 1.88, nCastPoint + 0.25 )
-			then
-				return BOT_ACTION_DESIRE_HIGH, botTarget, "R打架"..J.Chat.GetNormName( botTarget )
-			end
-		end
-	end
-
-
-	return BOT_ACTION_DESIRE_NONE
-
-
+    local target=SpellDecisions.LagunaTarget(abilityR,true)
+    return target~=nil and BOT_ACTION_DESIRE_HIGH or BOT_ACTION_DESIRE_NONE,target
 end
 
-
-function X.CanCastAbilityROnTarget( nTarget )
-
-	if J.CanCastOnTargetAdvanced( nTarget )
-		and not nTarget:HasModifier( "modifier_arc_warden_tempest_double" )
-	then
-		if bot:HasScepter()
-		then
-			return J.CanCastOnMagicImmune( nTarget )
-		else
-			return J.CanCastOnNonMagicImmune( nTarget )
-		end
-	end
-
-	return false
-
+function X.CanCastAbilityROnTarget(target)
+    return J.IsValidHero(target) and J.CanCastOnNonMagicImmune(target)
+        and J.CanCastOnTargetAdvanced(target) and not J.IsSuspiciousIllusion(target)
+        and not J.CannotBeKilled(bot,target)
 end
 
 function X.ConsiderFlameCloak()
-	if not FlameCloak:IsTrained()
-	or not FlameCloak:IsFullyCastable()
+	if not J.CanCastAbility(FlameCloak) or bot:HasModifier('modifier_lina_flame_cloak')
 	then
 		return BOT_ACTION_DESIRE_NONE
 	end
 
+    if J.IsGoingOnSomeone(bot) and J.IsValidHero(botTarget) and J.CanCastOnNonMagicImmune(botTarget)
+        and J.IsInRange(bot,botTarget,abilityR:GetCastRange()+aetherRange)
+        and not J.CannotBeKilled(bot,botTarget)
+        and (J.CanCastAbility(abilityQ) or J.CanCastAbility(abilityR)) then return BOT_ACTION_DESIRE_HIGH end
 	local nAttackRange = bot:GetAttackRange()
 	local nEnemyHeroes = J.GetNearbyHeroes(bot,nAttackRange, true, BOT_MODE_NONE)
 	local nAlliedHeroes = J.GetNearbyHeroes(bot,nAttackRange, false, BOT_MODE_NONE)

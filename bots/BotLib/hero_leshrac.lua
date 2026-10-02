@@ -60,6 +60,12 @@ local botTarget
 
 if bot.edictPushing == nil then bot.edictPushing = false end
 
+local function SpellRange(ability)
+    local range = ability:GetCastRange()
+    local lens = J.IsItemAvailable('item_aether_lens')
+    return range + (lens ~= nil and lens:GetSpecialValueInt('cast_range_bonus') or 0)
+end
+
 function X.SkillsComplement()
     if J.CanNotUseAbility(bot) then return end
 
@@ -67,6 +73,27 @@ function X.SkillsComplement()
     if not bot:HasModifier('modifier_leshrac_diabolic_edict')
     then
         bot.edictPushing = false
+    end
+
+    -- Interrupt channels before spending a cast on routine damage or a slow.
+    if J.CanCastAbility(SplitEarth) then
+        for _, enemy in pairs(J.GetNearbyHeroes(bot, 1600, true, BOT_MODE_NONE)) do
+            if J.IsValidHero(enemy) and J.CanCastOnNonMagicImmune(enemy)
+                and not J.IsSuspiciousIllusion(enemy)
+                and J.IsInRange(bot, enemy, SpellRange(SplitEarth))
+                and enemy:IsChanneling() then
+                J.SetQueuePtToINT(bot, true, SplitEarth)
+                bot:ActionQueue_UseAbilityOnLocation(SplitEarth,
+                    J.GetCorrectLoc(enemy, SplitEarth:GetCastPoint() + SplitEarth:GetSpecialValueFloat('delay')))
+                return
+            end
+        end
+    end
+
+    NihilismDesire = X.ConsiderNihilism()
+    if NihilismDesire > 0 then
+        bot:Action_UseAbility(Nihilism)
+        return
     end
 
     PulseNovaDesire = X.ConsiderPulseNova()
@@ -79,21 +106,24 @@ function X.SkillsComplement()
     LightningStormDesire, LightningStormTarget = X.ConsiderLightningStorm()
     if LightningStormDesire > 0
     then
-        bot:Action_UseAbilityOnEntity(LightningStorm, LightningStormTarget)
+        J.SetQueuePtToINT(bot, true, LightningStorm)
+        bot:ActionQueue_UseAbilityOnEntity(LightningStorm, LightningStormTarget)
         return
     end
 
     SplitEarthDesire, SplitEarthLocation = X.ConsiderSplitEarth()
     if SplitEarthDesire > 0
     then
-        bot:Action_UseAbilityOnLocation(SplitEarth, SplitEarthLocation)
+        J.SetQueuePtToINT(bot, true, SplitEarth)
+        bot:ActionQueue_UseAbilityOnLocation(SplitEarth, SplitEarthLocation)
         return
     end
 
     DiabolicEdictDesire = X.ConsiderDiabolicEdict()
     if DiabolicEdictDesire > 0
     then
-        bot:Action_UseAbility(DiabolicEdict)
+        J.SetQueuePtToINT(bot, true, DiabolicEdict)
+        bot:ActionQueue_UseAbility(DiabolicEdict)
         return
     end
 
@@ -106,12 +136,12 @@ function X.SkillsComplement()
 end
 
 function X.ConsiderSplitEarth()
-    if not SplitEarth:IsFullyCastable()
+    if not J.CanCastAbility(SplitEarth)
     then
         return BOT_ACTION_DESIRE_NONE, 0
     end
 
-    local nCastRange = J.GetProperCastRange(false, bot, SplitEarth:GetCastRange())
+    local nCastRange = SpellRange(SplitEarth)
     local nCastPoint = SplitEarth:GetCastPoint()
     local nRadius = SplitEarth:GetSpecialValueInt('radius')
     local nDelay = SplitEarth:GetSpecialValueFloat('delay')
@@ -269,7 +299,7 @@ function X.ConsiderSplitEarth()
             local nEnemyLaneCreeps = bot:GetNearbyLaneCreeps(nCastRange, true)
             if nEnemyLaneCreeps ~= nil and #nEnemyLaneCreeps >= 4
             then
-                return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(nEnemyHeroes)
+                return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(nEnemyLaneCreeps)
             end
         end
     end
@@ -371,7 +401,7 @@ function X.ConsiderSplitEarth()
 end
 
 function X.ConsiderDiabolicEdict()
-    if not DiabolicEdict:IsFullyCastable()
+    if not J.CanCastAbility(DiabolicEdict)
     then
         return BOT_ACTION_DESIRE_NONE
     end
@@ -382,8 +412,8 @@ function X.ConsiderDiabolicEdict()
     if J.IsGoingOnSomeone(bot)
     then
         if J.IsValidTarget(botTarget)
-        and J.CanCastOnNonMagicImmune(botTarget)
-        and J.IsInRange(bot, botTarget, nRadius + 100)
+        and J.CanCastOnMagicImmune(botTarget)
+        and J.IsInRange(bot, botTarget, nRadius)
         and not J.IsSuspiciousIllusion(botTarget)
         and not botTarget:HasModifier('modifier_abaddon_borrowed_time')
         and not botTarget:HasModifier('modifier_dazzle_shallow_grave')
@@ -425,8 +455,8 @@ function X.ConsiderDiabolicEdict()
     if J.IsPushing(bot)
     and J.GetManaAfter(nManaCost) > 0.25
     then
-        local nEnemyTowers = bot:GetNearbyTowers(1000, true)
-        local nEnemyLaneCreeps = bot:GetNearbyLaneCreeps(800, true)
+        local nEnemyTowers = bot:GetNearbyTowers(nRadius, true)
+        local nEnemyLaneCreeps = bot:GetNearbyLaneCreeps(nRadius, true)
         if nEnemyTowers ~= nil and #nEnemyTowers >= 1
         and nEnemyLaneCreeps ~= nil and #nEnemyLaneCreeps <= 2
         then
@@ -438,7 +468,7 @@ function X.ConsiderDiabolicEdict()
     if J.IsDoingRoshan(bot)
     then
         if J.IsRoshan(botTarget)
-        and J.CanCastOnNonMagicImmune(botTarget)
+        and J.CanCastOnMagicImmune(botTarget)
         and J.IsInRange(bot, botTarget, nRadius)
         then
             return BOT_ACTION_DESIRE_HIGH
@@ -459,12 +489,12 @@ function X.ConsiderDiabolicEdict()
 end
 
 function X.ConsiderLightningStorm()
-    if not LightningStorm:IsFullyCastable()
+    if not J.CanCastAbility(LightningStorm)
     then
         return BOT_ACTION_DESIRE_NONE, nil
     end
 
-    local nCastRange = J.GetProperCastRange(false, bot, LightningStorm:GetCastRange())
+    local nCastRange = SpellRange(LightningStorm)
     local nDamage = LightningStorm:GetSpecialValueInt('damage')
     local nJumpDist = LightningStorm:GetSpecialValueInt('radius')
 
@@ -473,6 +503,7 @@ function X.ConsiderLightningStorm()
     do
         if J.IsValidHero(enemyHero)
         and J.CanCastOnNonMagicImmune(enemyHero)
+        and J.CanCastOnTargetAdvanced(enemyHero)
         and J.CanKillTarget(enemyHero, nDamage, DAMAGE_TYPE_MAGICAL)
         and not J.IsSuspiciousIllusion(enemyHero)
         and not enemyHero:HasModifier('modifier_abaddon_borrowed_time')
@@ -494,6 +525,7 @@ function X.ConsiderLightningStorm()
         do
             if J.IsValidHero(enemyHero)
             and J.CanCastOnNonMagicImmune(enemyHero)
+        and J.CanCastOnTargetAdvanced(enemyHero)
             and not J.IsSuspiciousIllusion(enemyHero)
             and not enemyHero:HasModifier('modifier_abaddon_borrowed_time')
             and not enemyHero:HasModifier('modifier_necrolyte_reapers_scythe')
@@ -523,6 +555,7 @@ function X.ConsiderLightningStorm()
     then
         if J.IsValidTarget(botTarget)
         and J.CanCastOnNonMagicImmune(botTarget)
+        and J.CanCastOnTargetAdvanced(botTarget)
         and J.IsInRange(bot, botTarget, nCastRange)
         and J.IsChasingTarget(bot, botTarget)
         and not J.IsSuspiciousIllusion(botTarget)
@@ -550,6 +583,7 @@ function X.ConsiderLightningStorm()
         do
             if J.IsValidHero(enemyHero)
             and J.CanCastOnNonMagicImmune(enemyHero)
+        and J.CanCastOnTargetAdvanced(enemyHero)
             and J.IsChasingTarget(enemyHero, bot)
             and not J.IsSuspiciousIllusion(enemyHero)
             and not J.IsDisabled(enemyHero)
@@ -627,6 +661,7 @@ function X.ConsiderLightningStorm()
     then
         if J.IsRoshan(botTarget)
         and J.CanCastOnNonMagicImmune(botTarget)
+        and J.CanCastOnTargetAdvanced(botTarget)
         and J.IsInRange(bot, botTarget, nCastRange)
         and not J.IsDisabled(botTarget)
         and not botTarget:HasModifier('modifier_roshan_spell_block')
@@ -660,6 +695,7 @@ function X.ConsiderLightningStorm()
             then
                 if J.IsValidHero(enemyHero)
                 and J.CanCastOnNonMagicImmune(enemyHero)
+        and J.CanCastOnTargetAdvanced(enemyHero)
                 and J.IsInRange(bot, enemyHero, nCastRange)
                 and J.IsChasingTarget(enemyHero, allyHero)
                 and not J.IsDisabled(enemyHero)
@@ -677,203 +713,49 @@ function X.ConsiderLightningStorm()
 end
 
 function X.ConsiderPulseNova()
-    if not PulseNova:IsFullyCastable()
-    then
-        return BOT_ACTION_DESIRE_NONE
+    if PulseNova == nil or not PulseNova:IsTrained() or PulseNova:IsHidden()
+        or not PulseNova:IsActivated() then return BOT_ACTION_DESIRE_NONE end
+    local on = PulseNova:GetToggleState()
+    local radius = PulseNova:GetSpecialValueInt('radius')
+    local useful = false
+    for _, enemy in pairs(J.GetNearbyHeroes(bot, radius, true, BOT_MODE_NONE)) do
+        if J.IsValidHero(enemy) and J.CanCastOnNonMagicImmune(enemy)
+            and not J.CannotBeKilled(bot, enemy) then useful = true; break end
     end
-
-	local nRadius = PulseNova:GetSpecialValueInt('radius')
-
-    if J.IsInTeamFight(bot, 1200)
-	then
-		local nInRangeEnemy = J.GetEnemiesNearLoc(bot:GetLocation(), nRadius + 150)
-
-        if nInRangeEnemy ~= nil and #nInRangeEnemy >= 2
-        then
-            if PulseNova:GetToggleState() == false
-            then
-                return BOT_ACTION_DESIRE_HIGH
-            else
-                if J.GetMP(bot) < 0.25
-                and PulseNova:GetToggleState() == true
-                then
-                    return BOT_ACTION_DESIRE_HIGH
-                end
-
-                return BOT_ACTION_DESIRE_NONE
-            end
-        end
-	end
-
-	if J.IsGoingOnSomeone(bot)
-	then
-        if J.IsValidTarget(botTarget)
-        and J.CanCastOnNonMagicImmune(botTarget)
-        and J.IsInRange(bot, botTarget, nRadius + 150)
-        and not J.IsSuspiciousIllusion(botTarget)
-        then
-            local nInRangeAlly = J.GetNearbyHeroes(botTarget, 1200, true, BOT_MODE_NONE)
-            local nInRangeEnemy = J.GetNearbyHeroes(botTarget, 1200, false, BOT_MODE_NONE)
-
-            if nInRangeAlly ~= nil and nInRangeEnemy ~= nil
-            and #nInRangeAlly >= #nInRangeEnemy
-            and (#nInRangeEnemy >= 1
-                or (#nInRangeEnemy == 0
-                    and not botTarget:HasModifier('modifier_abaddon_borrowed_time')
-                    and not botTarget:HasModifier('modifier_dazzle_shallow_grave')
-                    and not botTarget:HasModifier('modifier_necrolyte_reapers_scythe')
-                    and not botTarget:HasModifier('modifier_oracle_false_promise_timer')
-                    and not botTarget:HasModifier('modifier_templar_assassin_refraction_absorb')))
-            then
-                if PulseNova:GetToggleState() == false
-                then
-                    return BOT_ACTION_DESIRE_HIGH
-                else
-                    if J.GetMP(bot) < 0.25
-                    and PulseNova:GetToggleState() == true
-                    then
-                        return BOT_ACTION_DESIRE_HIGH
-                    end
-
-                    return BOT_ACTION_DESIRE_NONE
-                end
-            end
-        end
-	end
-
-    if J.IsPushing(bot) or J.IsDefending(bot)
-    then
-        local nEnemyLaneCreeps = bot:GetNearbyLaneCreeps(nRadius, true)
-
-        if nEnemyLaneCreeps ~= nil
-        then
-            if #nEnemyLaneCreeps >= 1
-            and PulseNova:GetToggleState() == false
-            and J.IsAttacking(bot)
-            and J.GetMP(bot) > 0.5
-            then
-                return BOT_ACTION_DESIRE_HIGH
-            else
-                if (#nEnemyLaneCreeps == 0 or J.GetMP(bot) < 0.25)
-                and PulseNova:GetToggleState() == true
-                then
-                    return BOT_ACTION_DESIRE_HIGH
-                end
-
-                return BOT_ACTION_DESIRE_NONE
-            end
-        end
+    local working = (J.IsFarming(bot) or J.IsPushing(bot) or J.IsDefending(bot)) and J.IsAttacking(bot)
+    if working then
+        useful = useful or #bot:GetNearbyLaneCreeps(radius, true) >= 3
+            or #bot:GetNearbyNeutralCreeps(radius) >= 2
     end
-
-    if J.IsFarming(bot)
-    then
-        local nNeutralCreeps = bot:GetNearbyNeutralCreeps(nRadius)
-        if nNeutralCreeps ~= nil
-        and ((#nNeutralCreeps >= 3)
-            or (#nNeutralCreeps >= 2 and nNeutralCreeps[1]:IsAncientCreep()))
-        then
-            if #nNeutralCreeps >= 3
-            and PulseNova:GetToggleState() == false
-            and J.IsAttacking(bot)
-            and J.GetMP(bot) > 0.5
-            then
-                return BOT_ACTION_DESIRE_HIGH
-            else
-                if (#nNeutralCreeps == 0 or J.GetMP(bot) < 0.25)
-                and PulseNova:GetToggleState() == true
-                then
-                    return BOT_ACTION_DESIRE_HIGH
-                end
-
-                return BOT_ACTION_DESIRE_NONE
-            end
-        end
-
-        local nEnemyLaneCreeps = bot:GetNearbyLaneCreeps(nRadius, true)
-        if nEnemyLaneCreeps ~= nil
-        then
-            if #nEnemyLaneCreeps >= 3
-            and PulseNova:GetToggleState() == false
-            and J.IsAttacking(bot)
-            and J.GetMP(bot) > 0.5
-            then
-                return BOT_ACTION_DESIRE_HIGH
-            else
-                if (#nEnemyLaneCreeps == 0 or J.GetMP(bot) < 0.25)
-                and PulseNova:GetToggleState() == true
-                then
-                    return BOT_ACTION_DESIRE_HIGH
-                end
-
-                return BOT_ACTION_DESIRE_NONE
-            end
-        end
+    if (J.IsDoingRoshan(bot) or J.IsDoingTormentor(bot)) and J.IsAttacking(bot)
+        and J.IsValidTarget(botTarget) and J.IsInRange(bot, botTarget, radius)
+        and J.CanCastOnNonMagicImmune(botTarget) then useful = true end
+    -- Turning off remains legal below the activation mana cost. Separate thresholds
+    -- avoid repeatedly paying the activation cost while nearly out of mana.
+    if on then
+        return (not useful or J.GetMP(bot) < 0.2) and BOT_ACTION_DESIRE_HIGH or BOT_ACTION_DESIRE_NONE
     end
-
-    if J.IsDoingRoshan(bot)
-    then
-        if J.IsRoshan(botTarget)
-        and J.CanCastOnNonMagicImmune(botTarget)
-        and J.IsInRange(bot, botTarget, nRadius)
-        and J.IsAttacking(bot)
-        then
-            if PulseNova:GetToggleState() == false
-            and J.GetMP(bot) > 0.7
-            then
-                return BOT_ACTION_DESIRE_HIGH
-            else
-                if J.GetMP(bot) < 0.25
-                and PulseNova:GetToggleState() == true
-                then
-                    return BOT_ACTION_DESIRE_HIGH
-                end
-
-                return BOT_ACTION_DESIRE_NONE
-            end
-        end
+    if J.CanCastAbility(PulseNova) and useful and J.GetMP(bot) >= (working and 0.5 or 0.3)
+        and bot:GetMana() >= PulseNova:GetManaCost() + PulseNova:GetSpecialValueInt('mana_cost_per_second') * 2 then
+        return BOT_ACTION_DESIRE_HIGH
     end
-
-    if J.IsDoingTormentor(bot)
-    then
-        if J.IsTormentor(botTarget)
-        and J.IsInRange(bot, botTarget, nRadius)
-        and J.IsAttacking(bot)
-        then
-            if PulseNova:GetToggleState() == false
-            and J.GetMP(bot) > 0.75
-            then
-                return BOT_ACTION_DESIRE_HIGH
-            else
-                if J.GetMP(bot) < 0.25
-                and PulseNova:GetToggleState() == true
-                then
-                    return BOT_ACTION_DESIRE_HIGH
-                end
-
-                return BOT_ACTION_DESIRE_NONE
-            end
-        end
-    end
-
-    if PulseNova:GetToggleState() == true
-    then
-        local nInRangeEnemy = J.GetNearbyHeroes(bot, nRadius + 220, true, BOT_MODE_NONE)
-        if #nInRangeEnemy <= 0 then
-            return BOT_ACTION_DESIRE_HIGH
-        end
-    end
-
     return BOT_ACTION_DESIRE_NONE
 end
 
 function X.ConsiderNihilism()
-    if not Nihilism:IsTrained()
-    or not Nihilism:IsFullyCastable()
+    if not J.CanCastAbility(Nihilism)
     then
         return BOT_ACTION_DESIRE_NONE
     end
 
     local nRadius = Nihilism:GetSpecialValueInt('radius')
+    if J.IsGoingOnSomeone(bot) and J.IsValidHero(botTarget)
+        and J.CanCastOnNonMagicImmune(botTarget) and not J.IsSuspiciousIllusion(botTarget)
+        and J.IsInRange(bot, botTarget, nRadius)
+        and not J.CannotBeKilled(bot, botTarget)
+        and (PulseNova:GetToggleState() or bot:HasModifier('modifier_leshrac_diabolic_edict')) then
+        return BOT_ACTION_DESIRE_HIGH
+    end
 
     if J.IsWithoutTarget(bot)
     and J.GetAttackProjectileDamageByRange(bot, 1200) >= bot:GetHealth()

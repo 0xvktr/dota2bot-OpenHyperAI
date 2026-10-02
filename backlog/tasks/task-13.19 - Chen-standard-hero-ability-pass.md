@@ -5,7 +5,7 @@ status: Needs In-Game Test
 assignee:
   - '@codex'
 created_date: '2026-10-01 16:04'
-updated_date: '2026-10-01 16:37'
+updated_date: '2026-10-02 15:48'
 labels:
   - hero
   - weak-hero
@@ -16,6 +16,10 @@ references:
   - bots/FunLib/rubick_hero/chen.lua
 documentation:
   - backlog/docs/doc-2 - Hero-improvement-playbook.md
+modified_files:
+  - bots/FunLib/rubick_hero/chen.lua
+  - bots/BotLib/hero_chen.lua
+  - tests/chen_ability_spec.lua
 parent_task_id: TASK-13
 priority: medium
 ordinal: 59000
@@ -61,6 +65,8 @@ Follow-up routing: TASK21 contextual Mekansm/Greaves/Locket and Pipe/Vladmir/Dru
 Review repair: Martyrdom lethal sacrifice now uses J.WillKillTarget with actual cast point plus projectile travel (live speed, pinned1000 fallback only for absent/nonpositive value), allowing target regeneration and expected incoming attacks before committing the unit. Real minion Think regression: healthy1000HP Zealot produces225 damage, target220HP at500 distance with20HP/s regen survives the0.8-second impact window; no sacrifice or generic fallback occurs. Chen ability scenarios passed, focused Lua5.2 parse and whitespace checks pass. Parent reruns full suite.
 
 Final integrated verification (2026-10-01): node tests/run-builds.cjs exited 0 after all review repairs; exact markers confirmed for all five new hero specs, 348 Lua files parsed, Valve check 128 native heroes / 22 Rubick copies / 0 allowlisted findings, 127 hero role tables, 90 specialized dispatches, 61 Rubick behavior cases and 272 purchase lists. git diff --check passed. HEAD comparison confirms this hero build/skill/talent prefix unchanged. No lobby launched; standard pass handed off as Needs In-Game Test, with capability limits above. Item/counterplay findings appended to TASK21/24.
+
+2026-10-02 integration API follow-up: replaced undocumented HasShard() calls with the existing modifier_item_aghanims_shard convention used by this repository. Fixtures use the actual modifier query, retaining shard state scenarios. Focused hero scenarios passed; builds and skill/talent preferences retained. Lobby verification remains required.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

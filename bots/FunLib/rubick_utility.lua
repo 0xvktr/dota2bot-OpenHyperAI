@@ -27,18 +27,241 @@ local Dawnbreaker = require(GetScriptDirectory()..'/FunLib/rubick_hero/dawnbreak
 local DeathProphet = require(GetScriptDirectory()..'/FunLib/rubick_hero/death_prophet')
 local Disruptor = require(GetScriptDirectory()..'/FunLib/rubick_hero/disruptor')
 local DoomBringer = require(GetScriptDirectory()..'/FunLib/rubick_hero/doom_bringer')
-
 local DragonKnight = require(GetScriptDirectory()..'/FunLib/rubick_hero/dragon_knight')
 local DrowRanger = require(GetScriptDirectory()..'/FunLib/rubick_hero/drow_ranger')
 local EarthSpirit = require(GetScriptDirectory()..'/FunLib/rubick_hero/earth_spirit')
 local Earthshaker = require(GetScriptDirectory()..'/FunLib/rubick_hero/earthshaker')
 local ElderTitan = require(GetScriptDirectory()..'/FunLib/rubick_hero/elder_titan')
+local Leshrac = require(GetScriptDirectory()..'/FunLib/rubick_hero/leshrac')
+local NagaSiren = require(GetScriptDirectory()..'/FunLib/rubick_hero/naga_siren')
+local EmberSpirit = require(GetScriptDirectory()..'/FunLib/rubick_hero/ember_spirit')
+local Lich = require(GetScriptDirectory()..'/FunLib/rubick_hero/lich')
+local Necrolyte = require(GetScriptDirectory()..'/FunLib/rubick_hero/necrolyte')
+local Enchantress = require(GetScriptDirectory()..'/FunLib/rubick_hero/enchantress')
+local LifeStealer = require(GetScriptDirectory()..'/FunLib/rubick_hero/life_stealer')
+local Lina = require(GetScriptDirectory()..'/FunLib/rubick_hero/lina')
+local Nevermore = require(GetScriptDirectory()..'/FunLib/rubick_hero/nevermore')
+local NightStalker = require(GetScriptDirectory()..'/FunLib/rubick_hero/night_stalker')
+local Enigma = require(GetScriptDirectory()..'/FunLib/rubick_hero/enigma')
+local Lion = require(GetScriptDirectory()..'/FunLib/rubick_hero/lion')
+local NyxAssassin = require(GetScriptDirectory()..'/FunLib/rubick_hero/nyx_assassin')
+local Luna = require(GetScriptDirectory()..'/FunLib/rubick_hero/luna')
+local FacelessVoid = require(GetScriptDirectory()..'/FunLib/rubick_hero/faceless_void')
+local Lycan = require(GetScriptDirectory()..'/FunLib/rubick_hero/lycan')
+local ObsidianDestroyer = require(GetScriptDirectory()..'/FunLib/rubick_hero/obsidian_destroyer')
+local Furion = require(GetScriptDirectory()..'/FunLib/rubick_hero/furion')
+local Magnataur = require(GetScriptDirectory()..'/FunLib/rubick_hero/magnataur')
+local OgreMagi = require(GetScriptDirectory()..'/FunLib/rubick_hero/ogre_magi')
+local Marci = require(GetScriptDirectory()..'/FunLib/rubick_hero/marci')
+local Mars = require(GetScriptDirectory()..'/FunLib/rubick_hero/mars')
+local Omniknight = require(GetScriptDirectory()..'/FunLib/rubick_hero/omniknight')
+local Grimstroke = require(GetScriptDirectory()..'/FunLib/rubick_hero/grimstroke')
+local Gyrocopter = require(GetScriptDirectory()..'/FunLib/rubick_hero/gyrocopter')
+local LegionCommander = require(GetScriptDirectory()..'/FunLib/rubick_hero/legion_commander')
+local Medusa = require(GetScriptDirectory()..'/FunLib/rubick_hero/medusa')
+local Hoodwink = require(GetScriptDirectory()..'/FunLib/rubick_hero/hoodwink')
+local Oracle = require(GetScriptDirectory()..'/FunLib/rubick_hero/oracle')
+local Meepo = require(GetScriptDirectory()..'/FunLib/rubick_hero/meepo')
+local Huskar = require(GetScriptDirectory()..'/FunLib/rubick_hero/huskar')
+local Pangolier = require(GetScriptDirectory()..'/FunLib/rubick_hero/pangolier')
+local Mirana = require(GetScriptDirectory()..'/FunLib/rubick_hero/mirana')
+local Jakiro = require(GetScriptDirectory()..'/FunLib/rubick_hero/jakiro')
+local MonkeyKing = require(GetScriptDirectory()..'/FunLib/rubick_hero/monkey_king')
+local PhantomAssassin = require(GetScriptDirectory()..'/FunLib/rubick_hero/phantom_assassin')
+local Juggernaut = require(GetScriptDirectory()..'/FunLib/rubick_hero/juggernaut')
+local KeeperOfTheLight = require(GetScriptDirectory()..'/FunLib/rubick_hero/keeper_of_the_light')
+local Morphling = require(GetScriptDirectory()..'/FunLib/rubick_hero/morphling')
+local PhantomLancer = require(GetScriptDirectory()..'/FunLib/rubick_hero/phantom_lancer')
+local Muerta = require(GetScriptDirectory()..'/FunLib/rubick_hero/muerta')
+local Phoenix = require(GetScriptDirectory()..'/FunLib/rubick_hero/phoenix')
+local Largo = require(GetScriptDirectory()..'/FunLib/rubick_hero/largo')
+local PrimalBeast = require(GetScriptDirectory()..'/FunLib/rubick_hero/primal_beast')
+local Kez = require(GetScriptDirectory()..'/FunLib/rubick_hero/kez')
+local Puck = require(GetScriptDirectory()..'/FunLib/rubick_hero/puck')
+local Kunkka = require(GetScriptDirectory()..'/FunLib/rubick_hero/kunkka')
+local Pudge = require(GetScriptDirectory()..'/FunLib/rubick_hero/pudge')
+local Pugna = require(GetScriptDirectory()..'/FunLib/rubick_hero/pugna')
+
+local Snapfire = require(GetScriptDirectory()..'/FunLib/rubick_hero/snapfire')
+
+local Tusk = require(GetScriptDirectory()..'/FunLib/rubick_hero/tusk')
+
+local Queenofpain = require(GetScriptDirectory()..'/FunLib/rubick_hero/queenofpain')
+
+local Sniper = require(GetScriptDirectory()..'/FunLib/rubick_hero/sniper')
+
+local Undying = require(GetScriptDirectory()..'/FunLib/rubick_hero/undying')
+
+local Ursa = require(GetScriptDirectory()..'/FunLib/rubick_hero/ursa')
+
+local Razor = require(GetScriptDirectory()..'/FunLib/rubick_hero/razor')
+
+local Spectre = require(GetScriptDirectory()..'/FunLib/rubick_hero/spectre')
+
+local Riki = require(GetScriptDirectory()..'/FunLib/rubick_hero/riki')
+
+local Vengefulspirit = require(GetScriptDirectory()..'/FunLib/rubick_hero/vengefulspirit')
+
+local WitchDoctor = require(GetScriptDirectory()..'/FunLib/rubick_hero/witch_doctor')
+
+local SpiritBreaker = require(GetScriptDirectory()..'/FunLib/rubick_hero/spirit_breaker')
+
+local Ringmaster = require(GetScriptDirectory()..'/FunLib/rubick_hero/ringmaster')
+
+local Venomancer = require(GetScriptDirectory()..'/FunLib/rubick_hero/venomancer')
+
+local StormSpirit = require(GetScriptDirectory()..'/FunLib/rubick_hero/storm_spirit')
+
+local Viper = require(GetScriptDirectory()..'/FunLib/rubick_hero/viper')
+
+local SandKing = require(GetScriptDirectory()..'/FunLib/rubick_hero/sand_king')
+
+local Sven = require(GetScriptDirectory()..'/FunLib/rubick_hero/sven')
+
+local ShadowDemon = require(GetScriptDirectory()..'/FunLib/rubick_hero/shadow_demon')
+
+local Techies = require(GetScriptDirectory()..'/FunLib/rubick_hero/techies')
+
+local Visage = require(GetScriptDirectory()..'/FunLib/rubick_hero/visage')
+
+local Zuus = require(GetScriptDirectory()..'/FunLib/rubick_hero/zuus')
+
+local VoidSpirit = require(GetScriptDirectory()..'/FunLib/rubick_hero/void_spirit')
+
+local ShadowShaman = require(GetScriptDirectory()..'/FunLib/rubick_hero/shadow_shaman')
+
+local TemplarAssassin = require(GetScriptDirectory()..'/FunLib/rubick_hero/templar_assassin')
+
+local Shredder = require(GetScriptDirectory()..'/FunLib/rubick_hero/shredder')
+
+local Terrorblade = require(GetScriptDirectory()..'/FunLib/rubick_hero/terrorblade')
+
+local Warlock = require(GetScriptDirectory()..'/FunLib/rubick_hero/warlock')
+
+local Slardar = require(GetScriptDirectory()..'/FunLib/rubick_hero/slardar')
+
+local Slark = require(GetScriptDirectory()..'/FunLib/rubick_hero/slark')
+
+local Tidehunter = require(GetScriptDirectory()..'/FunLib/rubick_hero/tidehunter')
+
+local Weaver = require(GetScriptDirectory()..'/FunLib/rubick_hero/weaver')
+
+local Silencer = require(GetScriptDirectory()..'/FunLib/rubick_hero/silencer')
+
+local Tinker = require(GetScriptDirectory()..'/FunLib/rubick_hero/tinker')
+
+local SkeletonKing = require(GetScriptDirectory()..'/FunLib/rubick_hero/skeleton_king')
+
+local Windrunner = require(GetScriptDirectory()..'/FunLib/rubick_hero/windrunner')
+
+local SkywrathMage = require(GetScriptDirectory()..'/FunLib/rubick_hero/skywrath_mage')
+
+local Tiny = require(GetScriptDirectory()..'/FunLib/rubick_hero/tiny')
+
+local WinterWyvern = require(GetScriptDirectory()..'/FunLib/rubick_hero/winter_wyvern')
+
+local Treant = require(GetScriptDirectory()..'/FunLib/rubick_hero/treant')
+
+local Wisp = require(GetScriptDirectory()..'/FunLib/rubick_hero/wisp')
+
+local TrollWarlord = require(GetScriptDirectory()..'/FunLib/rubick_hero/troll_warlord')
 
 local J = require( GetScriptDirectory()..'/FunLib/jmz_func' )
 local handlers = {
     Abaddon, AbyssalUnderlord, Alchemist, AncientApparition, Antimage, ArcWarden,
     Axe, Bane, Batrider, Beastmaster, Bloodseeker, BountyHunter, Brewmaster,
     Bristleback, Broodmother, Centaur, ChaosKnight, Chen, Clinkz, CrystalMaiden, Clockwerk, DarkSeer, DarkWillow, Dawnbreaker, DeathProphet, Disruptor, DoomBringer, DragonKnight, DrowRanger, EarthSpirit, Earthshaker, ElderTitan,
+    Leshrac,
+    NagaSiren,
+    EmberSpirit,
+    Lich,
+    Necrolyte,
+    Enchantress,
+    LifeStealer,
+    Lina,
+    Nevermore,
+    NightStalker,
+    Enigma,
+    Lion,
+    NyxAssassin,
+    Luna,
+    FacelessVoid,
+    Lycan,
+    ObsidianDestroyer,
+    Furion,
+    Magnataur,
+    OgreMagi,
+    Marci,
+    Mars,
+    Omniknight,
+    Grimstroke,
+    Gyrocopter,
+    LegionCommander,
+    Medusa,
+    Hoodwink,
+    Oracle,
+    Meepo,
+    Huskar,
+    Pangolier,
+    Mirana,
+    Jakiro,
+    MonkeyKing,
+    PhantomAssassin,
+    Juggernaut,
+    KeeperOfTheLight,
+    Morphling,
+    PhantomLancer,
+    Muerta,
+    Phoenix,
+    Largo,
+    PrimalBeast,
+    Kez,
+    Puck,
+    Kunkka,
+    Pudge,
+    Pugna,
+    Snapfire,
+    Tusk,
+    Queenofpain,
+    Sniper,
+    Undying,
+    Ursa,
+    Razor,
+    Spectre,
+    Riki,
+    Vengefulspirit,
+    WitchDoctor,
+    SpiritBreaker,
+    Ringmaster,
+    Venomancer,
+    StormSpirit,
+    Viper,
+    SandKing,
+    Sven,
+    ShadowDemon,
+    Techies,
+    Visage,
+    Zuus,
+    VoidSpirit,
+    ShadowShaman,
+    TemplarAssassin,
+    Shredder,
+    Terrorblade,
+    Warlock,
+    Slardar,
+    Slark,
+    Tidehunter,
+    Weaver,
+    Silencer,
+    Tinker,
+    SkeletonKing,
+    Windrunner,
+    SkywrathMage,
+    Tiny,
+    WinterWyvern,
+    Treant,
+    Wisp,
+    TrollWarlord,
 }
 
 local UNIT = DOTA_ABILITY_BEHAVIOR_UNIT_TARGET or 8
@@ -111,17 +334,118 @@ X.UseFreezingFieldSpell = CrystalMaiden.UseFreezingFieldSpell
 X.UseShadowRealmDuringChannel = DarkWillow.UseShadowRealmDuringChannel
 X.UsePendingConverge = Dawnbreaker.UsePendingConverge
 X.ObserveGlimpseHistory = Disruptor.ObserveGlimpseHistory
+X.ObserveTimeLapseHistory = Weaver.ObserveStolenTimeLapseHistory
+X.ObserveTetherState = Wisp.ObserveTetherState
+X.IsRelocating = Wisp.IsRelocating
 
 X.UseGlacierDuringMultishot = DrowRanger.UseGlacierDuringMultishot
 X.UseMagnetizeStone = EarthSpirit.UseMagnetizeStone
 X.UseAstralSpirit = ElderTitan.UseAstralSpirit
 X.HandleAstralSpiritMinion = ElderTitan.HandleAstralSpiritMinion
+X.HandleLycanMinion = Lycan.UseHightail
+X.HandleTombstoneMinion = Undying.ConsiderStolenTombstoneMinion
+X.HandleDeathWard = WitchDoctor.HandleDeathWard
+X.HandlePlagueWardMinion = Venomancer.ConsiderStolenPlagueWardMinion
+X.UseChainsDuringSleight = EmberSpirit.UseChainsDuringSleight
+X.UsePulseNovaOff = Leshrac.UsePulseNovaOff
+X.UseDuringGaze = Lich.UseDuringGaze
+X.UseConsume = LifeStealer.UseConsume
+X.StopDrain = Lion.StopDrain
+X.UseSplitShot = Medusa.UseSplitShot
+X.UseSharpshooterRelease = Hoodwink.UseSharpshooterRelease
+X.UseFortuneRelease = Oracle.ConsiderStolenFortuneRelease
+X.UseHealingWardDuringSlash = Juggernaut.UseHealingWardDuringSlash
+X.UseStrengthShift = Morphling.UseStrengthShift
+X.UseIlluminateRelease = KeeperOfTheLight.UseIlluminateRelease
+X.UseGunslinger = Muerta.UseGunslinger
+X.UseRhapsodyOff = Largo.UseRhapsodyOff
+X.ConsiderPrimalContinuation = PrimalBeast.ConsiderStolenPrimalContinuation
+X.ConsiderEggSunRay = Phoenix.ConsiderStolenEggSunRay
+X.ConsiderPhaseJaunt = Puck.ConsiderStolenPhaseJaunt
+X.ConsiderDismemberSupport = Pudge.ConsiderStolenDismemberSupport
+X.ConsiderLifeDrainContinuation = Pugna.ConsiderStolenLifeDrainContinuation
+X.ConsiderSnowballContinuation = Tusk.ConsiderStolenSnowballContinuation
+X.ConsiderDisabledEnrage = Ursa.ConsiderStolenDisabledEnrage
+X.UseSmokeDuringTricks = Riki.UseSmokeDuringTricks
+X.UseRestorationDuringChannel = WitchDoctor.UseRestorationDuringChannel
+X.UseChargeSupport = SpiritBreaker.UseChargeSupport
+X.IsCharging = SpiritBreaker.IsCharging
+X.UseBallFlightSpells = StormSpirit.UseBallFlightSpells
+X.UseTameTheBeastsCrack = Ringmaster.UseTameTheBeastsCrack
+X.UseCarnivalSouvenir = Ringmaster.UseCarnivalSouvenir
+X.UseLightningHands = Zuus.UseLightningHands
+X.HandleTrapMinion = TemplarAssassin.UseTrapMinion
+X.HandleFamiliarMinion = Visage.ConsiderStolenFamiliarMinion
+X.ConsiderDissimilatePortal = VoidSpirit.ConsiderStolenDissimilatePortal
+X.UseDisabledRefraction = TemplarAssassin.UseDisabledRefraction
+X.ConsiderUpheavalSafety = Warlock.ConsiderStolenUpheavalSafety
+X.UseSpellsDuringTimberChain = Shredder.UseSpellsDuringTimberChain
+X.UseShadowDanceSpells = Slark.UseShadowDanceSpells
+X.ConsiderGeminateAutoCast = Weaver.ConsiderStolenGeminateAutoCast
+X.ConsiderPoisonAutoCast = Viper.ConsiderStolenPoisonAutoCast
+X.ConsiderPowershotSafety = Windrunner.ConsiderStolenPowershotSafety
+X.ConsiderArcticBurnToggle = WinterWyvern.ConsiderStolenArcticBurnToggle
+X.UseBattleStance = TrollWarlord.UseBattleStance
+function X.UseSilencedHammer()
+    if not bot:IsSilenced() then return false end
+    local hammer = bot:GetAbilityByName('omniknight_hammer_of_purity')
+    return hammer ~= nil and Omniknight.ConsiderSilencedSpell(hammer)
+end
 
 function X.ConsiderStolenSpell(ability)
     X.ObserveGlimpseHistory()
+    X.ObserveTimeLapseHistory()
+    X.ObserveTetherState()
     bot = GetBot()
-    if X.UseShadowRealmDuringChannel() or X.UsePendingConverge() or X.UseFreezingFieldSpell() or X.UseBarrageInvisibility() or X.UsePendingStomp() or X.UsePendingGate() or X.UseGlacierDuringMultishot() or X.UseMagnetizeStone() or X.UseAstralSpirit() then return true end
-    if not ready(ability) or (J.CanNotUseAbility(bot) and not canReleaseWhileSilenced(ability))
+    if X.IsRelocating() then return false end
+    if X.UseShadowRealmDuringChannel()
+        or X.UsePendingConverge()
+        or X.UseFreezingFieldSpell()
+        or X.UseBarrageInvisibility()
+        or X.UsePendingStomp()
+        or X.UsePendingGate()
+        or X.UseGlacierDuringMultishot()
+        or X.UseMagnetizeStone()
+        or X.UseAstralSpirit()
+        or X.UseChainsDuringSleight()
+        or X.UseDuringGaze()
+        or X.UsePulseNovaOff()
+        or X.UseConsume()
+        or X.StopDrain()
+        or X.UseSplitShot()
+        or X.UseSilencedHammer()
+        or X.UseSharpshooterRelease()
+        or X.UseFortuneRelease()
+        or X.UseHealingWardDuringSlash()
+        or X.UseStrengthShift()
+        or X.UseIlluminateRelease()
+        or X.UseGunslinger()
+        or X.UseRhapsodyOff()
+        or X.ConsiderPrimalContinuation()
+        or X.ConsiderEggSunRay()
+        or X.ConsiderPhaseJaunt()
+        or X.ConsiderDismemberSupport()
+        or X.ConsiderSnowballContinuation()
+        or X.ConsiderDisabledEnrage()
+        or X.UseSmokeDuringTricks()
+        or X.UseRestorationDuringChannel()
+        or X.UseChargeSupport()
+        or X.UseBallFlightSpells()
+        or X.UseTameTheBeastsCrack()
+        or X.UseCarnivalSouvenir()
+        or X.UseLightningHands()
+        or X.ConsiderDissimilatePortal()
+        or X.UseDisabledRefraction()
+        or X.ConsiderUpheavalSafety()
+        or X.UseSpellsDuringTimberChain()
+        or X.UseShadowDanceSpells()
+        or X.ConsiderGeminateAutoCast()
+        or X.ConsiderPoisonAutoCast()
+        or X.ConsiderPowershotSafety()
+        or X.ConsiderArcticBurnToggle()
+        or X.UseBattleStance()
+        or X.ConsiderLifeDrainContinuation() then return true end
+    if X.IsCharging() or not ready(ability) or (J.CanNotUseAbility(bot) and not canReleaseWhileSilenced(ability))
         or bot:IsChanneling() or bot:IsCastingAbility() or bot:IsUsingAbility() then return false end
 
     for _,handler in ipairs(handlers) do

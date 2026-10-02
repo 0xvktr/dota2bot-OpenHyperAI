@@ -2,6 +2,7 @@ local X = {}
 local bot = GetBot()
 
 local J = require( GetScriptDirectory()..'/FunLib/jmz_func' )
+local SpellDecisions = require(GetScriptDirectory()..'/FunLib/rubick_hero/monkey_king')
 local Minion = dofile( GetScriptDirectory()..'/FunLib/aba_minion' )
 local sTalentList = J.Skill.GetTalentList( bot )
 local sAbilityList = J.Skill.GetAbilityList( bot )
@@ -80,10 +81,24 @@ local WukongsCommandDesire, WukongsCommandLocation
 function X.SkillsComplement()
     if J.CanNotUseAbility(bot) then return end
 
+    local guard = bot:GetAbilityByName('monkey_king_transfiguration')
+    local guardPoint = SpellDecisions.GuardPoint(guard)
+    if guardPoint ~= nil then
+        bot:Action_UseAbilityOnLocation(guard, guardPoint)
+        return
+    end
+    local interrupt = SpellDecisions.StrikePoint(BoundlessStrike, true)
+    if interrupt ~= nil then
+        J.SetQueuePtToINT(bot, true, BoundlessStrike)
+        bot:ActionQueue_UseAbilityOnLocation(BoundlessStrike, interrupt)
+        return
+    end
     WukongsCommandDesire, WukongsCommandLocation = X.ConsiderWukongsCommand()
     if WukongsCommandDesire > 0
     then
-        bot:Action_UseAbilityOnLocation(WukongsCommand, WukongsCommandLocation)
+        J.SetQueuePtToINT(bot, true, WukongsCommand)
+        bot:ActionQueue_UseAbilityOnLocation(WukongsCommand, WukongsCommandLocation)
+        SpellDecisions.RecordRing(WukongsCommandLocation, WukongsCommand)
         return
     end
 
@@ -97,22 +112,14 @@ function X.SkillsComplement()
     MischiefDesire = X.ConsiderMischief()
     if MischiefDesire > 0
     then
-        bot:Action_ClearActions(false)
-        bot:ActionQueue_UseAbility(Mischief)
-
-        if not RevertForm:IsHidden()
-        or RevertForm:IsFullyCastable()
-        then
-            bot:ActionQueue_Delay(0.2)
-            bot:ActionQueue_UseAbility(RevertForm)
-        end
-
+        bot:Action_UseAbility(Mischief)
         return
     end
 
     TreeDanceDesire, TreeDanceTarget = X.ConsiderTreeDance()
     if TreeDanceDesire > 0
     then
+        if GetUnitToLocationDistance(bot, GetTreeLocation(TreeDanceTarget)) > TreeDance:GetCastRange() then return end
         bot:Action_UseAbilityOnTree(TreeDance, TreeDanceTarget)
         return
     end
@@ -120,6 +127,7 @@ function X.SkillsComplement()
     PrimalSpringDesire, PrimalSpringLocation = X.ConsiderPrimalSpring()
     if PrimalSpringDesire > 0
     then
+        if GetUnitToLocationDistance(bot, PrimalSpringLocation) > PrimalSpring:GetCastRange() then return end
         bot:Action_UseAbilityOnLocation(PrimalSpring, PrimalSpringLocation)
         return
     end
@@ -135,10 +143,10 @@ function X.ConsiderBoundlessStrike()
         return BOT_ACTION_DESIRE_NONE, 0
     end
 
-    local nCastRange = J.GetProperCastRange(false, bot, BoundlessStrike:GetCastRange())
+    local nCastRange = BoundlessStrike:GetSpecialValueInt('strike_cast_range')
     local nCastPoint = BoundlessStrike:GetCastPoint()
     local nRadius = BoundlessStrike:GetSpecialValueInt('strike_radius')
-    local nDamage = bot:GetAttackDamage() * (BoundlessStrike:GetSpecialValueInt('strike_crit_mult') / 100)
+    local nDamage = bot:GetAttackDamage() * (BoundlessStrike:GetSpecialValueInt('strike_crit_mult') / 100) + BoundlessStrike:GetSpecialValueInt('strike_flat_damage')
     local botTarget = J.GetProperTarget(bot)
 
     local nEnemyHeroes = J.GetNearbyHeroes(bot,nCastRange, true, BOT_MODE_NONE)
@@ -159,7 +167,7 @@ function X.ConsiderBoundlessStrike()
                 return BOT_ACTION_DESIRE_HIGH, enemyHero:GetLocation()
             end
 
-            if J.CanKillTarget(enemyHero, nDamage, DAMAGE_TYPE_MAGICAL)
+            if J.CanKillTarget(enemyHero, nDamage, DAMAGE_TYPE_PHYSICAL)
             and not enemyHero:HasModifier('modifier_abaddon_borrowed_time')
             and not enemyHero:HasModifier('modifier_dazzle_shallow_grave')
             and not enemyHero:HasModifier('modifier_oracle_false_promise_timer')
@@ -176,7 +184,7 @@ function X.ConsiderBoundlessStrike()
 
 		if nLocationAoE.count >= 2
 		then
-            local realEnemyCount = J.GetEnemiesNearLoc(bot:GetLocation(), nRadius)
+            local realEnemyCount = J.GetEnemiesNearLoc(nLocationAoE.targetloc, nRadius)
             if realEnemyCount ~= nil and #realEnemyCount >= 2
             then
                 return BOT_ACTION_DESIRE_HIGH, nLocationAoE.targetloc
@@ -363,7 +371,7 @@ function X.ConsiderBoundlessStrike()
 end
 
 function X.ConsiderTreeDance()
-    if not TreeDance:IsFullyCastable()
+    if bot:IsRooted() or SpellDecisions.InRing() or not J.CanCastAbility(TreeDance)
     then
         return BOT_ACTION_DESIRE_NONE, nil
     end
@@ -475,7 +483,7 @@ function X.ConsiderTreeDance()
 end
 
 function X.ConsiderPrimalSpring()
-    if PrimalSpring:IsHidden()
+    if bot:IsRooted() or SpellDecisions.InRing() or PrimalSpring == nil or PrimalSpring:IsHidden()
     or not PrimalSpring:IsFullyCastable()
     or not PrimalSpring:IsActivated()
     then
@@ -491,7 +499,7 @@ function X.ConsiderPrimalSpring()
 		local nLocationAoE = bot:FindAoELocation(true, true, bot:GetLocation(), nMaxDistance, nRadius, nChannelTime, 0)
 		if nLocationAoE.count >= 2
 		then
-            local realEnemyCount = J.GetEnemiesNearLoc(bot:GetLocation(), nRadius)
+            local realEnemyCount = J.GetEnemiesNearLoc(nLocationAoE.targetloc, nRadius)
             if realEnemyCount ~= nil and #realEnemyCount >= 2
             then
                 return BOT_ACTION_DESIRE_HIGH, nLocationAoE.targetloc
@@ -598,70 +606,19 @@ function X.ConsiderPrimalSpring()
 end
 
 function X.ConsiderMischief()
-    if not Mischief:IsFullyCastable()
+    if not J.CanCastAbility(Mischief)
     then
         return BOT_ACTION_DESIRE_NONE
     end
 
-    if J.IsStunProjectileIncoming(bot, 600)
-	then
-		return BOT_ACTION_DESIRE_HIGH
-	end
+    if SpellDecisions.MischiefImminent(Mischief) then return BOT_ACTION_DESIRE_HIGH end
 
     return BOT_ACTION_DESIRE_NONE
 end
 
 function X.ConsiderWukongsCommand()
-    if not WukongsCommand:IsFullyCastable()
-    then
-        return BOT_ACTION_DESIRE_NONE, 0
-    end
-
-    local nCastRange = WukongsCommand:GetSpecialValueInt('cast_range')
-	local nRadius = WukongsCommand:GetSpecialValueInt('second_radius')
-    local botTarget = J.GetProperTarget(bot)
-
-	if J.IsInTeamFight(bot, 1200)
-	then
-		local nLocationAoE = bot:FindAoELocation(true, true, bot:GetLocation(), nCastRange, nRadius / 2, 1, 0)
-		if nLocationAoE.count >= 2
-		then
-            local realEnemyCount = J.GetEnemiesNearLoc(bot:GetLocation(), nRadius)
-            if realEnemyCount ~= nil and #realEnemyCount >= 2
-            and not J.IsLocationInChrono(nLocationAoE.targetloc)
-            and not J.IsLocationInBlackHole(nLocationAoE.targetloc)
-            then
-                return BOT_ACTION_DESIRE_HIGH, nLocationAoE.targetloc
-            end
-		end
-	end
-
-    if J.IsGoingOnSomeone(bot)
-	then
-        local nInRangeAlly = J.GetNearbyHeroes(bot,1000, false, BOT_MODE_NONE)
-
-		if J.IsValidTarget(botTarget)
-        and J.CanCastOnNonMagicImmune(botTarget)
-        and J.IsInRange(bot, botTarget, nCastRange)
-        -- and J.IsCore(botTarget)
-        and not J.IsSuspiciousIllusion(botTarget)
-        and not botTarget:HasModifier('modifier_abaddon_borrowed_time')
-        and not botTarget:HasModifier('modifier_dazzle_shallow_grave')
-        and not botTarget:HasModifier('modifier_templar_assassin_refraction_absorb')
-        and not J.IsLocationInChrono(botTarget:GetLocation())
-        and not J.IsLocationInBlackHole(botTarget:GetLocation())
-		then
-            local nTargetInRangeAlly = J.GetNearbyHeroes(botTarget, 1000, false, BOT_MODE_NONE)
-
-            if nInRangeAlly ~= nil and nTargetInRangeAlly ~= nil
-            and #nInRangeAlly >= #nTargetInRangeAlly
-            then
-                return BOT_ACTION_DESIRE_HIGH, botTarget:GetExtrapolatedLocation(1)
-            end
-		end
-	end
-
-    return BOT_ACTION_DESIRE_NONE, 0
+    local point = SpellDecisions.RingPoint(WukongsCommand)
+    return point ~= nil and BOT_ACTION_DESIRE_HIGH or BOT_ACTION_DESIRE_NONE, point
 end
 
 -- Helper Funcs

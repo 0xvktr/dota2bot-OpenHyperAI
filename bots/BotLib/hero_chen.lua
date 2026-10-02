@@ -180,7 +180,7 @@ function X.ConsiderHolyPersuasion()
     local ancients = 0
     for _, unit in ipairs(owned) do if unit:IsAncientCreep() then ancients = ancients + 1 end end
     local ultimate = bot:GetAbilityByName('chen_hand_of_god')
-    local ancientLimit = bot:HasShard() and ultimate ~= nil and ultimate:GetLevel() or 0
+    local ancientLimit = bot:HasModifier('modifier_item_aghanims_shard') and ultimate ~= nil and ultimate:GetLevel() or 0
     local range = CastRange(HolyPersuasion)
     local candidates = bot:GetNearbyNeutralCreeps(math.min(range, 1600))
     -- Enemy summons and dominated creeps are valid recruitment targets too.

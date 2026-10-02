@@ -18,6 +18,7 @@ for (const name of heroNames) {
 // 1. Lua syntax: every migrated hero, its build data, and the shared infrastructure.
 const lua = [
     'bots/FunLib/rubick_utility.lua', 'bots/FunLib/spell_prob_list.lua',
+    ...fs.readdirSync('bots/FunLib').filter(f => f.endsWith('_abilities.lua')).map(f => 'bots/FunLib/' + f),
     ...fs.readdirSync('bots/FunLib/rubick_hero').filter(f => f.endsWith('.lua')).map(f => 'bots/FunLib/rubick_hero/' + f),
     'bots/FunLib/break_state.lua', 'bots/FunLib/minion_lib/primal_split.lua', 'bots/FunLib/minion_lib/minion_with_skill.lua', 'bots/FunLib/lone_druid_items.lua', 'bots/BotLib/hero_lone_druid_bear.lua',
     ...heroNames.flatMap(n => [`bots/BotLib/hero_${n}.lua`, `${buildsDir}/${n}.lua`]),
@@ -32,7 +33,7 @@ const lua = [
 for (const file of lua) parser.parse(read(file), {luaVersion: '5.2'});
 console.log(`Lua syntax passed for ${lua.length} files`);
 
-for (const file of ['creep_deny_spec.cjs', 'mask_disassembly_spec.cjs', 'valve_ability_check.cjs', 'power_treads_spec.cjs', 'item_cast_policy_spec.cjs', 'high_five_spec.cjs', 'camp_filter_spec.cjs', 'early_item_cleanup_spec.cjs']) {
+for (const file of ['creep_deny_spec.cjs', 'mask_disassembly_spec.cjs', 'valve_ability_check.cjs', 'power_treads_spec.cjs', 'item_cast_policy_spec.cjs', 'hero_cast_hooks_spec.cjs', 'high_five_spec.cjs', 'camp_filter_spec.cjs', 'early_item_cleanup_spec.cjs']) {
     const result = cp.spawnSync(process.execPath, [path.join('tests', file)], {stdio: 'inherit'});
     assert.strictEqual(result.status, 0, `${file} failed`);
 }
@@ -174,6 +175,99 @@ run(['tests/earthshaker_ability_spec.lua'], 'Earthshaker ability scenarios passe
 run(['tests/elder_titan_ability_spec.lua'], 'Elder Titan ability scenarios passed');
 run(['tests/break_state_spec.lua'], 'Break state scenarios passed');
 run(['tests/brewmaster_split_spec.lua'], 'Brewmaster split scenarios passed');
+run(['tests/leshrac_ability_spec.lua'], 'Leshrac ability scenarios passed');
+run(['tests/naga_siren_ability_spec.lua'], 'Naga Siren ability scenarios passed');
+run(['tests/ember_spirit_ability_spec.lua'], 'Ember Spirit ability scenarios passed');
+run(['tests/lich_ability_spec.lua'], 'Lich ability scenarios passed');
+run(['tests/necrolyte_ability_spec.lua'], 'Necrophos ability scenarios passed');
+run(['tests/enchantress_ability_spec.lua'], "Enchantress ability scenarios passed");
+run(['tests/life_stealer_ability_spec.lua'], "Lifestealer ability scenarios passed");
+run(['tests/lina_ability_spec.lua'], "Lina ability scenarios passed");
+run(['tests/nevermore_ability_spec.lua'], "Shadow Fiend ability scenarios passed");
+run(['tests/night_stalker_ability_spec.lua'], "Night Stalker ability scenarios passed");
+run(['tests/enigma_ability_spec.lua'], "Enigma ability scenarios passed");
+run(['tests/lion_ability_spec.lua'], "Lion ability scenarios passed");
+run(['tests/nyx_assassin_ability_spec.lua'], "Nyx Assassin ability scenarios passed");
+run(['tests/luna_ability_spec.lua'], "Luna ability scenarios passed");
+run(['tests/faceless_void_ability_spec.lua'], "Faceless Void ability scenarios passed");
+run(['tests/lycan_ability_spec.lua'], "Lycan ability scenarios passed (5 groups)");
+run(['tests/obsidian_destroyer_ability_spec.lua'], "Outworld Destroyer ability scenarios passed");
+run(['tests/furion_ability_spec.lua'], "Nature Prophet ability scenarios passed");
+run(['tests/magnataur_ability_spec.lua'], "Magnus ability scenarios passed (5 groups)");
+run(['tests/ogre_magi_ability_spec.lua'], "Ogre Magi ability scenarios passed");
+run(['tests/marci_ability_spec.lua'], "Marci ability scenarios passed (5 groups)");
+run(['tests/mars_ability_spec.lua'], "Mars ability scenarios passed (4 groups)");
+run(['tests/omniknight_ability_spec.lua'], "Omniknight ability scenarios passed");
+run(['tests/grimstroke_ability_spec.lua'], "Grimstroke ability scenarios passed");
+run(['tests/gyrocopter_ability_spec.lua'], "Gyrocopter ability scenarios passed");
+run(['tests/legion_commander_ability_spec.lua'], "Legion Commander ability scenarios passed (6 groups)");
+run(['tests/medusa_ability_spec.lua'], "Medusa ability scenarios passed (5 groups)");
+run(['tests/rubick_unknown_handlers_spec.lua'], 'Rubick unknown handler preservation passed');
+run(['tests/hoodwink_ability_spec.lua'], "Hoodwink ability scenarios passed");
+run(['tests/oracle_ability_spec.lua'], "Oracle ability scenarios passed");
+run(['tests/meepo_ability_spec.lua'], "Meepo ability scenarios passed (6 groups)");
+run(['tests/huskar_ability_spec.lua'], "Huskar ability scenarios passed");
+run(['tests/pangolier_ability_spec.lua'], "Pangolier ability scenarios passed");
+run(['tests/mirana_ability_spec.lua'], "Mirana ability scenarios passed (5 groups)");
+run(['tests/jakiro_ability_spec.lua'], "Jakiro ability scenarios passed");
+run(['tests/monkey_king_ability_spec.lua'], "Monkey King ability scenarios passed (4 groups)");
+run(['tests/phantom_assassin_ability_spec.lua'], "Phantom Assassin ability scenarios passed");
+run(['tests/juggernaut_ability_spec.lua'], "Juggernaut ability scenarios passed");
+run(['tests/keeper_of_the_light_ability_spec.lua'], "Keeper of the Light ability scenarios passed");
+run(['tests/morphling_ability_spec.lua'], "morphling_ability_spec: 5 behavioral groups passed");
+run(['tests/phantom_lancer_ability_spec.lua'], "Phantom Lancer ability scenarios passed");
+run(['tests/muerta_ability_spec.lua'], "muerta_ability_spec: 5 behavioral groups passed");
+run(['tests/phoenix_ability_spec.lua'], "Phoenix ability scenarios passed");
+run(['tests/largo_ability_spec.lua'], "largo_ability_spec: 6 behavioral groups passed");
+run(['tests/primal_beast_ability_spec.lua'], "Primal Beast ability scenarios passed");
+run(['tests/kez_ability_spec.lua'], "Kez ability scenarios passed");
+run(['tests/puck_ability_spec.lua'], "Puck ability scenarios passed");
+run(['tests/kunkka_ability_spec.lua'], "Kunkka ability scenarios passed");
+run(['tests/pudge_ability_spec.lua'], "Pudge ability scenarios passed");
+run(['tests/pugna_ability_spec.lua'], "Pugna ability scenarios passed");
+run(['tests/snapfire_ability_spec.lua'], "Snapfire ability scenarios passed");
+run(['tests/tusk_ability_spec.lua'], "Tusk ability scenarios passed");
+run(['tests/queenofpain_ability_spec.lua'], "Queen of Pain ability scenarios passed: ");
+run(['tests/sniper_ability_spec.lua'], "Sniper ability scenarios passed");
+run(['tests/undying_ability_spec.lua'], "Undying ability scenarios passed");
+run(['tests/rattletrap_ability_spec.lua'], "Clockwerk ability scenarios passed: ");
+run(['tests/ursa_ability_spec.lua'], "Ursa ability scenarios passed");
+run(['tests/razor_ability_spec.lua'], "Razor ability scenarios passed: ");
+run(['tests/spectre_ability_spec.lua'], "Spectre ability scenarios passed");
+run(['tests/riki_ability_spec.lua'], "Riki ability scenarios passed: ");
+run(['tests/vengefulspirit_ability_spec.lua'], "Vengeful Spirit ability scenarios passed");
+run(['tests/witch_doctor_ability_spec.lua'], "Witch Doctor ability scenarios passed: ");
+run(['tests/spirit_breaker_ability_spec.lua'], "Spirit Breaker ability scenarios passed");
+run(['tests/ringmaster_ability_spec.lua'], "Ringmaster ability scenarios passed: ");
+run(['tests/venomancer_ability_spec.lua'], "Venomancer ability scenarios passed");
+run(['tests/storm_spirit_ability_spec.lua'], "Storm Spirit ability scenarios passed");
+run(['tests/viper_ability_spec.lua'], "Viper ability scenarios passed");
+run(['tests/sand_king_ability_spec.lua'], "Sand King ability scenarios passed: ");
+run(['tests/sven_ability_spec.lua'], "Sven ability scenarios passed");
+run(['tests/shadow_demon_ability_spec.lua'], "Shadow Demon ability scenarios passed: ");
+run(['tests/techies_ability_spec.lua'], "Techies ability scenarios passed");
+run(['tests/visage_ability_spec.lua'], "Visage ability scenarios passed");
+run(['tests/zuus_ability_spec.lua'], "Zeus ability scenarios passed: ");
+run(['tests/void_spirit_ability_spec.lua'], "Void Spirit ability scenarios passed");
+run(['tests/shadow_shaman_ability_spec.lua'], "Shadow Shaman ability scenarios passed: ");
+run(['tests/templar_assassin_ability_spec.lua'], "Templar Assassin native/copied focused scenarios passed");
+run(['tests/shredder_ability_spec.lua'], "Timbersaw ability scenarios passed: ");
+run(['tests/terrorblade_ability_spec.lua'], "Terrorblade native/copied focused scenarios passed");
+run(['tests/warlock_ability_spec.lua'], "Warlock ability scenarios passed");
+run(['tests/slardar_ability_spec.lua'], "Slardar ability scenarios passed: ");
+run(['tests/slark_ability_spec.lua'], "Slark ability scenarios passed: ");
+run(['tests/tidehunter_ability_spec.lua'], "Tidehunter native/copied focused scenarios passed");
+run(['tests/weaver_ability_spec.lua'], "Weaver ability scenarios passed");
+run(['tests/silencer_ability_spec.lua'], "Silencer ability spec passed: ");
+run(['tests/tinker_ability_spec.lua'], "Tinker native/copied focused scenarios passed");
+run(['tests/skeleton_king_ability_spec.lua'], "Wraith King ability spec passed: ");
+run(['tests/windrunner_ability_spec.lua'], "Windranger ability scenarios passed");
+run(['tests/skywrath_mage_ability_spec.lua'], "Skywrath Mage ability spec passed: ");
+run(['tests/tiny_ability_spec.lua'], "Tiny native/copied focused scenarios passed");
+run(['tests/winter_wyvern_ability_spec.lua'], "Winter Wyvern ability scenarios passed");
+run(['tests/treant_ability_spec.lua'], "Treant native/copied focused scenarios passed");
+run(['tests/wisp_ability_spec.lua'], "Io ability scenarios passed: ");
+run(['tests/troll_warlord_ability_spec.lua'], "Troll Warlord ability spec passed: ");
 run(['tests/rubick_handlers_spec.lua'], 'Rubick specialized handler scenarios passed');
 run(['tests/rubick_stolen_spec.lua'], 'Rubick stolen dispatcher, cast shapes, target masks, radii, support intent and channel safety passed');
 run(['tests/rubick_hero_spec.lua'], 'Rubick hero behavior checks passed:');

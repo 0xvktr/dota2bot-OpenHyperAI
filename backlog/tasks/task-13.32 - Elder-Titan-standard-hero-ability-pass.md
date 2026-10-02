@@ -5,7 +5,7 @@ status: Needs In-Game Test
 assignee:
   - '@codex'
 created_date: '2026-10-01 17:35'
-updated_date: '2026-10-01 18:02'
+updated_date: '2026-10-02 15:48'
 labels:
   - hero
 dependencies: []
@@ -13,6 +13,10 @@ references:
   - bots/BotLib/hero_elder_titan.lua
 documentation:
   - backlog/docs/doc-2 - Hero-improvement-playbook.md
+modified_files:
+  - bots/FunLib/rubick_hero/elder_titan.lua
+  - bots/BotLib/hero_elder_titan.lua
+  - tests/elder_titan_ability_spec.lua
 parent_task_id: TASK-13
 priority: medium
 ordinal: 72000
@@ -47,6 +51,8 @@ Lobby checklist: native and stolen Spirit spawning/owner ID, linked Move/Return 
 Independent cross-review corrections: remaining TP duration must exceed full Stomp cast/channel delay; accumulated observed touches remain useful after enemies leave Spirit-near observations; ethereal/Guardian Angel/Cold Embrace zero the physical part of lethal estimates while retaining useful control decisions. Added faithful native/copy negative and positive scenarios. Supplied isolated stolen handle is authoritative; real linked Spirit/Stomp handles, visibility/ownership and Spirit-own channels remain guarded. First integrated suite exited0; final suite is repeated after final Earth Spirit timing checks.
 
 Final integrated verification: node tests/run-builds.cjs exited0 after all final reviews/corrections. Exact five hero markers passed;368 Lua files parse,128 native/32 Rubick Valve checks with zero findings,127 heroes/253 roles,133 specialized dispatches,68 Rubick native behavior cases and272 purchase lists. All five native build/skill/talent prefixes remain byte-identical with HEAD; git diff --check passed. Shared dispatcher registers all five dedicated handlers; narrow observed Drow Glacier, Earth Spirit Magnetize Stone and owned Elder Titan Spirit/minion hooks are covered. TASK21/24 source-derived observations recorded. No engine lobby launched; remaining capability boundaries are in each task checklist.
+
+2026-10-02 integration API follow-up: replaced undocumented HasShard() calls with the existing modifier_item_aghanims_shard convention used by this repository. Fixtures use the actual modifier query, retaining shard state scenarios. Focused hero scenarios passed; builds and skill/talent preferences retained. Lobby verification remains required.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

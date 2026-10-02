@@ -2,6 +2,7 @@ local X             = {}
 local bot           = GetBot()
 
 local J             = require( GetScriptDirectory()..'/FunLib/jmz_func' )
+local EnigmaAbilities = require(GetScriptDirectory()..'/FunLib/enigma_abilities')
 local Minion        = dofile( GetScriptDirectory()..'/FunLib/aba_minion' )
 local sTalentList   = J.Skill.GetTalentList( bot )
 local sAbilityList  = J.Skill.GetAbilityList( bot )
@@ -52,8 +53,6 @@ local DemonicSummoning  = bot:GetAbilityByName('enigma_demonic_conversion')
 local MidnightPulse     = bot:GetAbilityByName('enigma_midnight_pulse')
 local BlackHole         = bot:GetAbilityByName('enigma_black_hole')
 
-local MaleficeAdditionalInstanceTalent = bot:GetAbilityByName('special_bonus_unique_enigma_2')
-local MidnightPulseRadiusTalent = bot:GetAbilityByName('special_bonus_unique_enigma_6')
 
 local MaleficeDesire, MaleficeTarget
 local DemonicSummoningDesire, DemonicSummoningLocation
@@ -73,18 +72,17 @@ function X.SkillsComplement()
 
     botTarget = J.GetProperTarget(bot)
 
-    -- if near by enemy hero is pulled by black hole, don't do anything
-    local nEnemyHeroes = J.GetNearbyHeroes(bot,1000, true, BOT_MODE_NONE)
-    for _, enemyHero in pairs(nEnemyHeroes)
-    do
-        if J.IsValidHero(enemyHero)
-        and (enemyHero:HasModifier('modifier_enigma_black_hole_pull')
-        or enemyHero:HasModifier('modifier_enigma_black_hole_pull_scepter'))
-        then
-            return
+    X.HasBlink()
+    -- A real channel interrupt must not wait for Pulse or a long setup queue.
+    if J.CanCastAbility(Malefice) then
+        for _, enemy in pairs(J.GetNearbyHeroes(bot, EnigmaAbilities.CastRange(bot, Malefice), true, BOT_MODE_NONE)) do
+            if J.IsValidHero(enemy) and J.CanCastOnNonMagicImmune(enemy)
+                and J.CanCastOnTargetAdvanced(enemy) and enemy:IsChanneling() then
+                bot:Action_UseAbilityOnEntity(Malefice, enemy); return
+            end
         end
     end
-    
+
     BlinkPulseHoleDesire, BlinkPulseHoleLocation = X.ConsiderBlinkPulseHole()
     if BlinkPulseHoleDesire > 0
     then
@@ -123,13 +121,6 @@ function X.SkillsComplement()
         return
     end
 
-    MidnightPulseDesire, MidnightPulseLocation = X.ConsiderMidnightPulse()
-    if MidnightPulseDesire > 0
-    then
-        bot:Action_UseAbilityOnLocation(MidnightPulse, MidnightPulseLocation)
-        return
-    end
-
     BlackHoleDesire, BlackHoleLocation = X.ConsiderBlackHole()
     if BlackHoleDesire > 0
     then
@@ -145,6 +136,14 @@ function X.SkillsComplement()
         bot:Action_UseAbilityOnLocation(BlackHole, BlackHoleLocation)
         return
     end
+
+    MidnightPulseDesire, MidnightPulseLocation = X.ConsiderMidnightPulse()
+    if MidnightPulseDesire > 0
+    then
+        bot:Action_UseAbilityOnLocation(MidnightPulse, MidnightPulseLocation)
+        return
+    end
+
 
     MaleficeDesire, MaleficeTarget = X.ConsiderMalefice()
     if MaleficeDesire > 0
@@ -162,22 +161,18 @@ function X.SkillsComplement()
 end
 
 function X.ConsiderMalefice()
-    if not Malefice:IsFullyCastable()
+    if not J.CanCastAbility(Malefice)
     then
         return BOT_ACTION_DESIRE_NONE, nil
     end
 
-	local nCastRange = J.GetProperCastRange(false, bot, Malefice:GetCastRange())
+	local nCastRange = EnigmaAbilities.CastRange(bot, Malefice)
     local nStunInstances = Malefice:GetSpecialValueInt('stun_instances')
 
-    if MaleficeAdditionalInstanceTalent:IsTrained()
-    then
-        nStunInstances = nStunInstances + MaleficeAdditionalInstanceTalent:GetSpecialValueInt('value')
-    end
 
 	local nDamage = Malefice:GetSpecialValueInt('damage') * nStunInstances
 
-	local nEnemyHeroes = J.GetNearbyHeroes(bot,nCastRange + 150, true, BOT_MODE_NONE)
+	local nEnemyHeroes = J.GetNearbyHeroes(bot,nCastRange, true, BOT_MODE_NONE)
 	for _, enemyHero in pairs(nEnemyHeroes)
 	do
 		if J.IsValidHero(enemyHero)
@@ -209,7 +204,7 @@ function X.ConsiderMalefice()
 		if J.IsValidTarget(botTarget)
         and J.CanCastOnNonMagicImmune(botTarget)
         and J.CanCastOnTargetAdvanced(botTarget)
-        and J.IsInRange(bot, botTarget, nCastRange + 150)
+        and J.IsInRange(bot, botTarget, nCastRange)
         and not J.IsSuspiciousIllusion(botTarget)
         and not J.IsDisabled(botTarget)
         and not botTarget:HasModifier('modifier_abaddon_borrowed_time')
@@ -218,8 +213,8 @@ function X.ConsiderMalefice()
         and not botTarget:HasModifier('modifier_skeleton_king_reincarnation_scepter_active')
         and not botTarget:HasModifier('modifier_oracle_false_promise_timer')
 		then
-            local nInRangeAlly = J.GetNearbyHeroes(botTarget, 1400, true, BOT_MODE_NONE)
-            local nInRangeEnemy = J.GetNearbyHeroes(botTarget, 1400, false, BOT_MODE_NONE)
+            local nInRangeAlly = J.GetNearbyHeroes(botTarget, 1400, false, BOT_MODE_NONE)
+            local nInRangeEnemy = J.GetNearbyHeroes(botTarget, 1400, true, BOT_MODE_NONE)
 
             if nInRangeAlly ~= nil and nInRangeEnemy ~= nil
             and #nInRangeAlly >= #nInRangeEnemy
@@ -308,13 +303,14 @@ function X.ConsiderMalefice()
 end
 
 function X.ConsiderDemonicSummoning()
-    if not DemonicSummoning:IsFullyCastable() or J.GetHP(bot) < 0.25
+    if not J.CanCastAbility(DemonicSummoning) or J.GetHP(bot) < 0.25
     then
         return BOT_ACTION_DESIRE_NONE, 0
     end
 
-    local nCastRange = J.GetProperCastRange(false, bot, DemonicSummoning:GetCastRange())
+    local nCastRange = EnigmaAbilities.CastRange(bot, DemonicSummoning)
     local nHPCost = 75 + (25 * (DemonicSummoning:GetLevel() - 1))
+    if bot:GetHealth() - nHPCost < bot:GetMaxHealth() * 0.25 then return 0, nil end
 
     if J.IsGoingOnSomeone(bot)
     and J.GetHP(bot) > 0.5
@@ -326,8 +322,8 @@ function X.ConsiderDemonicSummoning()
         and not botTarget:HasModifier('modifier_dazzle_shallow_grave')
         and not botTarget:HasModifier('modifier_faceless_void_chronosphere_freeze')
 		then
-            local nInRangeAlly = J.GetNearbyHeroes(botTarget, 1400, true, BOT_MODE_NONE)
-            local nInRangeEnemy = J.GetNearbyHeroes(botTarget, 1400, false, BOT_MODE_NONE)
+            local nInRangeAlly = J.GetNearbyHeroes(botTarget, 1400, false, BOT_MODE_NONE)
+            local nInRangeEnemy = J.GetNearbyHeroes(botTarget, 1400, true, BOT_MODE_NONE)
 
             if nInRangeAlly ~= nil and nInRangeEnemy ~= nil
             and #nInRangeAlly >= #nInRangeEnemy
@@ -454,210 +450,17 @@ function X.ConsiderDemonicSummoning()
     return BOT_ACTION_DESIRE_NONE, 0
 end
 
-function X.ConsiderMidnightPulse()
-    if not MidnightPulse:IsFullyCastable()
-    then
-        return BOT_ACTION_DESIRE_NONE, 0
-    end
-
-    local nCastRange = J.GetProperCastRange(false, bot, MidnightPulse:GetCastRange())
-    local nRadius = MidnightPulse:GetSpecialValueInt('radius')
-
-    if MidnightPulseRadiusTalent:IsTrained()
-    then
-        nRadius = nRadius + MidnightPulseRadiusTalent:GetSpecialValueInt('value')
-    end
-
-	if J.IsInTeamFight(bot, 1200)
-	then
-		local nLocationAoE = bot:FindAoELocation(true, true, bot:GetLocation(), nCastRange, nRadius / 2, 0, 0)
-        local nInRangeEnemy = J.GetEnemiesNearLoc(nLocationAoE.targetloc, nRadius * 0.8)
-
-		if nInRangeEnemy ~= nil and #nInRangeEnemy >= 2
-        then
-			return BOT_ACTION_DESIRE_HIGH, nLocationAoE.targetloc
-		end
-	end
-
-	if J.IsGoingOnSomeone(bot)
-	then
-		if J.IsValidTarget(botTarget)
-        and J.CanCastOnNonMagicImmune(botTarget)
-        and not J.IsSuspiciousIllusion(botTarget)
-        and not botTarget:HasModifier('modifier_abaddon_borrowed_time')
-		then
-            local nInRangeAlly = J.GetNearbyHeroes(botTarget, 1400, true, BOT_MODE_NONE)
-            local nInRangeEnemy = J.GetNearbyHeroes(botTarget, 1400, false, BOT_MODE_NONE)
-
-            if nInRangeAlly ~= nil and nInRangeEnemy ~= nil
-            and #nInRangeAlly >= #nInRangeEnemy
-            then
-                nInRangeEnemy = J.GetEnemiesNearLoc(botTarget:GetLocation(), nRadius * 0.66)
-                if J.IsInRange(bot, botTarget, nCastRange)
-                then
-                    if not J.IsChasingTarget(bot, botTarget)
-                    then
-                        if nInRangeEnemy ~= nil and #nInRangeEnemy >= 1
-                        then
-                            return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(nInRangeEnemy)
-                        else
-                            return BOT_ACTION_DESIRE_HIGH, botTarget:GetLocation()
-                        end
-                    else
-                        return BOT_ACTION_DESIRE_HIGH, botTarget:GetExtrapolatedLocation(1)
-                    end
-                else
-                    if J.IsInRange(bot, botTarget, nCastRange + nRadius)
-                    and not J.IsInRange(bot, botTarget, nCastRange)
-                    and not J.IsChasingTarget(bot, botTarget)
-                    then
-                        return BOT_ACTION_DESIRE_HIGH, J.Site.GetXUnitsTowardsLocation(bot, botTarget:GetLocation(), nCastRange)
-                    end
-                end
-            end
-		end
-	end
-
-    if J.IsDoingRoshan(bot)
-	then
-        if J.IsRoshan(botTarget)
-        and J.CanCastOnNonMagicImmune(botTarget)
-        and J.IsInRange(bot, botTarget, nCastRange)
-        and J.IsAttacking(bot)
-        then
-            return BOT_ACTION_DESIRE_HIGH, botTarget:GetLocation()
-        end
-	end
-
-    if J.IsDoingTormentor(bot)
-	then
-        if J.IsTormentor(botTarget)
-        and J.IsInRange(bot, botTarget, nCastRange)
-        and J.IsAttacking(bot)
-        then
-            return BOT_ACTION_DESIRE_HIGH, botTarget:GetLocation()
-        end
-	end
-
-    return BOT_ACTION_DESIRE_NONE, 0
-end
-
-function X.ConsiderBlackHole()
-    if not BlackHole:IsFullyCastable()
-    then
-        return BOT_ACTION_DESIRE_NONE, 0
-    end
-
-	local nCastRange = J.GetProperCastRange(false, bot, BlackHole:GetCastRange())
-    local nRadius = BlackHole:GetSpecialValueInt('radius')
-    local nDamage = BlackHole:GetSpecialValueInt('damage')
-    local nDuration = BlackHole:GetSpecialValueInt('duration')
-
-	if J.IsInTeamFight(bot, 1200)
-	then
-		local nLocationAoE = bot:FindAoELocation(true, true, bot:GetLocation(), nCastRange, nRadius * 0.8, 0, 0)
-        local nInRangeEnemy = J.GetEnemiesNearLoc(nLocationAoE.targetloc, nRadius)
-
-		if nInRangeEnemy ~= nil and #nInRangeEnemy >= 2
-        then
-            return BOT_ACTION_DESIRE_HIGH, nLocationAoE.targetloc
-		end
-	end
-
-	if J.IsGoingOnSomeone(bot)
-	then
-		if J.IsValidTarget(botTarget)
-        and J.CanCastOnMagicImmune(botTarget)
-        and J.IsInRange(bot, botTarget, 800)
-        and not J.IsSuspiciousIllusion(botTarget)
-        and not botTarget:HasModifier('modifier_abaddon_borrowed_time')
-        and not botTarget:HasModifier('modifier_dazzle_shallow_grave')
-        and not botTarget:HasModifier('modifier_faceless_void_chronosphere_freeze')
-        and not botTarget:HasModifier('modifier_oracle_false_promise_timer')
-        and not botTarget:HasModifier('modifier_templar_assassin_refraction_absorb')
-        and not botTarget:HasModifier('modifier_item_aeon_disk_buff')
-		then
-            local nInRangeAlly = J.GetNearbyHeroes(botTarget, 1200, true, BOT_MODE_NONE)
-            local nInRangeEnemy = J.GetNearbyHeroes(botTarget, 1200, false, BOT_MODE_NONE)
-
-            if nInRangeAlly ~= nil and nInRangeEnemy ~= nil
-            then
-                if #nInRangeEnemy >= #nInRangeAlly
-                and #nInRangeEnemy <= 1
-                then
-                    if J.CanKillTarget(botTarget, nDamage * nDuration, DAMAGE_TYPE_PURE)
-                    -- and J.IsCore(botTarget)
-                    and botTarget:GetHealth() > 200
-                    then
-                        nInRangeEnemy = J.GetEnemiesNearLoc(botTarget:GetLocation(), nRadius)
-                        if nInRangeEnemy ~= nil and #nInRangeEnemy >= 1
-                        then
-                            return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(nInRangeEnemy)
-                        else
-                            if J.IsInRange(bot, botTarget, nCastRange + nRadius)
-                            and not J.IsInRange(bot, botTarget, nCastRange)
-                            then
-                                return BOT_ACTION_DESIRE_HIGH, J.Site.GetXUnitsTowardsLocation(bot, botTarget:GetLocation(), nCastRange)
-                            else
-                                return BOT_ACTION_DESIRE_HIGH, botTarget:GetLocation()
-                            end
-                        end
-                    end
-                end
-
-                if #nInRangeAlly >= #nInRangeEnemy
-                -- and J.IsCore(botTarget)
-                then
-                    if #nInRangeAlly <= 1
-                    and J.CanKillTarget(botTarget, nDamage * 1.1 * nDuration, DAMAGE_TYPE_PURE)
-                    then
-                        return BOT_ACTION_DESIRE_HIGH, botTarget:GetLocation()
-                    else
-                        nInRangeEnemy = J.GetEnemiesNearLoc(botTarget:GetLocation(), nRadius)
-                        if nInRangeEnemy ~= nil and #nInRangeEnemy >= 2
-                        then
-                            return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(nInRangeEnemy)
-                        else
-                            if J.IsInRange(bot, botTarget, nCastRange + nRadius)
-                            and not J.IsInRange(bot, botTarget, nCastRange)
-                            then
-                                return BOT_ACTION_DESIRE_HIGH, J.Site.GetXUnitsTowardsLocation(bot, botTarget:GetLocation(), nCastRange)
-                            else
-                                return BOT_ACTION_DESIRE_HIGH, botTarget:GetLocation()
-                            end
-                        end
-                    end
-                end
-            end
-		end
-	end
-
-    return BOT_ACTION_DESIRE_NONE, 0
-end
+function X.ConsiderMidnightPulse() return EnigmaAbilities.Pulse(bot, MidnightPulse) end
+function X.ConsiderBlackHole() return EnigmaAbilities.Hole(bot, BlackHole) end
 
 ------------------------------
 function X.ConsiderBlinkHole()
-    if X.CanDoBlinkHole()
-    then
-        local nRadius = BlackHole:GetSpecialValueInt('radius')
-
-        if J.IsInTeamFight(bot, 1200)
-        then
-            local nLocationAoE = bot:FindAoELocation(true, true, bot:GetLocation(), 1199, nRadius, 0, 0)
-            local nInRangeEnemy = J.GetEnemiesNearLoc(nLocationAoE.targetloc, nRadius)
-
-            if nInRangeEnemy ~= nil and #nInRangeEnemy >= 2
-            then
-                return BOT_ACTION_DESIRE_HIGH, nLocationAoE.targetloc
-            end
-        end
-    end
-
-    return BOT_ACTION_DESIRE_NONE
+    if not X.CanDoBlinkHole() then return 0, nil end
+    return EnigmaAbilities.Hole(bot, BlackHole, Blink:GetCastRange())
 end
 
 function X.CanDoBlinkHole()
-    if BlackHole:IsFullyCastable()
+    if J.CanCastAbility(BlackHole)
     and Blink ~= nil and Blink:IsFullyCastable()
     then
         local nManaCost = BlackHole:GetManaCost()
@@ -672,28 +475,20 @@ function X.CanDoBlinkHole()
 end
 ------------------------------
 function X.ConsiderBlinkPulseHole()
-    if X.CanDoBlinkPulseHole()
-    then
-        local nRadius = BlackHole:GetSpecialValueInt('radius')
-
-        if J.IsInTeamFight(bot, 1200)
-        then
-            local nLocationAoE = bot:FindAoELocation(true, true, bot:GetLocation(), 1199, nRadius, 0, 0)
-            local nInRangeEnemy = J.GetEnemiesNearLoc(nLocationAoE.targetloc, nRadius)
-
-            if nInRangeEnemy ~= nil and #nInRangeEnemy >= 2
-            then
-                return BOT_ACTION_DESIRE_HIGH, nLocationAoE.targetloc
-            end
-        end
+    if not X.CanDoBlinkPulseHole() then return 0, nil end
+    local desire, point = EnigmaAbilities.Hole(bot, BlackHole, Blink:GetCastRange())
+    if desire <= 0 then return 0, nil end
+    local targets = EnigmaAbilities.HoleTargets(point, BlackHole:GetSpecialValueInt('radius'))
+    -- Extra damage setup is reserved for targets already held in place.
+    for _, enemy in pairs(targets) do
+        if not J.IsDisabled(enemy) then return 0, nil end
     end
-
-    return BOT_ACTION_DESIRE_NONE
+    return desire, point
 end
 
 function X.CanDoBlinkPulseHole()
-    if BlackHole:IsFullyCastable()
-    and MidnightPulse:IsFullyCastable()
+    if J.CanCastAbility(BlackHole)
+    and J.CanCastAbility(MidnightPulse)
     and Blink ~= nil and Blink:IsFullyCastable()
     then
         local nManaCost = BlackHole:GetManaCost() + MidnightPulse:GetManaCost()
@@ -709,6 +504,7 @@ end
 ------------------------------
 
 function X.HasBlink()
+    Blink = nil
     local blink = nil
 
     for i = 0, 5

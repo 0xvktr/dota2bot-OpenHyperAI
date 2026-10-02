@@ -150,7 +150,7 @@ end
 function X.ConsiderStomp()
     if not J.CanCastAbility(Stomp) then return BOT_ACTION_DESIRE_NONE end
     -- Shard alt-cast swaps location; do not issue an unverified teleport command.
-    if bot:HasShard() and Stomp:GetAutoCastState() then return BOT_ACTION_DESIRE_NONE end
+    if bot:HasModifier('modifier_item_aghanims_shard') and Stomp:GetAutoCastState() then return BOT_ACTION_DESIRE_NONE end
     local count = 0
     local target = J.GetProperTarget(bot)
     local heroes = J.GetNearbyHeroes(bot, 1600, true, BOT_MODE_NONE)

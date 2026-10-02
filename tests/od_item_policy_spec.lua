@@ -4,17 +4,24 @@ local H = dofile('tests/hero_harness.lua')
 local bot, J = H.bot, H.J
 local P = require('bots/FunLib/item_cast_policy')
 BOT_MODE_NONE=0; BOT_MODE_LANING=1; BOT_MODE_FARM=2
-BOT_ACTION_DESIRE_NONE=0; BOT_ACTION_DESIRE_HIGH=1; DAMAGE_TYPE_MAGICAL=2
+BOT_ACTION_DESIRE_NONE=0; BOT_ACTION_DESIRE_HIGH=1; DAMAGE_TYPE_MAGICAL=2; DAMAGE_TYPE_PHYSICAL=1; DAMAGE_TYPE_ALL=4; UNIT_LIST_ENEMY_HEROES=2
 local now=100
 function DotaTime() return now end
 function GetUnitToUnitDistance(_, target) return target.range or 0 end
 local Vec={}; Vec.__index=Vec
 local function V(x,y) return setmetatable({x=x,y=y,z=0},Vec) end
 Vec.__sub=function(a,b) return V(a.x-b.x,a.y-b.y) end
+Vec.__add=function(a,b) return V(a.x+b.x,a.y+b.y) end
+Vec.__mul=function(a,b) return V(a.x*b,a.y*b) end
+function Vec:Normalized() local n=self:Length2D();return V(self.x/n,self.y/n) end
 function Vec:Length2D() return math.sqrt(self.x*self.x+self.y*self.y) end
 function GetUnitToLocationDistance(_,loc) return loc:Length2D() end
 local actions, abilities, enemies = {}, {}, {}
 bot.mana=50; bot.maxMana=1000; bot.mode=0; bot.hp=1000
+function GetUnitList(kind) assert(kind==UNIT_LIST_ENEMY_HEROES);return enemies end
+function bot:NumModifiers() return 0 end
+function bot:IsDisarmed() return false end
+function bot:HasScepter() return false end
 function bot:GetMana() return self.mana end
 function bot:GetMaxMana() return self.maxMana end
 function bot:GetHealth() return self.hp end
@@ -33,7 +40,7 @@ function bot:GetNearbyCreeps() return {} end
 function bot:GetItemInSlot(slot) return (self.items or {})[slot] end
 function bot:GetAbilityByName(name) return abilities[name] end
 function bot:HasModifier() return false end
-function bot:WasRecentlyDamagedByAnyHero() return false end
+function bot:WasRecentlyDamagedByAnyHero() return self.damaged==true end
 function bot:NumQueuedActions() return self.queued or 0 end
 for _, method in ipairs({'IsChanneling','IsCastingAbility','IsUsingAbility','IsInvisible','IsMuted',
     'IsSilenced','IsStunned','IsHexed','IsNightmared'}) do
@@ -65,6 +72,11 @@ local function ability(name,cost)
     return a
 end
 local target={range=400,hp=1000,hero=true,channel=true,team=3,mods={}}
+function target:IsNull() return false end
+function target:IsMagicImmune() return self.immune==true end
+function target:IsInvulnerable() return false end
+function target:GetMaxMana() return 500 end
+function target:GetEstimatedDamageToTarget(_,_,_,kind) return bot.damaged and 500 or 0 end
 function target:IsAlive() return true end
 function target:IsHero() return self.hero end
 function target:IsChanneling() return self.channel end
@@ -90,6 +102,10 @@ J.IsSuspiciousIllusion=function(t) return t.illusion == true end
 J.IsInRange=function(a,t,range) return (t.range or a.range or 0) <= range end
 J.IsDisabled=function() return false end
 J.CanKillTarget=function() return false end
+J.IsUnitTargetProjectileIncoming=function() return false end
+J.CannotBeKilled=function() return false end
+J.WillKillTarget=function(t,d) return t.hp<d end
+J.GetCorrectLoc=function(t) return t:GetLocation() end
 J.IsCastingUltimateAbility=function() return false end
 J.IsInTeamFight=function() return false end
 J.IsGoingOnSomeone=function() return false end
@@ -109,7 +125,7 @@ end
 local orb=ability('obsidian_destroyer_arcane_orb',0); orb.specials.mana_cost_percentage=20
 local astral=ability('obsidian_destroyer_astral_imprisonment',150)
 local ult=ability('obsidian_destroyer_sanity_eclipse',300)
-local barrier=ability('obsidian_destroyer_objurgation',175)
+local barrier=ability('obsidian_destroyer_objurgation',175);barrier.specials.barrier_flat=300;barrier.specials.mana_to_barrier=12
 bot.items = { [0]=ability('item_enchanted_mango',0) }
 local od=H.load('npc_dota_hero_obsidian_destroyer','pos_2')
 bot.target=target; enemies={target}
@@ -125,11 +141,13 @@ local mango = bot.items[0]
 local ring = ability('item_soul_ring',0); ring.specials.mana_gain=170
 bot.items[0]=ring; bot.mana=50; actions={}
 J.IsGoingOnSomeone=function() return true end
+bot.damaged=true
 od.SkillsComplement()
 assert(#actions==0 and P.Intent(bot,J).ability==barrier, 'actual defensive barrier requests Soul Ring for mana')
 assert(P.RestoreDesire(bot,ring,J)>0, 'safe health permits Soul Ring for the selected barrier')
 bot.mana=175; od.SkillsComplement()
 assert(#actions==1 and actions[1].ability==barrier, 'barrier is cast after mana restoration')
+bot.damaged=false
 J.IsGoingOnSomeone=function() return false end
 bot.items[0]=mango
 local considerBarrier=od.ConsiderObjurgation
@@ -137,7 +155,7 @@ od.ConsiderObjurgation=function() return 0 end
 J.IsGoingOnSomeone=function() return true end
 J.CanKillTarget=function(t,damage) return t.hp < damage end
 target.hp=80; bot.mana=200; actions={}
-ult.specials.base_damage=200; ult.specials.damage_multiplier=0.4
+ult.specials.base_damage=200; ult.specials.damage_multiplier=0.4;ult.specials.radius=500
 od.SkillsComplement()
 assert(#actions==0 and P.Intent(bot,J).ability==ult, 'real lethal Eclipse requests ground-cast restoration')
 target.range=800

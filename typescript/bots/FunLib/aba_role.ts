@@ -173,15 +173,16 @@ export const GetReplyMemberID = function () {
 
     const tMemberIDList = GetTeamPlayers(GetTeam());
 
-    const nMemberCount = tMemberIDList.length;
-    let nHumanCount = 0;
+    const botIDs: number[] = [];
     for (let i = 0; i < tMemberIDList.length; i++) {
-        if (!IsPlayerBot(tMemberIDList[i])) {
-            nHumanCount = nHumanCount + 1;
+        if (IsPlayerBot(tMemberIDList[i])) {
+            botIDs.push(tMemberIDList[i]);
         }
     }
 
-    replyMemberID = tMemberIDList[RandomInt(nHumanCount + 1, nMemberCount)];
+    if (botIDs.length === 0) return null;
+
+    replyMemberID = botIDs[RandomInt(0, botIDs.length - 1)];
     return replyMemberID;
 };
 

@@ -83,21 +83,14 @@ if bot.canVendettaKill == nil then bot.canVendettaKill = false end
 if bot.vendettaTarget == nil then bot.vendettaTarget = nil end
 
 function X.SkillsComplement()
-	if J.CanNotUseAbility(bot) then return end
+	if J.CanNotUseAbility(bot) or bot:IsChanneling() then return end
 
-    VendettaDesire = X.ConsiderVendetta()
-    if VendettaDesire > 0
-    then
-        bot:Action_UseAbility(Vendetta)
-        return
-    end
-
+    UnBurrowDesire = X.ConsiderUnBurrow()
+    if UnBurrowDesire > 0 then bot:Action_UseAbility(UnBurrow); return end
     SpikedCarapaceDesire = X.ConsiderSpikedCarapace()
-    if SpikedCarapaceDesire > 0
-    then
-        bot:Action_UseAbility(SpikedCarapace)
-        return
-    end
+    if SpikedCarapaceDesire > 0 then bot:Action_UseAbility(SpikedCarapace); return end
+    VendettaDesire = X.ConsiderVendetta()
+    if VendettaDesire > 0 then bot:Action_UseAbility(Vendetta); return end
 
     ImpaleDesire, ImpaleLocation = X.ConsiderImpale()
     if ImpaleDesire > 0
@@ -128,373 +121,185 @@ function X.SkillsComplement()
     end
 end
 
+local function SpellRange(ability)
+    local range = ability:GetCastRange()
+    local lens = J.IsItemAvailable('item_aether_lens')
+    if lens ~= nil then range = range + lens:GetSpecialValueInt('cast_range_bonus') end
+    if bot:HasModifier('modifier_nyx_assassin_burrow') and Burrow~=nil
+        and (ability==Impale or ability==Mindflare) then range=range+Burrow:GetSpecialValueInt('cast_range') end
+    return range
+end
+local function Enemy(enemy)
+    return J.IsValidHero(enemy) and not J.IsSuspiciousIllusion(enemy) and J.CanCastOnNonMagicImmune(enemy)
+end
+local function ImpaleLocation(enemy)
+    local range = SpellRange(Impale)
+    local delay = Impale:GetCastPoint() + GetUnitToUnitDistance(bot, enemy) / Impale:GetSpecialValueInt('speed')
+    local location = J.GetCorrectLoc(enemy, delay)
+    if GetUnitToLocationDistance(bot, location) <= range then return location end
+    return nil
+end
+local function LineHits(unit, location)
+    local start = bot:GetLocation()
+    local dx,dy = location.x-start.x,location.y-start.y
+    local length = math.sqrt(dx*dx+dy*dy)
+    if length == 0 then return false end
+    local delay=Impale:GetCastPoint()+GetUnitToUnitDistance(bot,unit)/Impale:GetSpecialValueInt('speed')
+    local p=J.GetCorrectLoc(unit,delay)
+    local ux,uy=p.x-start.x,p.y-start.y
+    local forward=(ux*dx+uy*dy)/length
+    local side=math.abs(ux*dy-uy*dx)/length
+    return forward>=0 and forward<=SpellRange(Impale) and side<=Impale:GetSpecialValueInt('width')
+end
 function X.ConsiderImpale()
-    if not Impale:IsFullyCastable()
-    or bot:HasModifier('modifier_nyx_assassin_vendetta')
-    then
-        return BOT_ACTION_DESIRE_NONE, 0
+    if not J.CanCastAbility(Impale) then return 0 end
+    local enemies=J.GetNearbyHeroes(bot,math.min(SpellRange(Impale),1600),true,BOT_MODE_NONE)
+    for _,enemy in ipairs(enemies) do
+        if Enemy(enemy) and enemy:IsChanneling() then
+            local location=ImpaleLocation(enemy)
+            if location~=nil then return BOT_ACTION_DESIRE_HIGH,location end
+        end
     end
-
-    local nCastRange = J.GetProperCastRange(false, bot, Impale:GetCastRange())
-    local nCastPoint = Impale:GetCastPoint()
-    local nStunDuration = Impale:GetSpecialValueInt('duration')
-    local nDamage = Impale:GetSpecialValueInt('impale_damage')
-    local botTarget = J.GetProperTarget(bot)
-
-    local nEnemyHeroes = J.GetNearbyHeroes(bot,nCastRange, true, BOT_MODE_NONE)
-    for _, enemyHero in pairs(nEnemyHeroes)
-    do
-        if J.IsValidHero(enemyHero)
-        and J.CanCastOnNonMagicImmune(enemyHero)
-        and not J.IsSuspiciousIllusion(enemyHero)
-        then
-            if enemyHero:IsChanneling() or J.IsCastingUltimateAbility(enemyHero)
-            then
-                return BOT_ACTION_DESIRE_HIGH, enemyHero:GetLocation()
-            end
-
-            if J.CanKillTarget(enemyHero, nDamage, DAMAGE_TYPE_MAGICAL)
-            and not enemyHero:HasModifier('modifier_abaddon_borrowed_time')
-            and not enemyHero:HasModifier('modifier_dazzle_shallow_grave')
-            and not enemyHero:HasModifier('modifier_oracle_false_promise_timer')
-            and not enemyHero:HasModifier('modifier_templar_assassin_refraction_absorb')
-            then
-                return BOT_ACTION_DESIRE_HIGH, enemyHero:GetExtrapolatedLocation(nCastPoint)
+    if bot:HasModifier('modifier_nyx_assassin_vendetta') then return 0 end
+    for _,enemy in ipairs(enemies) do
+        if Enemy(enemy) then
+            local location=ImpaleLocation(enemy)
+            if location~=nil and J.CanKillTarget(enemy,Impale:GetSpecialValueInt('impale_damage'),DAMAGE_TYPE_MAGICAL)
+                and not J.CannotBeKilled(bot,enemy) then return BOT_ACTION_DESIRE_HIGH,location end
+        end
+    end
+    if J.IsInTeamFight(bot,1200) then
+        for _,enemy in ipairs(enemies) do
+            if Enemy(enemy) then
+                local location=ImpaleLocation(enemy)
+                if location~=nil then
+                    local hits=0
+                    for _,other in ipairs(enemies) do if Enemy(other) and LineHits(other,location) then hits=hits+1 end end
+                    if hits>=2 then return BOT_ACTION_DESIRE_HIGH,location end
+                end
             end
         end
     end
-
-    local nAllyHeroes = J.GetNearbyHeroes(bot,nCastRange, false, BOT_MODE_NONE)
-    for _, allyHero in pairs(nAllyHeroes)
-    do
-        local nAllyInRangeEnemy = J.GetNearbyHeroes(allyHero, nCastRange, true, BOT_MODE_NONE)
-
-        if J.IsRetreating(allyHero)
-        and allyHero:WasRecentlyDamagedByAnyHero(2.1)
-        and not allyHero:IsIllusion()
-        and J.GetMP(bot) > 0.31
-        then
-            if nAllyInRangeEnemy ~= nil and #nAllyInRangeEnemy >= 1
-            and J.IsValidHero(nAllyInRangeEnemy[1])
-            and J.CanCastOnNonMagicImmune(nAllyInRangeEnemy[1])
-            and J.IsInRange(allyHero, nAllyInRangeEnemy[1], 400)
-            and J.IsInRange(bot, nAllyInRangeEnemy[1], nCastRange)
-            and J.IsRunning(allyHero)
-            and nAllyInRangeEnemy[1]:IsFacingLocation(allyHero:GetLocation(), 30)
-            and not J.IsDisabled(nAllyInRangeEnemy[1])
-            and not J.IsTaunted(nAllyInRangeEnemy[1])
-            and not J.IsSuspiciousIllusion(nAllyInRangeEnemy[1])
-            and not nAllyInRangeEnemy[1]:HasModifier('modifier_enigma_black_hole_pull')
-            and not nAllyInRangeEnemy[1]:HasModifier('modifier_faceless_void_chronosphere_freeze')
-            and not nAllyInRangeEnemy[1]:HasModifier('modifier_necrolyte_reapers_scythe')
-            then
-                return BOT_ACTION_DESIRE_HIGH, nAllyInRangeEnemy[1]:GetExtrapolatedLocation(nCastPoint)
+    local target=J.GetProperTarget(bot)
+    if J.IsGoingOnSomeone(bot) and Enemy(target) and not J.IsDisabled(target) then
+        local location=ImpaleLocation(target)
+        if location~=nil then return BOT_ACTION_DESIRE_HIGH,location end
+    end
+    for _,enemy in ipairs(enemies) do
+        if Enemy(enemy) and not J.IsDisabled(enemy) and J.IsRetreating(bot)
+            and bot:WasRecentlyDamagedByAnyHero(2) and J.IsChasingTarget(enemy,bot) then
+            local location=ImpaleLocation(enemy)
+            if location~=nil then return BOT_ACTION_DESIRE_HIGH,location end
+        end
+    end
+    if (J.IsFarming(bot) or J.IsPushing(bot) or J.IsDefending(bot) or J.IsLaning(bot))
+        and J.IsAllowedToSpam(bot,Impale:GetManaCost()) then
+        local creeps=bot:GetNearbyCreeps(math.min(SpellRange(Impale),1600),true)
+        for _,creep in ipairs(creeps) do
+            if J.IsValid(creep) and J.CanCastOnNonMagicImmune(creep) then
+                local location=ImpaleLocation(creep)
+                if location~=nil then
+                    local hit,kills=0,0
+                    for _,other in ipairs(creeps) do
+                        if J.IsValid(other) and J.CanCastOnNonMagicImmune(other) and LineHits(other,location) then
+                            hit=hit+1
+                            if J.CanKillTarget(other,Impale:GetSpecialValueInt('impale_damage'),DAMAGE_TYPE_MAGICAL) then kills=kills+1 end
+                        end
+                    end
+                    if kills>=2 or not J.IsLaning(bot) and hit>=3 then return BOT_ACTION_DESIRE_HIGH,location end
+                end
             end
         end
     end
-
-    if J.IsGoingOnSomeone(bot)
-	then
-        local strongestTarget = J.GetStrongestUnit(nCastRange, bot, true, false, nStunDuration)
-        local nInRangeAlly = J.GetNearbyHeroes(bot,1200, false, BOT_MODE_NONE)
-
-        if strongestTarget == nil
-        then
-            strongestTarget = J.GetStrongestUnit(nCastRange, bot, true, true, nStunDuration)
-        end
-
-		if J.IsValidTarget(strongestTarget)
-        and J.IsInRange(bot, strongestTarget, nCastRange)
-        and not J.IsSuspiciousIllusion(strongestTarget)
-        and not J.IsDisabled(strongestTarget)
-        and not J.IsTaunted(strongestTarget)
-        and not strongestTarget:HasModifier('modifier_abaddon_borrowed_time')
-        and not strongestTarget:HasModifier('modifier_dazzle_shallow_grave')
-        and not strongestTarget:HasModifier('modifier_enigma_black_hole_pull')
-        and not strongestTarget:HasModifier('modifier_faceless_void_chronosphere_freeze')
-        and not strongestTarget:HasModifier('modifier_necrolyte_reapers_scythe')
-        and not strongestTarget:HasModifier('modifier_templar_assassin_refraction_absorb')
-		then
-            local nTargetInRangeAlly = J.GetNearbyHeroes(strongestTarget, 1200, false, BOT_MODE_NONE)
-
-            if nInRangeAlly ~= nil and nTargetInRangeAlly ~= nil
-            and #nInRangeAlly >= #nTargetInRangeAlly
-            then
-                return BOT_ACTION_DESIRE_HIGH, strongestTarget:GetExtrapolatedLocation(nCastPoint)
-            end
-		end
-	end
-
-    if J.IsRetreating(bot)
-    then
-        local nInRangeAlly = J.GetNearbyHeroes(bot,800, false, BOT_MODE_NONE)
-        local nInRangeEnemy = J.GetNearbyHeroes(bot,800, true, BOT_MODE_NONE)
-
-        if nInRangeAlly ~= nil and nInRangeEnemy
-        and J.IsValidHero(nInRangeEnemy[1])
-        and J.CanCastOnNonMagicImmune(nInRangeEnemy[1])
-        and J.IsInRange(bot, nInRangeEnemy[1], nCastRange)
-        and J.IsRunning(nInRangeEnemy[1])
-        and nInRangeEnemy[1]:IsFacingLocation(bot:GetLocation(), 30)
-        and not J.IsSuspiciousIllusion(nInRangeEnemy[1])
-        then
-            local nTargetInRangeAlly = J.GetNearbyHeroes(nInRangeEnemy[1], 800, false, BOT_MODE_NONE)
-
-            if nTargetInRangeAlly ~= nil
-            and ((#nTargetInRangeAlly > #nInRangeAlly)
-                or (J.GetHP(bot) < 0.82 and bot:WasRecentlyDamagedByAnyHero(1.5)))
-            then
-                return BOT_ACTION_DESIRE_HIGH, nInRangeEnemy[1]:GetExtrapolatedLocation(nCastPoint)
-            end
-        end
-    end
-
-    if J.IsLaning(bot)
-    and not J.IsThereNonSelfCoreNearby(1200)
-	then
-        local canKill = 0
-        local creepList = {}
-		local nEnemyLaneCreeps = bot:GetNearbyLaneCreeps(nCastRange, true)
-        local nInRangeEnemy = J.GetNearbyHeroes(bot,nCastRange, true, BOT_MODE_NONE)
-
-		for _, creep in pairs(nEnemyLaneCreeps)
-		do
-			-- if J.IsValid(creep)
-			-- and (J.IsKeyWordUnit('ranged', creep) or J.IsKeyWordUnit('siege', creep) or J.IsKeyWordUnit('flagbearer', creep))
-			-- and creep:GetHealth() <= nDamage
-			-- then
-			-- 	local nCreepInRangeHero = creep:GetNearbyHeroes(500, false, BOT_MODE_NONE)
-
-			-- 	if nCreepInRangeHero ~= nil and #nCreepInRangeHero >= 1
-            --     and J.GetMP(bot) > 0.41
-			-- 	then
-			-- 		return BOT_ACTION_DESIRE_HIGH, creep:GetLocation()
-			-- 	end
-			-- end
-
-            if J.IsValid(creep)
-            and creep:GetHealth() <= nDamage
-            then
-                canKill = canKill + 1
-                table.insert(creepList, creep)
-            end
-		end
-
-        if canKill >= 2
-        and J.GetMP(bot) > 0.25
-        and nInRangeEnemy ~= nil and #nInRangeEnemy >= 1
-        then
-            return BOT_ACTION_DESIRE_HIGH, J.GetCenterOfUnits(creepList)
-        end
-	end
-
-    if J.IsDoingRoshan(bot)
-    then
-        if J.IsRoshan(botTarget)
-        and J.CanCastOnNonMagicImmune(botTarget)
-        and J.IsInRange(bot, botTarget, 500)
-        and J.IsAttacking(bot)
-        and not J.IsDisabled(botTarget)
-        then
-            return BOT_ACTION_DESIRE_HIGH, botTarget:GetLocation()
-        end
-    end
-
-    if J.IsDoingTormentor(bot)
-    then
-        if J.IsTormentor(botTarget)
-        and J.IsInRange(bot, botTarget, 400)
-        and J.IsAttacking(bot)
-        then
-            return BOT_ACTION_DESIRE_HIGH, botTarget:GetLocation()
-        end
-    end
-
-    return BOT_ACTION_DESIRE_NONE, 0
+    return 0
 end
-
 function X.ConsiderMindflare()
-    if not Mindflare:IsFullyCastable()
-    or bot:HasModifier('modifier_nyx_assassin_vendetta')
-    then
-        return BOT_ACTION_DESIRE_NONE, nil
-    end
-
-    local nCastRange = J.GetProperCastRange(false, bot, Mindflare:GetCastRange())
-	local nDmgPct = Mindflare:GetSpecialValueInt('max_mana_as_damage_pct')
-
-    local nEnemyHeroes = J.GetNearbyHeroes(bot,nCastRange, true, BOT_MODE_NONE)
-    for _, enemyHero in pairs(nEnemyHeroes)
-    do
-        if J.IsValidHero(enemyHero)
-        and J.CanCastOnNonMagicImmune(enemyHero)
-        and J.CanKillTarget(enemyHero, enemyHero:GetMaxMana() * (nDmgPct / 100), DAMAGE_TYPE_MAGICAL)
-        and not J.IsSuspiciousIllusion(enemyHero)
-        and not enemyHero:HasModifier('modifier_abaddon_borrowed_time')
-        and not enemyHero:HasModifier('modifier_dazzle_shallow_grave')
-        and not enemyHero:HasModifier('modifier_oracle_false_promise_timer')
-        and not enemyHero:HasModifier('modifier_templar_assassin_refraction_absorb')
-        then
-            return BOT_ACTION_DESIRE_HIGH, enemyHero
+    if not J.CanCastAbility(Mindflare) or bot:HasModifier('modifier_nyx_assassin_vendetta') then return 0 end
+    local range=SpellRange(Mindflare)
+    for _,enemy in ipairs(J.GetNearbyHeroes(bot,math.min(range,1600),true,BOT_MODE_NONE)) do
+        if Enemy(enemy) and J.IsInRange(bot,enemy,range) and J.CanCastOnTargetAdvanced(enemy)
+            and not J.CannotBeKilled(bot,enemy) then
+            local damage=enemy:GetMaxMana()*Mindflare:GetSpecialValueInt('max_mana_as_damage_pct')/100
+            if J.CanKillTarget(enemy,damage,DAMAGE_TYPE_MAGICAL) then return BOT_ACTION_DESIRE_HIGH,enemy end
         end
     end
-
-    if J.IsGoingOnSomeone(bot)
-	then
-        local weakestTarget = J.GetVulnerableWeakestUnit(bot, true, true, nCastRange)
-        local nInRangeAlly = J.GetNearbyHeroes(bot,800, false, BOT_MODE_NONE)
-
-		if J.IsValidTarget(weakestTarget)
-        and not J.IsSuspiciousIllusion(weakestTarget)
-        and not weakestTarget:HasModifier('modifier_abaddon_borrowed_time')
-        and not weakestTarget:HasModifier('modifier_dazzle_shallow_grave')
-        and not weakestTarget:HasModifier('modifier_necrolyte_reapers_scythe')
-        and not weakestTarget:HasModifier('modifier_templar_assassin_refraction_absorb')
-		then
-            local nTargetInRangeAlly = J.GetNearbyHeroes(weakestTarget, 800, false, BOT_MODE_NONE)
-
-            if nInRangeAlly ~= nil and nTargetInRangeAlly ~= nil
-            and #nInRangeAlly >= #nTargetInRangeAlly
-            then
-                return BOT_ACTION_DESIRE_HIGH, weakestTarget
+    local target=J.GetProperTarget(bot)
+    if J.IsInTeamFight(bot,1200) and not Enemy(target) then
+        local best,score=nil,0
+        local radius=Mindflare:GetSpecialValueInt('aoe')
+        local enemies=J.GetNearbyHeroes(bot,math.min(range+radius,1600),true,BOT_MODE_NONE)
+        for _,enemy in ipairs(enemies) do
+            if Enemy(enemy) and J.IsInRange(bot,enemy,range) and J.CanCastOnTargetAdvanced(enemy) then
+                local value=enemy:GetMaxMana()
+                for _,other in ipairs(enemies) do
+                    if other~=enemy and Enemy(other) and J.IsInRange(enemy,other,radius) then value=value+other:GetMaxMana() end
+                end
+                if value>score then best,score=enemy,value end
             end
-		end
-	end
-
-    return BOT_ACTION_DESIRE_NONE, nil
+        end
+        target=best
+    end
+    if (J.IsGoingOnSomeone(bot) or J.IsInTeamFight(bot,1200)) and Enemy(target)
+        and J.IsInRange(bot,target,range) and J.CanCastOnTargetAdvanced(target)
+        and not J.CannotBeKilled(bot,target) then
+        -- Max-mana damage is safe to estimate. The echo needs source-attributed damage unavailable here.
+        if J.CanCastAbility(Impale) and not J.IsDisabled(target) and ImpaleLocation(target)~=nil then return 0 end
+        for i=1,5 do
+            local item=J.IsItemAvailable(i==1 and 'item_dagon' or 'item_dagon_'..i)
+            if item~=nil and item:IsFullyCastable() and J.IsDisabled(target) and J.IsInRange(bot,target,SpellRange(item)) then return 0 end
+        end
+        return BOT_ACTION_DESIRE_HIGH,target
+    end
+    return 0
 end
-
 function X.ConsiderSpikedCarapace()
-    if not SpikedCarapace:IsFullyCastable()
-    or bot:HasModifier('modifier_nyx_assassin_vendetta')
-    then
-        return BOT_ACTION_DESIRE_NONE
+    if not J.CanCastAbility(SpikedCarapace) or bot:HasModifier('modifier_nyx_assassin_spiked_carapace') then return 0 end
+    if bot:HasModifier('modifier_nyx_assassin_burrow') and Burrow~=nil then
+        local radius=Burrow:GetSpecialValueInt('carapace_radius')
+        for _,enemy in ipairs(J.GetNearbyHeroes(bot,math.min(radius,1600),true,BOT_MODE_NONE)) do
+            if Enemy(enemy) and J.IsInRange(bot,enemy,radius) and not J.IsDisabled(enemy) then return BOT_ACTION_DESIRE_HIGH end
+        end
     end
-
-    if J.IsUnitTargetProjectileIncoming(bot, 400)
-	then
-		return BOT_ACTION_DESIRE_HIGH
-	end
-
-	if not bot:HasModifier('modifier_sniper_assassinate')
-	and not bot:IsMagicImmune()
-	then
-		if J.IsWillBeCastUnitTargetSpell(bot, 1400)
-		then
-			return BOT_ACTION_DESIRE_HIGH
-		end
-	end
-
-    return BOT_ACTION_DESIRE_NONE
+    if J.IsUnitTargetProjectileIncoming(bot,400) or J.IsWillBeCastUnitTargetSpell(bot,1200)
+        or bot:WasRecentlyDamagedByAnyHero(0.5) and #J.GetNearbyHeroes(bot,800,true,BOT_MODE_NONE)>0 then return BOT_ACTION_DESIRE_HIGH end
+    return 0
 end
-
 function X.ConsiderBurrow()
-    if bot:HasModifier('modifier_nyx_assassin_burrow') or not J.CanBeCast(Burrow)
-    then
-        return BOT_ACTION_DESIRE_NONE
+    if not J.CanCastAbility(Burrow) or bot:HasModifier('modifier_nyx_assassin_burrow')
+        or bot:HasModifier('modifier_nyx_assassin_vendetta') or J.IsRetreating(bot)
+        or not (J.IsInTeamFight(bot,1400) or J.IsDefending(bot)) then return 0 end
+    if J.GetHP(bot)<0.4 or #J.GetNearbyHeroes(bot,350,true,BOT_MODE_NONE)>0 then return 0 end
+    if not J.CanCastAbility(Impale) and not J.CanCastAbility(Mindflare) then return 0 end
+    local range=J.CanCastAbility(Impale) and SpellRange(Impale) or SpellRange(Mindflare)
+    range=range+Burrow:GetSpecialValueInt('cast_range')
+    for _,enemy in ipairs(J.GetNearbyHeroes(bot,math.min(range,1600),true,BOT_MODE_NONE)) do
+        if Enemy(enemy) and J.IsInRange(bot,enemy,range) then return BOT_ACTION_DESIRE_HIGH end
     end
-
-    local nCarapaceRadius = Burrow:GetSpecialValueInt('carapace_radius')
-
-    if J.IsInTeamFight(bot, 1200)
-    then
-        local realEnemyCount = J.GetEnemiesNearLoc(bot:GetLocation(), nCarapaceRadius)
-
-        if realEnemyCount ~= nil and #realEnemyCount >= 2
-        then
-            return BOT_ACTION_DESIRE_HIGH
-        end
-    end
-
-    return BOT_ACTION_DESIRE_NONE
+    return 0
 end
-
 function X.ConsiderUnBurrow()
-    if not bot:HasModifier('modifier_nyx_assassin_burrow') or not J.CanBeCast(UnBurrow)
-    then
-        return BOT_ACTION_DESIRE_NONE
-    end
-
-    local nEnemyHeroes = J.GetNearbyHeroes(bot, 1200, true, BOT_MODE_NONE)
-    if #nEnemyHeroes < 1
-    then
-        return BOT_ACTION_DESIRE_HIGH
-    end
-
-    return BOT_ACTION_DESIRE_NONE
+    if not J.CanCastAbility(UnBurrow) or not bot:HasModifier('modifier_nyx_assassin_burrow') then return 0 end
+    if J.IsRetreating(bot) then return BOT_ACTION_DESIRE_HIGH end
+    local range=0
+    if Impale~=nil then range=math.max(range,SpellRange(Impale)) end
+    if Mindflare~=nil then range=math.max(range,SpellRange(Mindflare)) end
+    if #J.GetNearbyHeroes(bot,math.min(range,1600),true,BOT_MODE_NONE)==0 then return BOT_ACTION_DESIRE_HIGH end
+    return 0
 end
-
 function X.ConsiderVendetta()
-    if not Vendetta:IsFullyCastable()
-    or bot:HasModifier('modifier_nyx_assassin_burrow')
-    or J.IsRealInvisible(bot)
-    then
-        return BOT_ACTION_DESIRE_NONE
-    end
-
-    local nDamage = Vendetta:GetSpecialValueInt('bonus_damage')
-    local botTarget = J.GetProperTarget(bot)
-
-    local nEnemyHeroes = J.GetNearbyHeroes(bot,800, true, BOT_MODE_NONE)
-    for _, enemyHero in pairs(nEnemyHeroes)
-    do
-        if J.IsValidHero(enemyHero)
-        and J.CanKillTarget(enemyHero, nDamage, DAMAGE_TYPE_PURE)
-        and not J.IsSuspiciousIllusion(enemyHero)
-        and not enemyHero:HasModifier('modifier_abaddon_borrowed_time')
-        and not enemyHero:HasModifier('modifier_dazzle_shallow_grave')
-        and not enemyHero:HasModifier('modifier_oracle_false_promise_timer')
-        and not enemyHero:HasModifier('modifier_templar_assassin_refraction_absorb')
-        then
-            local nInRangeAlly = J.GetNearbyHeroes(bot,800, false, BOT_MODE_NONE)
-            local nTargetInRangeAlly = J.GetNearbyHeroes(enemyHero, 800, false, BOT_MODE_NONE)
-
-            if nInRangeAlly ~= nil
-            and #nInRangeAlly >= #nTargetInRangeAlly
-            then
-                bot.canVendettaKill = true
-                bot.vendettaTarget = enemyHero
-                return BOT_ACTION_DESIRE_HIGH
-            else
-                bot.canVendettaKill = false
-                bot.vendettaTarget = nil
-            end
-        end
-    end
-
-    if J.IsRetreating(bot)
-    and not J.IsRealInvisible(bot)
-    then
+    if not J.CanCastAbility(Vendetta) or J.IsRealInvisible(bot) then return 0 end
+    bot.canVendettaKill=false;bot.vendettaTarget=nil
+    if J.IsRetreating(bot) and bot:WasRecentlyDamagedByAnyHero(3) then return BOT_ACTION_DESIRE_HIGH end
+    if bot:IsDisarmed() then return 0 end
+    local target=J.GetProperTarget(bot)
+    if J.IsGoingOnSomeone(bot) and J.IsValidHero(target) and not J.IsSuspiciousIllusion(target)
+        and J.CanBeAttacked(target) and J.IsInRange(bot,target,2200)
+        and not J.CannotBeKilled(bot,target) then
+        local pure=Vendetta:GetSpecialValueInt('bonus_damage')
+        if J.CanKillTarget(target,pure,DAMAGE_TYPE_PURE) then bot.canVendettaKill=true;bot.vendettaTarget=target end
         return BOT_ACTION_DESIRE_HIGH
     end
-
-    if J.IsGoingOnSomeone(bot)
-	then
-        local nInRangeAlly = J.GetNearbyHeroes(bot,1600, false, BOT_MODE_NONE)
-
-		if J.IsValidTarget(botTarget)
-        and J.IsInRange(bot, botTarget, 2200)
-        and not J.IsSuspiciousIllusion(botTarget)
-        and not J.IsDisabled(botTarget)
-        and not J.IsTaunted(botTarget)
-        and not botTarget:HasModifier('modifier_abaddon_borrowed_time')
-        and not botTarget:HasModifier('modifier_dazzle_shallow_grave')
-        and not botTarget:HasModifier('modifier_enigma_black_hole_pull')
-        and not botTarget:HasModifier('modifier_faceless_void_chronosphere_freeze')
-        and not botTarget:HasModifier('modifier_necrolyte_reapers_scythe')
-        and not botTarget:HasModifier('modifier_templar_assassin_refraction_absorb')
-		then
-            local nTargetInRangeAlly = J.GetNearbyHeroes(botTarget, 1600, false, BOT_MODE_NONE)
-
-            if nInRangeAlly ~= nil and nTargetInRangeAlly ~= nil
-            and #nInRangeAlly >= #nTargetInRangeAlly
-            then
-                return BOT_ACTION_DESIRE_HIGH
-            end
-		end
-	end
-
-    return BOT_ACTION_DESIRE_NONE
+    return 0
 end
 
 return X
