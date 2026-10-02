@@ -199,18 +199,20 @@ ____exports.GetReplyMemberID = function()
         return ____exports.replyMemberID
     end
     local tMemberIDList = GetTeamPlayers(GetTeam())
-    local nMemberCount = #tMemberIDList
-    local nHumanCount = 0
+    local botIDs = {}
     do
         local i = 0
         while i < #tMemberIDList do
-            if not IsPlayerBot(tMemberIDList[i + 1]) then
-                nHumanCount = nHumanCount + 1
+            if IsPlayerBot(tMemberIDList[i + 1]) then
+                botIDs[#botIDs + 1] = tMemberIDList[i + 1]
             end
             i = i + 1
         end
     end
-    ____exports.replyMemberID = tMemberIDList[RandomInt(nHumanCount + 1, nMemberCount) + 1]
+    if #botIDs == 0 then
+        return nil
+    end
+    ____exports.replyMemberID = botIDs[RandomInt(0, #botIDs - 1) + 1]
     return ____exports.replyMemberID
 end
 ____exports.memberIDIndexTable = nil

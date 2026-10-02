@@ -18,6 +18,7 @@
 - **Bots communicate** - they announce pushes, defends, Roshan, and respond to your pings with "On my way!" (in 4 languages)
 - **10+ Game modes supported** - All pick, Turbo, All random, Captain mode, 1v1 mid, All Random Deathmatch, etc.
 - **Customizable everything** - bot names, roles, hero picks, bans, item builds, skill builds, and more
+- **Match banter** - localized reactions to kills, streaks, escapes and comebacks, with cooldowns ([settings](docs/BOT_BANTER.md))
 - **AI Chatbot** - bots chat like real (toxic) players (requires FretBots mode)
 - **All roles supported** - deterministic position 1-5 lane assignment
 

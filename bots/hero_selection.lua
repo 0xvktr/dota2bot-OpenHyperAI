@@ -921,8 +921,7 @@ local function handleCommand(inputStr, PlayerID, bTeamOnly)
 end
 
 function HandleLocaleSetting(locale)
-	Customize.Localization = locale
-	print("Set to speak: ".. locale)
+	Localization.SetLocale(locale)
 end
 
 -- Initialize a clean, staggered per-slot schedule once we’re allowed to pick.
@@ -1006,6 +1005,9 @@ function GetHumanChatHero(name)
 end
 
 function SelectHeroChatCallback(PlayerID, ChatText, bTeamOnly)
+	if IsPlayerBot(PlayerID) then return end
+	-- Preserve compound draft commands; standalone language commands share the match parser.
+	if not ChatText:find(';', 1, true) and Localization.HandleChatCommand(ChatText) then return end
 	local text = string.lower(ChatText);
 
 	if GetGameState() == GAME_STATE_HERO_SELECTION and string.len(ChatText) == 2 then

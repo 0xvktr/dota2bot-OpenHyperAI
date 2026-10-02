@@ -75,15 +75,18 @@ Customize.Weak_Penalty = { type = "exp", base = 0.6 }
 -- Exact match on unit names by default; set Customize.Strict_Ban_Match = false to allow guarded substring matches (length ≥ 6).
 Customize.Strict_Ban_Match = true
 
--- To allow bots do trash talking in different scenarios: got fb, killing a human, etc. Disable this also disables GPT chat.
+-- Offline match banter (kills, escapes, score swings and self-deprecating deaths).
+-- Disable this to mute banter and chat replies, including GPT chat.
 Customize.Allow_Trash_Talk = true
 
 -- To allow bots response with GPT generated text to your chats in global channel. Disable Allow_Trash_Talk can disable this.
 Customize.Allow_AI_GPT_Response = true
 
 -- Set the level of bots' trash talks. Disable Allow_Trash_Talk can disable this.
--- 1 => no trash talks from ally bots, no taunt from enemy after it gets a kill. 2 => ally bots also trash talk to you, allow taunt from enemy after it gets a kill.
-Customize.Trash_Talk_Level = 1
+-- 1 => occasional match banter; no ordinary kill/streak taunts or ally chat replies.
+-- 2 => also enable kill/multikill/streak taunts and ally chat replies. 0 => mute offline banter/replies.
+-- Match banter has a 45s per-bot, 12s per-team and 120s per-event cooldown.
+Customize.Trash_Talk_Level = 2
 
 -- To set the names for the Radiant bots. Don't need to provide a value for all 5 bots, missing names will have a Random value.
 Customize.Radiant_Names = {

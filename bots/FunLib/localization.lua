@@ -533,6 +533,31 @@ function X.GetLocale()
     return Customize.Localization or LanguageCode
 end
 
+function X.SetLocale(locale)
+    if type(locale) == 'string' then
+        locale = locale:match('^%s*(.-)%s*$'):lower()
+        if locale == 'cn' then locale = 'zh' end
+    end
+    if not X.Supported(locale) then
+        print('Supported bot languages: !speak en / zh (cn) / ru / ja')
+        return false
+    end
+    Customize.Localization = locale
+    print('Set to speak: '..locale)
+    return true
+end
+
+-- Consume only exact language commands, including malformed/bare commands.
+function X.HandleChatCommand(text)
+    if type(text) ~= 'string' then return false end
+    local command, locale = text:match('^%s*(%S+)%s*(.-)%s*$')
+    if command == nil then return false end
+    command = command:lower()
+    if command ~= '!sp' and command ~= '!speak' then return false end
+    X.SetLocale(locale)
+    return true
+end
+
 function X.Get(key)
     local localeSet = Localization[X.GetLocale()] or Localization['en']
     local res = localeSet[key] or Localization['en'][key]
